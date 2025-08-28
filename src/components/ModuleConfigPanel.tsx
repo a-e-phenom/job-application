@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, RotateCcw, Plus } from 'lucide-react';
+import { X, Save, RotateCcw, Plus, Type, FileText, ChevronDown, Circle, CheckSquare, FolderOpen, Image, Phone } from 'lucide-react';
 import { FlowModule } from '../types/flow';
 import { ModuleTemplate } from '../hooks/useTemplates';
 
@@ -16,6 +16,7 @@ interface LocalOverrides {
     halfWidth?: boolean;
     layout?: 'vertical' | 'horizontal';
     content?: string;
+    typeSelectorOpen?: boolean; // Added for custom dropdown
   }>;
 }
 
@@ -210,20 +211,122 @@ export default function ModuleConfigPanel({
   <X className="w-4 h-4" />
 </button>
               </div>
-              <select
-                value={question.type}
-                onChange={(e) => updateQuestion(index, 'type', e.target.value)}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="text">Text input</option>
-                <option value="textarea">Text Area</option>
-                <option value="select">Dropdown input</option>
-                <option value="radio">Radio Buttons</option>
-                <option value="checkbox">Checkboxes</option>
-                <option value="file">File uploader</option>
-                <option value="image">Image Upload</option>
-                <option value="phone">Phone Number</option>
-              </select>
+              {/* Element Type Selector */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => updateQuestion(index, 'typeSelectorOpen', !question.typeSelectorOpen)}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center justify-between"
+                >
+                  <div className="flex items-center space-x-2">
+                    {question.type === 'text' && <Type className="w-4 h-4" />}
+                    {question.type === 'textarea' && <FileText className="w-4 h-4" />}
+                    {question.type === 'select' && <ChevronDown className="w-4 h-4" />}
+                    {question.type === 'radio' && <Circle className="w-4 h-4" />}
+                    {question.type === 'checkbox' && <CheckSquare className="w-4 h-4" />}
+                    {question.type === 'file' && <FolderOpen className="w-4 h-4" />}
+                    {question.type === 'image' && <Image className="w-4 h-4" />}
+                    {question.type === 'phone' && <Phone className="w-4 h-4" />}
+                    <span>
+                      {question.type === 'text' && 'Text input'}
+                      {question.type === 'textarea' && 'Text Area'}
+                      {question.type === 'select' && 'Dropdown input'}
+                      {question.type === 'radio' && 'Radio Buttons'}
+                      {question.type === 'checkbox' && 'Checkboxes'}
+                      {question.type === 'file' && 'File uploader'}
+                      {question.type === 'image' && 'Image Upload'}
+                      {question.type === 'phone' && 'Phone Number'}
+                    </span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                </button>
+                
+                {/* Dropdown Menu */}
+                {question.typeSelectorOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                    <div 
+                      className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                      onClick={() => {
+                        updateQuestion(index, 'type', 'text');
+                        updateQuestion(index, 'typeSelectorOpen', false);
+                      }}
+                    >
+                      <Type className="w-4 h-4" />
+                      <span>Text input</span>
+                    </div>
+                    <div 
+                      className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                      onClick={() => {
+                        updateQuestion(index, 'type', 'textarea');
+                        updateQuestion(index, 'typeSelectorOpen', false);
+                      }}
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span>Text Area</span>
+                    </div>
+                    <div 
+                      className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                      onClick={() => {
+                        updateQuestion(index, 'type', 'select');
+                        updateQuestion(index, 'typeSelectorOpen', false);
+                      }}
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                      <span>Dropdown input</span>
+                    </div>
+                    <div 
+                      className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                      onClick={() => {
+                        updateQuestion(index, 'type', 'radio');
+                        updateQuestion(index, 'typeSelectorOpen', false);
+                      }}
+                    >
+                      <Circle className="w-4 h-4" />
+                      <span>Radio Buttons</span>
+                    </div>
+                    <div 
+                      className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                      onClick={() => {
+                        updateQuestion(index, 'type', 'checkbox');
+                        updateQuestion(index, 'typeSelectorOpen', false);
+                      }}
+                    >
+                      <CheckSquare className="w-4 h-4" />
+                      <span>Checkboxes</span>
+                    </div>
+                    <div 
+                      className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                      onClick={() => {
+                        updateQuestion(index, 'type', 'file');
+                        updateQuestion(index, 'typeSelectorOpen', false);
+                      }}
+                    >
+                      <FolderOpen className="w-4 h-4" />
+                      <span>File uploader</span>
+                    </div>
+                    <div 
+                      className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                      onClick={() => {
+                        updateQuestion(index, 'type', 'image');
+                        updateQuestion(index, 'typeSelectorOpen', false);
+                      }}
+                    >
+                      <Image className="w-4 h-4" />
+                      <span>Image Upload</span>
+                    </div>
+                    <div 
+                      className="px-2 py-1 hover:bg-gray-1 cursor-pointer flex items-center space-x-2"
+                      onClick={() => {
+                        updateQuestion(index, 'type', 'phone');
+                        updateQuestion(index, 'typeSelectorOpen', false);
+                      }}
+                    >
+                      <Phone className="w-4 h-4" />
+                      <span>Phone Number</span>
+                    </div>
+                  </div>
+                )}
+              </div>
               <input
                 type="text"
                 value={question.text}

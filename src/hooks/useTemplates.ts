@@ -20,6 +20,7 @@ export interface ModuleTemplate {
       halfWidth?: boolean;
       layout?: 'vertical' | 'horizontal';
       content?: string;
+      typeSelectorOpen?: boolean;
     }>;
     customFields?: Record<string, any>;
   };

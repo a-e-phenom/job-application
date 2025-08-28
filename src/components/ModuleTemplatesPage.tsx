@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Save, RotateCcw, X, Check, Plus, GripVertical, Airplay } from 'lucide-react';
+import { ArrowLeft, Save, RotateCcw, X, Check, Plus, GripVertical, Airplay, Type, FileText, ChevronDown, Circle, CheckSquare, FolderOpen, Image, Phone, Calendar, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTemplates, ModuleTemplate } from '../hooks/useTemplates';
 import GenericModuleRenderer from './GenericModuleRenderer';
@@ -186,7 +186,8 @@ export default function ModuleTemplatesPage() {
       id: `element_${Date.now()}`,
       text: 'New Element',
       type: 'text' as const,
-      required: false
+      required: false,
+      typeSelectorOpen: false
     };
 
     setEditedTemplate(prev => ({
@@ -582,22 +583,145 @@ export default function ModuleTemplatesPage() {
                                     <div className="flex-1">
                                     {/* Question Type Dropdown - Above other configurations */}
                                     <div className="mb-3">
-                                      <select
-                                        value={question.type}
-                                        onChange={(e) => updateQuestion(question.id, 'type', e.target.value)}
-                                        className="w-[340px] px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                      >
-                                        <option value="text">Text input</option>
-                                        <option value="textarea">Textarea</option>
-                                        <option value="select">Dropdown input</option>
-                                        <option value="radio">Radio</option>
-                                        <option value="checkbox">Checkbox</option>
-                                        <option value="file">File uploader</option>
-                                        <option value="image">Image</option>
-                                        <option value="phone">Phone Number</option>
-                                        <option value="interview-scheduler">Interview Scheduler</option>
-                                        <option value="message">Message</option>
-                                      </select>
+                                      <div className="relative">
+                                        <button
+                                          type="button"
+                                          onClick={() => updateQuestion(question.id, 'typeSelectorOpen', !question.typeSelectorOpen)}
+                                          className="w-[340px] px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 flex items-center justify-between"
+                                        >
+                                          <div className="flex items-center space-x-2">
+                                            {question.type === 'text' && <Type className="w-4 h-4" />}
+                                            {question.type === 'textarea' && <FileText className="w-4 h-4" />}
+                                            {question.type === 'select' && <ChevronDown className="w-4 h-4" />}
+                                            {question.type === 'radio' && <Circle className="w-4 h-4" />}
+                                            {question.type === 'checkbox' && <CheckSquare className="w-4 h-4" />}
+                                            {question.type === 'file' && <FolderOpen className="w-4 h-4" />}
+                                            {question.type === 'image' && <Image className="w-4 h-4" />}
+                                            {question.type === 'phone' && <Phone className="w-4 h-4" />}
+                                            {question.type === 'interview-scheduler' && <Calendar className="w-4 h-4" />}
+                                            {question.type === 'message' && <MessageSquare className="w-4 h-4" />}
+                                            <span>
+                                              {question.type === 'text' && 'Text input'}
+                                              {question.type === 'textarea' && 'Textarea'}
+                                              {question.type === 'select' && 'Dropdown input'}
+                                              {question.type === 'radio' && 'Radio'}
+                                              {question.type === 'checkbox' && 'Checkbox'}
+                                              {question.type === 'file' && 'File uploader'}
+                                              {question.type === 'image' && 'Image'}
+                                              {question.type === 'phone' && 'Phone Number'}
+                                              {question.type === 'interview-scheduler' && 'Interview Scheduler'}
+                                              {question.type === 'message' && 'Message'}
+                                            </span>
+                                          </div>
+                                          <ChevronDown className="w-4 h-4 text-gray-400" />
+                                        </button>
+                                        
+                                        {/* Dropdown Menu */}
+                                        {question.typeSelectorOpen && (
+                                          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                                            <div 
+                                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                                              onClick={() => {
+                                                updateQuestion(question.id, 'type', 'text');
+                                                updateQuestion(question.id, 'typeSelectorOpen', false);
+                                              }}
+                                            >
+                                              <Type className="w-4 h-4" />
+                                              <span>Text input</span>
+                                            </div>
+                                            <div 
+                                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                                              onClick={() => {
+                                                updateQuestion(question.id, 'type', 'textarea');
+                                                updateQuestion(question.id, 'typeSelectorOpen', false);
+                                              }}
+                                            >
+                                              <FileText className="w-4 h-4" />
+                                              <span>Textarea</span>
+                                            </div>
+                                            <div 
+                                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                                              onClick={() => {
+                                                updateQuestion(question.id, 'type', 'select');
+                                                updateQuestion(question.id, 'typeSelectorOpen', false);
+                                              }}
+                                            >
+                                              <ChevronDown className="w-4 h-4" />
+                                              <span>Dropdown input</span>
+                                            </div>
+                                            <div 
+                                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                                              onClick={() => {
+                                                updateQuestion(question.id, 'type', 'radio');
+                                                updateQuestion(question.id, 'typeSelectorOpen', false);
+                                              }}
+                                            >
+                                              <Circle className="w-4 h-4" />
+                                              <span>Radio</span>
+                                            </div>
+                                            <div 
+                                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                                              onClick={() => {
+                                                updateQuestion(question.id, 'type', 'checkbox');
+                                                updateQuestion(question.id, 'typeSelectorOpen', false);
+                                              }}
+                                            >
+                                              <CheckSquare className="w-4 h-4" />
+                                              <span>Checkbox</span>
+                                            </div>
+                                            <div 
+                                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                                              onClick={() => {
+                                                updateQuestion(question.id, 'type', 'file');
+                                                updateQuestion(question.id, 'typeSelectorOpen', false);
+                                              }}
+                                            >
+                                              <FolderOpen className="w-4 h-4" />
+                                              <span>File uploader</span>
+                                            </div>
+                                            <div 
+                                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                                              onClick={() => {
+                                                updateQuestion(question.id, 'type', 'image');
+                                                updateQuestion(question.id, 'typeSelectorOpen', false);
+                                              }}
+                                            >
+                                              <Image className="w-4 h-4" />
+                                              <span>Image</span>
+                                            </div>
+                                            <div 
+                                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                                              onClick={() => {
+                                                updateQuestion(question.id, 'type', 'phone');
+                                                updateQuestion(question.id, 'typeSelectorOpen', false);
+                                              }}
+                                            >
+                                              <Phone className="w-4 h-4" />
+                                              <span>Phone Number</span>
+                                            </div>
+                                            <div 
+                                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                                              onClick={() => {
+                                                updateQuestion(question.id, 'type', 'interview-scheduler');
+                                                updateQuestion(question.id, 'typeSelectorOpen', false);
+                                              }}
+                                            >
+                                              <Calendar className="w-4 h-4" />
+                                              <span>Interview Scheduler</span>
+                                            </div>
+                                            <div 
+                                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                                              onClick={() => {
+                                                updateQuestion(question.id, 'type', 'message');
+                                                updateQuestion(question.id, 'typeSelectorOpen', false);
+                                              }}
+                                            >
+                                              <MessageSquare className="w-4 h-4" />
+                                              <span>Message</span>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
                                     
                                     {/* Question Text and Delete Button */}
@@ -791,9 +915,7 @@ export default function ModuleTemplatesPage() {
                                             />
                                           </div>
                                         </div>
-                                        <p className="text-xs text-gray-500 mt-1">
-                                          Upload an image file. It will be displayed full width in the application.
-                                        </p>
+                                        
                                       </div>
                                     )}
                                   
