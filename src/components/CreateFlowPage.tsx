@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Plus, Check, Trash2, GripVertical, Upload, X, ChevronRight, ChevronLeft, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Plus, Check, Trash2, GripVertical, Upload, X, ChevronRight, ChevronLeft, ChevronUp, ChevronDown, Edit } from 'lucide-react';
 import { FlowModule, ApplicationFlow, FlowStep, PRESET_COLORS } from '../types/flow';
 import { useTemplates } from '../hooks/useTemplates';
 import { useFlows } from '../hooks/useFlows';
@@ -510,9 +510,9 @@ export default function CreateFlowPage({ onBack, onFlowCreated, editingFlow }: C
   const renderStepContent = () => {
     if (currentStep === 1) {
       return (
-        <div className="space-y-8">
+        <div className="space-y-4">
           {/* Basic Information */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             <h2 className="text-md font-semibold text-gray-700">Basic Information</h2>
             
             <div>
@@ -525,7 +525,7 @@ export default function CreateFlowPage({ onBack, onFlowCreated, editingFlow }: C
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., Software Engineer Application"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full px-4 py-2 border border-gray-300 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
 
@@ -539,14 +539,14 @@ export default function CreateFlowPage({ onBack, onFlowCreated, editingFlow }: C
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Brief description of this application flow..."
                 rows={3}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-vertical"
+                className="w-full px-4 py-2 border border-gray-300 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-vertical"
               />
             </div>
           </div>
 
           {/* Appearance */}
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-gray-900">Appearance</h2>
+            <h2 className="text-md font-semibold text-gray-700">Appearance</h2>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -747,7 +747,7 @@ export default function CreateFlowPage({ onBack, onFlowCreated, editingFlow }: C
                   type="button"
                   onClick={() => setLogoUploadMode('url')}
                   className={`
-                    px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200
+                    px-3 py-2 text-xs font-medium rounded-md transition-colors duration-200
                     ${logoUploadMode === 'url'
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -760,7 +760,7 @@ export default function CreateFlowPage({ onBack, onFlowCreated, editingFlow }: C
                   type="button"
                   onClick={() => setLogoUploadMode('upload')}
                   className={`
-                    px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200
+                    px-3 py-2 text-xs font-medium rounded-md transition-colors duration-200
                     ${logoUploadMode === 'upload'
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -777,7 +777,7 @@ export default function CreateFlowPage({ onBack, onFlowCreated, editingFlow }: C
                   value={logoUrl}
                   onChange={(e) => setLogoUrl(e.target.value)}
                   placeholder="https://example.com/logo.png"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
               ) : (
                 <div className="space-y-4">
@@ -791,7 +791,7 @@ export default function CreateFlowPage({ onBack, onFlowCreated, editingFlow }: C
                         id="logo-upload"
                       />
                       <label htmlFor="logo-upload" className="cursor-pointer">
-                        <div className="w-12 h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <div className="w-12 h-12 mx-auto bg-gray-100 rounded-lg flex items-center justify-center mb-4">
                           <Upload className="w-6 h-6 text-gray-400" />
                         </div>
                         <p className="text-gray-600 mb-2">
@@ -841,168 +841,177 @@ export default function CreateFlowPage({ onBack, onFlowCreated, editingFlow }: C
     // Step 2: Flow Steps
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-md font-semibold text-gray-700">
-            Flow Steps ({getTotalModules()} modules total)
-          </h2>
-          <button
-            type="button"
-            onClick={addStep}
-            className="flex items-center space-x-1 text-sm text-indigo-600 hover:text-indigo-700"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Step</span>
-          </button>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
-          {/* Left Column - Available Modules */}
-          <div className="lg:col-span-1">
-            <h3 className="text-sm font-medium text-gray-700 mb-4">Available Modules</h3>
-            <div className="space-y-3 max-h-[550px] overflow-y-auto">
-              {templatesLoading ? (
-                <div className="text-center py-8 text-gray-500">Loading modules...</div>
-              ) : availableModules.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">No modules available</div>
-              ) : (
-                availableModules.map((module) => (
-                  <div
-                    key={module.id}
-                    draggable={!isModuleUsed(module.id)}
-                    onDragStart={(e) => handleDragStart(e, module)}
-                    className={`
-                      p-4 border rounded-lg transition-all duration-200 cursor-grab active:cursor-grabbing
-                      ${isModuleUsed(module.id)
-                        ? 'border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                      }
-                      ${draggedModule?.id === module.id ? 'opacity-50' : ''}
-                    `}
-                  >
-                    <div className="flex items-start space-x-3">
-                      <GripVertical className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-gray-900 text-sm">{module.name}</h4>
-                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">{module.description}</p>
-                      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 ">
+        {/* Left Column - Available Modules */}
+        <div className="lg:col-span-1  bg-gray-50 p-4 rounded-xl">
+          <h3 className="text-sm font-medium text-gray-700 mb-2">Modules</h3>
+          <div className="space-y-2 max-h-[550px] overflow-y-auto">
+            {templatesLoading ? (
+              <div className="text-center py-8 text-gray-500">Loading modules...</div>
+            ) : availableModules.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">No modules available</div>
+            ) : (
+              availableModules.map((module) => (
+                <div
+                  key={module.id}
+                  draggable={!isModuleUsed(module.id)}
+                  onDragStart={(e) => handleDragStart(e, module)}
+                  className={`
+                    p-3 pl-2 border rounded-lg transition-all duration-200 cursor-grab active:cursor-grabbing bg-white
+                    ${isModuleUsed(module.id)
+                      ? 'border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed'
+                      : 'border-gray-200 hover:border-indigo-300 hover:bg-indigo-50'
+                    }
+                    ${draggedModule?.id === module.id ? 'opacity-50' : ''}
+                  `}
+                >
+                  <div className="flex items-start space-x-2">
+                    <GripVertical className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-gray-900 text-sm">{module.name}</h4>
+                      {/* <p className="text-xs text-gray-600 mt-0 line-clamp-2">{module.description}</p> */}
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Right Column - Flow Steps */}
-          <div className="lg:col-span-2">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Flow Steps</h3>
-            <div className="space-y-4 max-h-[550px] overflow-y-auto">
-              {steps.map((step, stepIndex) => (
-                <div key={step.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <input
-                      type="text"
-                      value={step.name}
-                      onChange={(e) => updateStepName(step.id, e.target.value)}
-                      className="text-lg font-medium text-gray-900 bg-transparent border-none focus:outline-none focus:ring-0 p-0 flex-1"
-                      placeholder="Step name"
-                    />
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-500">
-                        {step.modules.length} modules
-                      </span>
-                      {steps.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeStep(step.id)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Drop Zone */}
-                  <div
-                    onDragOver={(e) => handleStepDragOver(e, step.id)}
-                    onDragLeave={handleStepDragLeave}
-                    onDrop={(e) => handleStepDrop(e, step.id)}
-                    onDragEnter={(e) => e.preventDefault()}
-                    className={`
-                      min-h-[120px] border-2 border-dashed rounded-lg p-4 transition-all duration-200
-                      ${dragOverStep === step.id
-                        ? 'border-indigo-400 bg-indigo-50'
-                        : 'border-gray-300'
-                      }
-                    `}
-                  >
-                    {step.modules.length === 0 ? (
-                      <div className="flex items-center justify-center h-full text-gray-500 text-sm">
-                        Drag modules here to add them to this step
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {step.modules.map((module, moduleIndex) => (
-                          <div
-                            key={module.id}
-                            className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg transition-all duration-200 hover:shadow-sm"
-                          >
-                            <div className="flex items-center space-x-3">
-                              <div className="flex flex-col space-y-1">
-                                <button
-                                  type="button"
-                                  onClick={() => moveModuleUp(step.id, moduleIndex)}
-                                  disabled={moduleIndex === 0}
-                                  className={`
-                                    p-1 rounded transition-colors duration-200
-                                    ${moduleIndex === 0
-                                      ? 'text-gray-300 cursor-not-allowed'
-                                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                                    }
-                                  `}
-                                  title="Move up"
-                                >
-                                  <ChevronUp className="w-3 h-3" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => moveModuleDown(step.id, moduleIndex)}
-                                  disabled={moduleIndex === step.modules.length - 1}
-                                  className={`
-                                    p-1 rounded transition-colors duration-200
-                                    ${moduleIndex === step.modules.length - 1
-                                      ? 'text-gray-300 cursor-not-allowed'
-                                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                                    }
-                                  `}
-                                  title="Move down"
-                                >
-                                  <ChevronDown className="w-3 h-3" />
-                                </button>
-                              </div>
-                              <div>
-                                <h5 className="font-medium text-gray-900 text-sm">{module.name}</h5>
-                                <p className="text-xs text-gray-600">{module.description}</p>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removeModuleFromStep(step.id, module.id)}
-                              className="text-red-500 hover:text-red-700 transition-colors duration-200"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </div>
-              ))}
-            </div>
+              ))
+            )}
+          </div>
+        </div>
+    
+        {/* Right Column - Flow Steps */}
+        <div className="lg:col-span-2">
+          {/* Header with Flow Steps + Add Step button */}
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-900">
+              Flow Steps
+            </h3>
+            <button
+              type="button"
+              onClick={addStep}
+              className="flex items-center space-x-1 text-sm text-indigo-600 hover:text-indigo-700"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Step</span>
+            </button>
+          </div>
+    
+          {/* Flow Steps List */}
+          <div className="space-y-4">
+            {steps.map((step, stepIndex) => (
+              <div key={step.id} className="border border-gray-200 rounded-xl p-4 bg-white">
+                <div className="flex items-center justify-between mb-4">
+  {/* Step name with hover edit icon */}
+  <div className="inline-flex items-center group">
+    <input
+      type="text"
+      value={step.name}
+      onChange={(e) => updateStepName(step.id, e.target.value)}
+      className="text-sm font-medium text-gray-800 bg-transparent border-none focus:outline-none focus:ring-0 p-0 w-auto"
+      placeholder="Step name"
+      size={Math.max(step.name.length, 1)} // auto-size input to text
+    />
+    <Edit className="w-4 h-4 ml-1 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" />
+  </div>
+
+  {/* Right side (modules + remove) */}
+  <div className="flex items-center space-x-2">
+    <span className="text-sm text-gray-500">
+      {step.modules.length} modules
+    </span>
+    {steps.length > 1 && (
+      <button
+        type="button"
+        onClick={() => removeStep(step.id)}
+        className="text-red-500 hover:text-red-700"
+      >
+        <X className="w-4 h-4" />
+      </button>
+    )}
+  </div>
+</div>
+    
+                {/* Drop Zone */}
+                <div
+                  onDragOver={(e) => handleStepDragOver(e, step.id)}
+                  onDragLeave={handleStepDragLeave}
+                  onDrop={(e) => handleStepDrop(e, step.id)}
+                  onDragEnter={(e) => e.preventDefault()}
+                  className={`
+                    min-h-[80px] bg-indigo-50 border-2 border-dashed rounded-lg p-4 transition-all duration-200 border-spacing-dashed
+                    ${dragOverStep === step.id
+                      ? 'border-indigo-300 bg-indigo-50'
+                      : 'border-indigo-300'
+                    }
+                  `}
+                >
+                  {step.modules.length === 0 ? (
+                    <div className="flex items-center justify-center min-h-[80px] font-normal text-gray-600 text-sm">
+                      Drag modules here to add them to this step
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {step.modules.map((module, moduleIndex) => (
+                        <div
+                          key={module.id}
+                          className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg transition-all duration-200 hover:shadow-sm"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="flex flex-col space-y-1">
+                              <button
+                                type="button"
+                                onClick={() => moveModuleUp(step.id, moduleIndex)}
+                                disabled={moduleIndex === 0}
+                                className={`
+                                  p-1 rounded transition-colors duration-200
+                                  ${moduleIndex === 0
+                                    ? 'text-gray-300 cursor-not-allowed'
+                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                                  }
+                                `}
+                                title="Move up"
+                              >
+                                <ChevronUp className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => moveModuleDown(step.id, moduleIndex)}
+                                disabled={moduleIndex === step.modules.length - 1}
+                                className={`
+                                  p-1 rounded transition-colors duration-200
+                                  ${moduleIndex === step.modules.length - 1
+                                    ? 'text-gray-300 cursor-not-allowed'
+                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                                  }
+                                `}
+                                title="Move down"
+                              >
+                                <ChevronDown className="w-3 h-3" />
+                              </button>
+                            </div>
+                            <div>
+                              <h5 className="font-medium text-gray-900 text-sm">{module.name}</h5>
+                              <p className="text-xs text-gray-600">{module.description}</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeModuleFromStep(step.id, module.id)}
+                            className="text-red-500 hover:text-red-700 transition-colors duration-200"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
+    </div>
+    
     );
   };
 

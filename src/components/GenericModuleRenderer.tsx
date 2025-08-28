@@ -931,6 +931,14 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
             value={value}
             onChange={(e) => updateFormData(question.id, e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            onFocus={(e) => {
+              e.target.style.borderColor = primaryColor;
+              e.target.style.boxShadow = `0 0 0 3px ${primaryColor}33`;
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#D1D5DB';
+              e.target.style.boxShadow = 'none';
+            }}
           />
         );
 
@@ -943,6 +951,14 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
             onChange={(e) => updateFormData(question.id, e.target.value)}
             rows={4}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-vertical"
+            onFocus={(e) => {
+              e.target.style.borderColor = primaryColor;
+              e.target.style.boxShadow = `0 0 0 3px ${primaryColor}33`;
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#D1D5DB';
+              e.target.style.boxShadow = 'none';
+            }}
           />
         );
 
@@ -953,9 +969,6 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
               value={value}
               onChange={(e) => updateFormData(question.id, e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none bg-white"
-              style={{
-                borderColor: primaryColor
-              }}
               onFocus={(e) => {
                 e.target.style.borderColor = primaryColor;
                 e.target.style.boxShadow = `0 0 0 3px ${primaryColor}33`;
@@ -1111,6 +1124,14 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
                 value={phoneData.countryCode}
                 onChange={(e) => updateFormData(question.id, { ...phoneData, countryCode: e.target.value })}
                 className="appearance-none w-full text-[14px] text-[#464F5E] border border-gray-300 rounded-[10px] py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                onFocus={(e) => {
+                  e.target.style.borderColor = primaryColor;
+                  e.target.style.boxShadow = `0 0 0 3px ${primaryColor}33`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#D1D5DB';
+                  e.target.style.boxShadow = 'none';
+                }}
               >
                 <option value="+1">🇺🇸 +1</option>
                 <option value="+44">🇬🇧 +44</option>
@@ -1129,16 +1150,24 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
                     clipRule="evenodd"
                   />
                 </svg>
-                </div>
               </div>
-              <input
-                type="tel"
-                placeholder="Type phone number"
-                value={phoneData.number}
-                onChange={(e) => updateFormData(question.id, { ...phoneData, number: e.target.value })}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
             </div>
+            <input
+              type="tel"
+              placeholder="Type phone number"
+              value={phoneData.number}
+              onChange={(e) => updateFormData(question.id, { ...phoneData, number: e.target.value })}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              onFocus={(e) => {
+                e.target.style.borderColor = primaryColor;
+                e.target.style.boxShadow = `0 0 0 3px ${primaryColor}33`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#D1D5DB';
+                e.target.style.boxShadow = 'none';
+              }}
+            />
+          </div>
         );
 
       case 'file':

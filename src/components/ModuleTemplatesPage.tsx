@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Save, RotateCcw, X, Check, Plus, GripVertical } from 'lucide-react';
+import { ArrowLeft, Save, RotateCcw, X, Check, Plus, GripVertical, Airplay } from 'lucide-react';
 import { useTemplates, ModuleTemplate } from '../hooks/useTemplates';
 import GenericModuleRenderer from './GenericModuleRenderer';
 
@@ -845,9 +845,18 @@ export default function ModuleTemplatesPage({ onBack }: ModuleTemplatesPageProps
                   )}
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  Select a module template to edit or create a new one
-                </div>
+                <div className="flex flex-col items-center justify-center h-full text-gray-500">
+  {/* Icon in gray box */}
+  <div className="bg-gray-50 rounded-xl p-3  mb-3">
+    <Airplay className="w-6 h-6 text-gray-500" />
+  </div>
+
+  {/* Text */}
+  <p className="text-sm text-center">
+    Select a module template to edit or create a new one
+  </p>
+</div>
+
               )}
             </div>
           </div>
