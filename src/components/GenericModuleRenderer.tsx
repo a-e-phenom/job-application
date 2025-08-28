@@ -925,10 +925,10 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
           <input
             key={question.id}
             type="text"
-            placeholder={`Enter ${question.text.toLowerCase()}`}
+            placeholder={` ${question.text}`}
             value={value}
             onChange={(e) => updateFormData(question.id, e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             onFocus={(e) => {
               e.target.style.borderColor = primaryColor;
               e.target.style.boxShadow = `0 0 0 3px ${primaryColor}33`;
@@ -944,7 +944,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
         return (
           <textarea
             key={question.id}
-            placeholder={`Enter ${question.text.toLowerCase()}`}
+            placeholder={` ${question.text}`}
             value={value}
             onChange={(e) => updateFormData(question.id, e.target.value)}
             rows={4}
@@ -1119,7 +1119,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
               <select
                 value={phoneData.countryCode}
                 onChange={(e) => updateFormData(question.id, { ...phoneData, countryCode: e.target.value })}
-                className="appearance-none w-full text-[14px] text-[#464F5E] border border-gray-300 rounded-[10px] py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="appearance-none w-full text-[14px] text-[#464F5E] border border-gray-300 rounded-[10px] py-2.5 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 onFocus={(e) => {
                   e.target.style.borderColor = primaryColor;
                   e.target.style.boxShadow = `0 0 0 3px ${primaryColor}33`;
