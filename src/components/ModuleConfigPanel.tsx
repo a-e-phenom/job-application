@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, RotateCcw, Plus, Type, FileText, ChevronDown, Circle, CheckSquare, FolderOpen, Image, Phone, Calendar, MessageSquare } from 'lucide-react';
+import { X, Save, RotateCcw, Plus, Type, FileText, ChevronDown, Circle, CheckSquare, FolderOpen, Image, Phone, Calendar, MessageSquare, ChevronUp, ChevronDown as ChevronDownIcon } from 'lucide-react';
 import { FlowModule } from '../types/flow';
 import { ModuleTemplate } from '../hooks/useTemplates';
 
@@ -143,6 +143,38 @@ export default function ModuleConfigPanel({
     updateField('questions', updatedQuestions);
   };
 
+  const moveQuestionUp = (index: number) => {
+    if (index === 0) return; // Can't move first item up
+    
+    setLocalOverrides(prev => {
+      const updatedQuestions = [...prev.questions];
+      const temp = updatedQuestions[index];
+      updatedQuestions[index] = updatedQuestions[index - 1];
+      updatedQuestions[index - 1] = temp;
+      
+      return {
+        ...prev,
+        questions: updatedQuestions
+      };
+    });
+  };
+
+  const moveQuestionDown = (index: number) => {
+    if (index === localOverrides.questions.length - 1) return; // Can't move last item down
+    
+    setLocalOverrides(prev => {
+      const updatedQuestions = [...prev.questions];
+      const temp = updatedQuestions[index];
+      updatedQuestions[index] = updatedQuestions[index + 1];
+      updatedQuestions[index + 1] = temp;
+      
+      return {
+        ...prev,
+        questions: updatedQuestions
+      };
+    });
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -212,7 +244,7 @@ export default function ModuleConfigPanel({
         {/* Questions */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-md font-medium text-gray-900">Elements</h3>
+            <h3 className="text-sm font-medium text-gray-900">Elements</h3>
             <button
   onClick={addQuestion}
   className="flex items-center text-indigo-600 text-sm font-medium hover:text-indigo-800 transition-colors duration-200"
@@ -221,9 +253,10 @@ export default function ModuleConfigPanel({
   Add Element
 </button>
           </div>
-
+          <div className="bg-gray-50 rounded-lg p-2 space-y-2 border border-gray-200">
           {localOverrides.questions.map((question, index) => (
-            <div key={question.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
+          
+            <div key={question.id} className="border border-gray-200 bg-white rounded-lg p-3 space-y-3">
               <div className="flex items-center justify-between">
               <div className="relative">
               <button
@@ -381,12 +414,39 @@ export default function ModuleConfigPanel({
                 )}
               </div>
 
-                <button
-  onClick={() => removeQuestion(index)}
-  className="text-red-600 hover:text-red-700 p-1 rounded"
->
-  <X className="w-4 h-4" />
-</button>
+                                <div className="flex items-center space-x-1">
+                  <button
+                    onClick={() => moveQuestionUp(index)}
+                    disabled={index === 0}
+                    className={`p-1 rounded transition-colors duration-200 ${
+                      index === 0 
+                        ? 'text-gray-300 cursor-not-allowed' 
+                        : 'text-gray-600 hover:text-gray-800'
+                    }`}
+                    title="Move up"
+                  >
+                    <ChevronUp className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => moveQuestionDown(index)}
+                    disabled={index === localOverrides.questions.length - 1}
+                    className={`p-1 rounded transition-colors duration-200 ${
+                      index === localOverrides.questions.length - 1 
+                        ? 'text-gray-300 cursor-not-allowed' 
+                        : 'text-gray-600 hover:text-gray-800'
+                    }`}
+                    title="Move down"
+                  >
+                    <ChevronDownIcon className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => removeQuestion(index)}
+                    className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors duration-200"
+                    title="Delete element"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
               {/* Element Type Selector */}
              
@@ -682,7 +742,9 @@ export default function ModuleConfigPanel({
                 </div>
               )}
             </div>
+           
           ))}
+           </div>
 
           {localOverrides.questions.length === 0 && (
             <div className="text-center py-8 text-gray-500">
@@ -697,11 +759,11 @@ export default function ModuleConfigPanel({
       </div>
 
       {/* Footer Actions */}
-      <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 z-[60]">
+      <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-3 z-[60]">
         <div className="flex items-center justify-between">
           <button
             onClick={handleReset}
-            className="flex items-center space-x-2 px-0 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-200"
+            className="flex items-center space-x-2 px-0 text-sm py-2 text-gray-600 hover:text-gray-800 transition-colors duration-200"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Reset</span>
@@ -710,14 +772,14 @@ export default function ModuleConfigPanel({
           <div className="flex items-center space-x-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-200"
+              className="px-1 py-2 text-gray-600 text-sm hover:text-gray-800 transition-colors duration-200"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={!hasChanges}
-              className={`flex items-center space-x-2 px-4 py-1.5 rounded-lg transition-colors duration-200 ${
+              className={`flex items-center space-x-2 text-sm px-4 py-1.5 rounded-lg transition-colors duration-200 ${
                 hasChanges
                   ? 'bg-indigo-600 text-white hover:bg-indigo-700'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
