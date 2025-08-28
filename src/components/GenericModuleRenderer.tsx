@@ -1181,6 +1181,20 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
           />
         );
 
+      case 'image':
+        if (question.content) {
+          return (
+            <div key={question.id} className="w-full">
+              <img 
+                src={question.content} 
+                alt="Question image" 
+                className="w-full h-auto rounded-lg border border-gray-200"
+              />
+            </div>
+          );
+        }
+        return null;
+
       case 'assessment':
         return (
           <AssessmentComponent
@@ -1236,17 +1250,21 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
       elements.push(
         <div key={`${question.id}-${nextQuestion.id}`} className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="block text-[14px] text-[#464F5E] mb-2">
-              {question.text}
-              {question.required && <span className="text-red-500 ml-1"></span>}
-            </label>
+            {question.type !== 'image' && (
+              <label className="block text-[14px] text-[#464F5E] mb-2">
+                {question.text}
+                {question.required && <span className="text-red-500 ml-1"></span>}
+              </label>
+            )}
             {renderQuestion(question, i, onNext)}
           </div>
           <div className="space-y-2">
-            <label className="block text-[14px] text-[#464F5E] mb-2">
-              {nextQuestion.text}
-              {nextQuestion.required && <span className="text-red-500 ml-1"></span>}
-            </label>
+            {nextQuestion.type !== 'image' && (
+              <label className="block text-[14px] text-[#464F5E] mb-2">
+                {nextQuestion.text}
+                {nextQuestion.required && <span className="text-red-500 ml-1"></span>}
+              </label>
+            )}
             {renderQuestion(nextQuestion, i + 1, onNext)}
           </div>
         </div>
@@ -1256,7 +1274,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
       // Render single question (full width or half width but no consecutive half)
       elements.push(
         <div key={question.id} className="space-y-2">
-          {question.type !== 'checkbox' && question.type !== 'message' && (
+          {question.type !== 'checkbox' && question.type !== 'message' && question.type !== 'image' && (
             <label className="block text-[14px] text-[#464F5E] mb-2">
               {question.text}
               {question.required && <span className="text-red-500 ml-1"></span>}

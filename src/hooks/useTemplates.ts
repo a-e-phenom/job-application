@@ -13,7 +13,7 @@ export interface ModuleTemplate {
     questions?: Array<{
       id: string;
       text: string;
-      type: 'text' | 'select' | 'radio' | 'checkbox' | 'textarea' | 'file' | 'phone' | 'interview-scheduler' | 'message';
+      type: 'text' | 'select' | 'radio' | 'checkbox' | 'textarea' | 'file' | 'image' | 'phone' | 'interview-scheduler' | 'message';
       options?: string[];
       required?: boolean;
       halfWidth?: boolean;
@@ -28,63 +28,14 @@ export interface ModuleTemplate {
 }
 
 // Type for creating/updating templates without component (auto-generated)
-export type CreateTemplateData = Omit<ModuleTemplate, 'id' | 'createdAt' | 'updatedAt' | 'isDefault' | 'component'> & {
-  component?: string; // Optional, will be auto-generated if not provided
+export type CreateTemplateData = Omit<ModuleTemplate, 'id' | 'createdAt' | 'updatedAt' | 'isDefault'> & {
+  component: string; // Required since we're not auto-generating
 };
 
 export function useTemplates() {
   const [templates, setTemplates] = useState<ModuleTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Generate unique component name based on template name
-  const generateUniqueComponentName = async (templateName: string): Promise<string> => {
-    // Convert template name to component name (remove spaces, special chars, etc.)
-    let baseComponentName = templateName
-      .replace(/[^a-zA-Z0-9]/g, '') // Remove special characters and spaces
-      .replace(/^[0-9]/, '') // Remove leading numbers
-      || 'CustomStep'; // Fallback if name is empty or only special chars
-    
-    // Check if component name already exists
-    let componentName = baseComponentName;
-    let counter = 1;
-    
-    while (true) {
-      const { data: existingTemplate, error: selectError } = await supabase
-        .from('module_templates')
-        .select('id')
-        .eq('component', componentName);
-      
-      if (selectError) {
-        console.warn('Failed to check existing component name:', componentName, selectError);
-        break;
-      }
-      
-      if (!existingTemplate || existingTemplate.length === 0) {
-        break; // Component name is unique
-      }
-      
-      // Component name exists, try with counter
-      componentName = `${baseComponentName}${counter}`;
-      counter++;
-    }
-    
-    return componentName;
-  };
-
-  // Default templates to ensure they exist
-  const defaultTemplates: Omit<ModuleTemplate, 'id' | 'createdAt' | 'updatedAt'>[] = [
-    {
-      name: 'Thank You Screen',
-      description: 'Final completion screen with customizable message',
-      component: 'ThankYouStep',
-      content: {
-        title: 'Thank you! 🎉',
-        subtitle: 'We received your submission and will get back to you as soon as possible.\nGood luck!'
-      },
-      isDefault: true
-    }
-  ];
 
   // Convert database template to module template
   const convertToModuleTemplate = (dbTemplate: DatabaseTemplate): ModuleTemplate => ({
@@ -111,36 +62,8 @@ export function useTemplates() {
     try {
       setLoading(true);
       
-      // First, ensure default templates exist
-      for (const defaultTemplate of defaultTemplates) {
-        // Check if template already exists
-        const { data: existingTemplate, error: selectError } = await supabase
-          .from('module_templates')
-          .select('id')
-          .eq('component', defaultTemplate.component);
-        
-        if (selectError) {
-          console.warn('Failed to check existing template:', defaultTemplate.name, selectError);
-          continue;
-        }
-
-        // Only insert if template doesn't exist
-        if (!existingTemplate || existingTemplate.length === 0) {
-          const { error: insertError } = await supabase
-            .from('module_templates')
-            .insert([{
-              name: defaultTemplate.name,
-              description: defaultTemplate.description,
-              component: defaultTemplate.component,
-              content: defaultTemplate.content,
-              is_default: defaultTemplate.isDefault
-            }]);
-          
-          if (insertError) {
-            console.warn('Failed to insert default template:', defaultTemplate.name, insertError);
-          }
-        }
-      }
+      // Default templates are already in the database from migrations
+      // No need to check or insert them here
       
       const { data, error } = await supabase
         .from('module_templates')
@@ -162,13 +85,12 @@ export function useTemplates() {
   // Create new template
   const createTemplate = async (templateData: CreateTemplateData) => {
     try {
-      // Generate unique component name if not provided
-      let finalTemplateData = { ...templateData };
-      if (!templateData.component || templateData.component === 'CustomStep') {
-        finalTemplateData.component = await generateUniqueComponentName(templateData.name);
+      // Component name is required since we're not auto-generating
+      if (!templateData.component) {
+        throw new Error('Component name is required');
       }
       
-      const dbTemplate = convertToDatabaseTemplate(finalTemplateData);
+      const dbTemplate = convertToDatabaseTemplate(templateData);
       const { data, error } = await supabase
         .from('module_templates')
         .insert([{ ...dbTemplate, is_default: false }])
@@ -189,16 +111,12 @@ export function useTemplates() {
   // Update existing template
   const updateTemplate = async (id: string, templateData: CreateTemplateData) => {
     try {
-      // Find existing template to check if name changed
-      const existingTemplate = templates.find(t => t.id === id);
-      
-      // Generate new component name if template name changed
-      let finalTemplateData = { ...templateData };
-      if (existingTemplate && existingTemplate.name !== templateData.name) {
-        finalTemplateData.component = await generateUniqueComponentName(templateData.name);
+      // Component name is required since we're not auto-generating
+      if (!templateData.component) {
+        throw new Error('Component name is required');
       }
       
-      const dbTemplate = convertToDatabaseTemplate(finalTemplateData);
+      const dbTemplate = convertToDatabaseTemplate(templateData);
       const { data, error } = await supabase
         .from('module_templates')
         .update(dbTemplate)

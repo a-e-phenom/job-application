@@ -14,6 +14,7 @@ export default function ModuleTemplatesPage() {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(true);
   const [saveFeedback, setSaveFeedback] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null); // Track which template to delete
   const navigate = useNavigate();
 
   const handleSelectTemplate = (template: ModuleTemplate) => {
@@ -31,6 +32,7 @@ export default function ModuleTemplatesPage() {
         await createTemplate({
           name: editedTemplate.name,
           description: editedTemplate.description,
+          component: editedTemplate.component,
           content: editedTemplate.content
         });
         setIsCreatingNew(false);
@@ -38,6 +40,7 @@ export default function ModuleTemplatesPage() {
         await updateTemplate(editedTemplate.id, {
           name: editedTemplate.name,
           description: editedTemplate.description,
+          component: editedTemplate.component,
           content: editedTemplate.content
         });
       }
@@ -62,7 +65,7 @@ export default function ModuleTemplatesPage() {
         id: '',
         name: 'New Module',
         description: 'Custom module description',
-        component: '', // Will be auto-generated
+        component: 'CustomStep', // Provide a default component name
         content: {
           title: 'New Module Title',
           subtitle: 'Module subtitle',
@@ -92,7 +95,7 @@ export default function ModuleTemplatesPage() {
       id: '',
       name: 'New Module',
       description: 'Custom module description',
-      component: '', // Will be auto-generated
+      component: 'CustomStep', // Provide a default component name
       content: {
         title: 'New Module Title',
         subtitle: 'Module subtitle',
@@ -110,20 +113,44 @@ export default function ModuleTemplatesPage() {
   };
 
   const handleDeleteTemplate = async (templateId: string) => {
-    if (confirm('Are you sure you want to delete this module template?')) {
-      try {
-        await deleteTemplate(templateId);
-        
-        // Clear selection if deleted template was selected
-        if (selectedTemplate?.id === templateId) {
-          setSelectedTemplate(null);
-          setEditedTemplate(null);
-          setIsCreatingNew(false);
-        }
-      } catch (error) {
-        console.error('Failed to delete template:', error);
+    try {
+      await deleteTemplate(templateId);
+      
+      // Clear selection if deleted template was selected
+      if (selectedTemplate?.id === templateId) {
+        setSelectedTemplate(null);
+        setEditedTemplate(null);
+        setIsCreatingNew(false);
       }
+    } catch (error) {
+      console.error('Failed to delete template:', error);
     }
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, templateId: string) => {
+    e.stopPropagation();
+    setShowDeleteConfirm(templateId);
+  };
+
+  const handleDeleteConfirm = async (templateId: string) => {
+    try {
+      await deleteTemplate(templateId);
+      
+      // Clear selection if deleted template was selected
+      if (selectedTemplate?.id === templateId) {
+        setSelectedTemplate(null);
+        setEditedTemplate(null);
+        setIsCreatingNew(false);
+      }
+      
+      setShowDeleteConfirm(null);
+    } catch (error) {
+      console.error('Failed to delete template:', error);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(null);
   };
 
   const updateEditedTemplate = (field: string, value: any) => {
@@ -310,24 +337,45 @@ export default function ModuleTemplatesPage() {
                     >
                       <div 
                         onClick={() => handleSelectTemplate(template)}
-                        className="cursor-pointer"
+                        className="cursor-pointer flex items-center justify-between"
                       >
                         <h4 className="font-medium text-sm text-gray-900">{template.name}</h4>
-                       
+                        
+                        {/* Delete button for custom templates */}
+                        {!template.isDefault && (
+                          <button
+                            onClick={(e) => handleDeleteClick(e, template.id)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-500 hover:text-red-700"
+                            title="Delete template"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                       
-                      {/* Delete button for custom templates */}
-                      {!template.isDefault && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteTemplate(template.id);
-                          }}
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-500 hover:text-red-700"
-                          title="Delete template"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                      {/* Delete Confirmation Overlay */}
+                      {showDeleteConfirm === template.id && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                          <div className="px-3 py-2 mt-1 text-sm text-gray-700">
+                            Delete this module?
+                          </div>
+                          <div className="flex gap-2 px-3 py-2">
+                            <button
+                              type="button"
+                              onClick={handleDeleteCancel}
+                              className="flex-1 px-4 py-1.5 text-sm text-gray-600 border border-gray-300 hover:bg-gray-100 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-300"
+                            >
+                              No
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteConfirm(template.id)}
+                              className="flex-1 px-4 py-1.5 text-sm text-white bg-red-600 hover:bg-red-700 rounded-md focus:outline-none focus:ring-1 focus:ring-red-300"
+                            >
+                              Yes
+                            </button>
+                          </div>
+                        </div>
                       )}
                     </div>
                   ))}
@@ -532,6 +580,7 @@ export default function ModuleTemplatesPage() {
                                         <option value="radio">Radio</option>
                                         <option value="checkbox">Checkbox</option>
                                         <option value="file">File</option>
+                                        <option value="image">Image</option>
                                         <option value="phone">Phone Number</option>
                                         <option value="interview-scheduler">Interview Scheduler</option>
                                         <option value="message">Message</option>
@@ -690,6 +739,47 @@ export default function ModuleTemplatesPage() {
                                         </div>
                                         <p className="text-xs text-gray-500 mt-1">
                                           Use **text** for bold, *text* for italic, press Enter for new lines, and select text + click alignment buttons for positioning
+                                        </p>
+                                      </div>
+                                    )}
+
+                                    {/* Image Configuration for Image type */}
+                                    {question.type === 'image' && (
+                                      <div className="mt-3">
+                                        <label className="block text-xs font-medium text-gray-600 mb-2">Image Upload</label>
+                                        <div className="border border-gray-300 rounded-lg p-3 bg-gray-50">
+                                          <div className="text-center">
+                                            <div className="text-sm text-gray-600 mb-2">
+                                              {question.content ? 'Image uploaded' : 'No image selected'}
+                                            </div>
+                                            {question.content && (
+                                              <div className="mb-3">
+                                                <img 
+                                                  src={question.content} 
+                                                  alt="Uploaded image" 
+                                                  className="max-w-full h-auto max-h-32 rounded border"
+                                                />
+                                              </div>
+                                            )}
+                                            <input
+                                              type="file"
+                                              accept="image/*"
+                                              onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                  const reader = new FileReader();
+                                                  reader.onload = (e) => {
+                                                    updateQuestion(question.id, 'content', e.target?.result as string);
+                                                  };
+                                                  reader.readAsDataURL(file);
+                                                }
+                                              }}
+                                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                                            />
+                                          </div>
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          Upload an image file. It will be displayed full width in the application.
                                         </p>
                                       </div>
                                     )}

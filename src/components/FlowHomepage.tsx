@@ -11,12 +11,10 @@ export default function FlowHomepage() {
   const navigate = useNavigate();
 
   const handleDeleteFlow = async (flowId: string) => {
-    if (confirm('Are you sure you want to delete this flow?')) {
-      try {
-        await deleteFlow(flowId);
-      } catch (error) {
-        console.error('Failed to delete flow:', error);
-      }
+    try {
+      await deleteFlow(flowId);
+    } catch (error) {
+      console.error('Failed to delete flow:', error);
     }
   };
 

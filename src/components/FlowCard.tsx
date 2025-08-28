@@ -12,6 +12,7 @@ interface FlowCardProps {
 export default function FlowCard({ flow, onEdit, onDelete, onPreview }: FlowCardProps) {
   const [showMenu, setShowMenu] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
 
   const getModuleIcon = (moduleId: string) => {
     switch (moduleId) {
@@ -35,12 +36,33 @@ export default function FlowCard({ flow, onEdit, onDelete, onPreview }: FlowCard
   const handleMenuClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowMenu(!showMenu);
+    // Reset delete confirmation when opening menu
+    setShowDeleteConfirm(false);
   };
 
   const handleActionClick = (e: React.MouseEvent, action: () => void) => {
     e.stopPropagation();
     setShowMenu(false);
+    setShowDeleteConfirm(false);
     action();
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    setShowDeleteConfirm(false);
+    // Delete immediately without any confirmation dialogs
+    onDelete(flow.id);
+  };
+
+  const handleDeleteCancel = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowDeleteConfirm(false);
   };
 
   const handleCopyUrl = async (e: React.MouseEvent) => {
@@ -64,6 +86,7 @@ export default function FlowCard({ flow, onEdit, onDelete, onPreview }: FlowCard
     }
     
     setShowMenu(false);
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -133,29 +156,57 @@ export default function FlowCard({ flow, onEdit, onDelete, onPreview }: FlowCard
           </button>
 
           {showMenu && (
-            <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-              
-              <button
-                onClick={(e) => handleActionClick(e, () => onEdit(flow))}
-                className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              >
-                <Edit className="w-4 h-4" />
-                <span>Edit</span>
-              </button>
-              <button
-                onClick={handleCopyUrl}
-                className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg"
-              >
-                {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-                <span>{copied ? 'Copied!' : 'Copy URL'}</span>
-              </button>
-              <button
-                onClick={(e) => handleActionClick(e, () => onDelete(flow.id))}
-                className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-b-lg"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Delete</span>
-              </button>
+            <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+              {!showDeleteConfirm ? (
+                // Action Menu
+                <>
+                  <button
+                    onClick={(e) => handleActionClick(e, () => onEdit(flow))}
+                    className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    onClick={handleCopyUrl}
+                    className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                    <span>{copied ? 'Copied!' : 'Copy URL'}</span>
+                  </button>
+                  <button
+                    onClick={handleDeleteClick}
+                    className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-b-lg"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete</span>
+                  </button>
+                </>
+              ) : (
+                // Delete Confirmation Overlay
+                <>
+  <div className="px-3 py-2 mt-1 text-sm text-gray-700">
+    Delete this flow?
+  </div>
+  <div className="flex gap-2 px-3 py-2">
+    <button
+      type="button"
+      onClick={handleDeleteCancel}
+      className="flex-1 px-4 py-1.5 text-sm text-gray-600 border border-gray-300 hover:bg-gray-100 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-300"
+    >
+      No
+    </button>
+    <button
+      type="button"
+      onClick={handleDeleteConfirm}
+      className="flex-1 px-4 py-1.5 text-sm text-white bg-red-600 hover:bg-red-700 rounded-md focus:outline-none focus:ring-1 focus:ring-red-300"
+    >
+      Yes
+    </button>
+  </div>
+</>
+
+              )}
             </div>
           )}
         </div>
