@@ -69,6 +69,7 @@ export default function ModuleTemplatesPage() {
         content: {
           title: 'New Module Title',
           subtitle: 'Module subtitle',
+          centerTitle: false,
           questions: []
         },
         isDefault: false,
@@ -99,6 +100,7 @@ export default function ModuleTemplatesPage() {
       content: {
         title: 'New Module Title',
         subtitle: 'Module subtitle',
+        centerTitle: false,
         questions: []
       },
       isDefault: false,
@@ -507,6 +509,19 @@ export default function ModuleTemplatesPage() {
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             />
                           </div>
+                        </div>
+
+                        {/* Center Title and Subtitle Checkbox */}
+                        <div className="mb-4">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={editedTemplate?.content.centerTitle || false}
+                              onChange={(e) => updateEditedTemplate('content.centerTitle', e.target.checked)}
+                              className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                            />
+                            <span className="ml-2 text-sm text-gray-700">Center title and subtitle</span>
+                          </label>
                         </div>
 
                         {/* Questions */}

@@ -1292,7 +1292,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
     <div className="w-full">
       {/* Title and Subtitle for all modules except Assessment */}
       {template.component !== 'AssessmentStep' && (
-        <div className="mb-8">
+        <div className={`mb-8 ${template.content.centerTitle ? 'text-center' : ''}`}>
           {template.content.title && (
             <h2 className="text-[18px] font-semibold text-[#353B46] mb-1">
               {template.content.title}

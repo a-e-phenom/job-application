@@ -10,6 +10,7 @@ export interface ModuleTemplate {
     title?: string;
     subtitle?: string;
     instructions?: string;
+    centerTitle?: boolean;
     questions?: Array<{
       id: string;
       text: string;
