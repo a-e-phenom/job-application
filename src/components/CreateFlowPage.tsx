@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Plus, Check, Trash2, GripVertical, Upload, X, ChevronRight, ChevronLeft, ChevronUp, ChevronDown, Edit } from 'lucide-react';
+import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { FlowModule, ApplicationFlow, FlowStep, PRESET_COLORS } from '../types/flow';
 import { useTemplates } from '../hooks/useTemplates';
 import { useFlows } from '../hooks/useFlows';
 import { uploadLogoImage } from '../lib/supabase';
+import { generateUniqueSlug, generateSlug } from '../lib/utils';
 
-interface CreateFlowPageProps {
-  onBack: () => void;
-  onFlowCreated?: (flow: ApplicationFlow) => void;
-  editingFlow?: ApplicationFlow | null;
-}
-
-export default function CreateFlowPage({ onBack, onFlowCreated, editingFlow }: CreateFlowPageProps) {
+export default function CreateFlowPage() {
   const { templates, loading: templatesLoading } = useTemplates();
-  const { createFlow, updateFlow } = useFlows();
+  const { createFlow, updateFlow, flows, loading: flowsLoading } = useFlows();
+  const navigate = useNavigate();
+  const { slug } = useParams<{ slug: string }>();
+  
+  // Determine if we're editing an existing flow
+  const editingFlow = slug ? flows.find(f => f.slug === slug) : null;
   
   // Step management
   const [currentStep, setCurrentStep] = useState(1);
@@ -42,6 +43,23 @@ export default function CreateFlowPage({ onBack, onFlowCreated, editingFlow }: C
   const [draggedModuleIndex, setDraggedModuleIndex] = useState<number | null>(null);
   const [draggedFromStep, setDraggedFromStep] = useState<string | null>(null);
   const [dragOverModuleIndex, setDragOverModuleIndex] = useState<number | null>(null);
+  
+  // Show loading state while flows are being fetched (only when editing)
+  if (slug && flowsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-gray-500 mb-4">Loading flow...</div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Redirect to homepage if editing flow not found
+  if (slug && !editingFlow) {
+    return <Navigate to="/" replace />;
+  }
 
   // Convert templates to available modules
   const availableModules: FlowModule[] = templates.map(template => ({
@@ -458,9 +476,14 @@ export default function CreateFlowPage({ onBack, onFlowCreated, editingFlow }: C
         }
       }
 
+      // Generate a unique slug for the flow
+      const existingSlugs = flows.map(f => f.slug);
+      const slug = editingFlow ? editingFlow.slug : generateUniqueSlug(name.trim(), existingSlugs);
+
       const flowData = {
         name: name.trim(),
         description: description.trim(),
+        slug,
         steps,
         isActive,
         primaryColor,
@@ -469,13 +492,13 @@ export default function CreateFlowPage({ onBack, onFlowCreated, editingFlow }: C
 
       if (editingFlow) {
         await updateFlow(editingFlow.id, flowData);
-        onBack();
+        navigate('/');
       } else {
         const newFlow = await createFlow(flowData);
-        if (onFlowCreated && newFlow) {
-          onFlowCreated(newFlow);
+        if (newFlow) {
+          navigate(`/flow/${newFlow.slug}`);
         } else {
-          onBack();
+          navigate('/');
         }
       }
     } catch (error) {
@@ -513,7 +536,7 @@ export default function CreateFlowPage({ onBack, onFlowCreated, editingFlow }: C
         <div className="space-y-4">
           {/* Basic Information */}
           <div className="space-y-4">
-            <h2 className="text-md font-semibold text-gray-700">Basic Information</h2>
+            {/* <h2 className="text-md font-semibold text-gray-700">General details</h2> */}
             
             <div>
               <label htmlFor="flowName" className="block text-sm font-medium text-gray-700 mb-2">
@@ -527,6 +550,11 @@ export default function CreateFlowPage({ onBack, onFlowCreated, editingFlow }: C
                 placeholder="e.g., Software Engineer Application"
                 className="w-full px-4 py-2 border border-gray-300 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               />
+              {name.trim() && (
+                <div className="mt-2 text-xs text-gray-500">
+                  URL: <span className="font-mono text-gray-700">{window.location.origin}/flow/{generateSlug(name.trim())}</span>
+                </div>
+              )}
             </div>
 
             <div>
@@ -546,7 +574,7 @@ export default function CreateFlowPage({ onBack, onFlowCreated, editingFlow }: C
 
           {/* Appearance */}
           <div className="space-y-4">
-            <h2 className="text-md font-semibold text-gray-700">Appearance</h2>
+            
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -1024,7 +1052,7 @@ export default function CreateFlowPage({ onBack, onFlowCreated, editingFlow }: C
     {/* Left: Back Button + Title */}
     <div className="flex items-center space-x-3">
       <button
-        onClick={onBack}
+        onClick={() => navigate('/')}
         className="flex items-center text-gray-600 hover:text-gray-800 transition-colors duration-200"
       >
         <ArrowLeft className="w-5 h-5" />
@@ -1077,7 +1105,7 @@ export default function CreateFlowPage({ onBack, onFlowCreated, editingFlow }: C
 
     {/* Right: Close Button */}
     <button
-      onClick={onBack}
+      onClick={() => navigate('/')}
       className="p-2 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
     >
       <X className="w-4 h-4" />

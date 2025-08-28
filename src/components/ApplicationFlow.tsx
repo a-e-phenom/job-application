@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { ArrowLeft, ArrowRight, X, Check, ChevronLeft, ChevronRight, Settings2, MoreVertical } from 'lucide-react';
+import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import ContactInfoStep from './ContactInfoStep';
 import PreScreeningStep from './PreScreeningStep';
 import InterviewSchedulingStep from './InterviewSchedulingStep';
@@ -14,81 +15,17 @@ import { InterviewSchedulingData } from '../types/application';
 import { useTemplates } from '../hooks/useTemplates';
 import { useFlows } from '../hooks/useFlows';
 
-interface ApplicationFlowProps {
-  flow: FlowType;
-  onBack: () => void;
-  onFlowUpdate?: (updatedFlow: FlowType) => void;
-}
-
-const initialContactInfo: ContactInfo = {
-  firstName: '',
-  lastName: '',
-  addressLine1: '',
-  state: '',
-  email: '',
-  countryCode: '+1',
-  phoneNumber: '',
-  optInCommunications: false,
-};
-
-const initialJobFit: JobFitInfo = {
-  experience: '',
-  skills: [],
-  availability: '',
-  salary: '',
-};
-
-const initialTasks: TasksInfo = {
-  portfolioUrl: '',
-  coverLetter: '',
-  additionalInfo: '',
-};
-
-const initialInterviewScheduling: InterviewSchedulingData = {
-  selectedDate: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
-  selectedTime: '10:00 AM', // Default to first time slot
-  timezone: 'UTC+05:30',
-};
-
-const initialPreScreening: PreScreeningInfo = {
-  isAtLeast18: '',
-  workAuthorization: '',
-  requiresSponsorship: '',
-  hasTransportation: '',
-  travelDistance: '',
-};
-
-const initialScreening: ScreeningData = {
-  workEligibility: '',
-  department: '',
-  services: [],
-  motivation: '',
-  weekdayDayShift: false,
-  weekdayNightShift: false,
-  weekdayNightShift2: false,
-  weekendDayShift: false,
-  weekendNightShift: false,
-  weekendNightShift2: false,
-};
-
-const initialResume: ResumeData = {
-  resumeFile: null,
-  previouslyWorked: '',
-  howDidYouHear: '',
-};
-
-const initialAssessment: AssessmentData = {
-  introCompleted: false,
-  scenarioAnswers: [],
-  agreementAnswers: [],
-  mathAnswers: []
-};
-
-export default function ApplicationFlow({ flow, onBack, onFlowUpdate }: ApplicationFlowProps) {
+export default function ApplicationFlow() {
+  // ALL HOOKS MUST BE AT THE TOP - NO EXCEPTIONS
   const { templates } = useTemplates();
-  const { updateFlow } = useFlows();
-  const primaryColor = flow.primaryColor || '#6366F1'; // Default to indigo if not set
+  const { updateFlow, flows, loading: flowsLoading } = useFlows();
+  const navigate = useNavigate();
+  const { slug } = useParams<{ slug: string }>();
   
+  // Find the flow by slug
+  const flow = flows.find(f => f.slug === slug);
+  
+  // ALL STATE HOOKS
   const [currentStep, setCurrentStep] = useState(0);
   const [currentSubStep, setCurrentSubStep] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
@@ -97,6 +34,71 @@ export default function ApplicationFlow({ flow, onBack, onFlowUpdate }: Applicat
   // Configuration panel state
   const [configPanelOpen, setConfigPanelOpen] = useState(false);
   const [configModule, setConfigModule] = useState<FlowModule | null>(null);
+  
+  // Initial state variables (these are NOT hooks, just constants)
+  const initialContactInfo: ContactInfo = {
+    firstName: '',
+    lastName: '',
+    addressLine1: '',
+    state: '',
+    email: '',
+    countryCode: '+1',
+    phoneNumber: '',
+    optInCommunications: false,
+  };
+
+  const initialJobFit: JobFitInfo = {
+    experience: '',
+    skills: [],
+    availability: '',
+    salary: '',
+  };
+
+  const initialTasks: TasksInfo = {
+    portfolioUrl: '',
+    coverLetter: '',
+    additionalInfo: '',
+  };
+
+  const initialInterviewScheduling: InterviewSchedulingData = {
+    selectedDate: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
+    selectedTime: '10:00 AM', // Default to first time slot
+    timezone: 'UTC+05:30',
+  };
+
+  const initialPreScreening: PreScreeningInfo = {
+    isAtLeast18: '',
+    workAuthorization: '',
+    requiresSponsorship: '',
+    hasTransportation: '',
+    travelDistance: '',
+  };
+
+  const initialScreening: ScreeningData = {
+    workEligibility: '',
+    department: '',
+    services: [],
+    motivation: '',
+    weekdayDayShift: false,
+    weekdayNightShift: false,
+    weekdayNightShift2: false,
+    weekendDayShift: false,
+    weekendNightShift: false,
+    weekendNightShift2: false,
+  };
+
+  const initialResume: ResumeData = {
+    resumeFile: null,
+    previouslyWorked: '',
+    howDidYouHear: '',
+  };
+
+  const initialAssessment: AssessmentData = {
+    introCompleted: false,
+    scenarioAnswers: [],
+    agreementAnswers: [],
+    mathAnswers: []
+  };
   
   const [applicationData, setApplicationData] = useState<ApplicationData>({
     contactInfo: initialContactInfo,
@@ -109,6 +111,7 @@ export default function ApplicationFlow({ flow, onBack, onFlowUpdate }: Applicat
     assessment: initialAssessment,
   });
 
+  // ALL useCallback HOOKS
   const updateContactInfo = useCallback((updates: Partial<ContactInfo>) => {
     setApplicationData(prev => ({
       ...prev,
@@ -122,8 +125,6 @@ export default function ApplicationFlow({ flow, onBack, onFlowUpdate }: Applicat
       preScreening: { ...prev.preScreening, ...updates }
     }));
   }, []);
-
-
 
   const updateInterviewScheduling = useCallback((updates: Partial<InterviewSchedulingData>) => {
     setApplicationData(prev => ({
@@ -152,7 +153,27 @@ export default function ApplicationFlow({ flow, onBack, onFlowUpdate }: Applicat
       assessment: { ...prev.assessment, ...updates }
     }));
   }, []);
-
+  
+  // NOW WE CAN HAVE CONDITIONAL LOGIC AND EARLY RETURNS
+  // Show loading state while flows are being fetched
+  if (flowsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-gray-500 mb-4">Loading flow...</div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Redirect to homepage if flow not found
+  if (!flow) {
+    return <Navigate to="/" replace />;
+  }
+  
+  const primaryColor = flow.primaryColor || '#6366F1'; // Default to indigo if not set
+  
   // Use flow steps directly
   const steps = flow.steps.map(step => ({
     id: step.id,
@@ -182,7 +203,6 @@ export default function ApplicationFlow({ flow, onBack, onFlowUpdate }: Applicat
     const currentModule = currentFlowStep?.modules[currentSubStep];
     
     if (currentModule?.component === 'AssessmentStep' && (window as any).assessmentState) {
-      console.log('Assessment button clicked - calling assessment handleNext');
       (window as any).assessmentState.handleNext();
       return;
     }
@@ -195,7 +215,7 @@ export default function ApplicationFlow({ flow, onBack, onFlowUpdate }: Applicat
       setCurrentSubStep(0); // Reset sub-step when moving to next step
     } else {
       // Flow is complete - go back to homepage
-      onBack();
+      navigate('/');
     }
   };
 
@@ -253,11 +273,6 @@ export default function ApplicationFlow({ flow, onBack, onFlowUpdate }: Applicat
 
       // Save to database
       await updateFlow(flow.id, updatedFlow);
-      
-      // Update parent state to reflect changes immediately
-      if (onFlowUpdate) {
-        onFlowUpdate(updatedFlow);
-      }
       
       // Close the panel
       setConfigPanelOpen(false);
@@ -527,7 +542,7 @@ export default function ApplicationFlow({ flow, onBack, onFlowUpdate }: Applicat
             )}
             
             <button 
-              onClick={onBack}
+              onClick={() => navigate('/')}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
             >
               <X className="w-4 h-4 text-gray-600" />
@@ -540,9 +555,6 @@ export default function ApplicationFlow({ flow, onBack, onFlowUpdate }: Applicat
       {(() => {
         const currentModuleId = currentFlowStep?.modules[currentSubStep]?.id;
         const currentComponent = currentFlowStep?.modules[currentSubStep]?.component;
-        console.log('Current module ID:', currentModuleId);
-        console.log('Current component:', currentComponent);
-        console.log('Is interview scheduling?', currentComponent === 'InterviewSchedulingStep');
         return null;
       })()}
       {currentFlowStep?.modules[currentSubStep]?.component === 'AssessmentStep' ? (

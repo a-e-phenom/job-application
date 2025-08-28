@@ -1,19 +1,14 @@
 import React, { useState } from 'react';
 import { Plus, Search, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import FlowCard from './FlowCard';
 import { ApplicationFlow } from '../types/flow';
 import { useFlows } from '../hooks/useFlows';
 
-interface FlowHomepageProps {
-  onPreviewFlow: (flow: ApplicationFlow) => void;
-  onCreateFlow: () => void;
-  onEditFlow: (flow: ApplicationFlow) => void;
-  onViewModuleTemplates: () => void;
-}
-
-export default function FlowHomepage({ onPreviewFlow, onCreateFlow, onEditFlow, onViewModuleTemplates }: FlowHomepageProps) {
+export default function FlowHomepage() {
   const { flows, loading, error, createFlow, updateFlow, deleteFlow } = useFlows();
   const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
 
   const handleDeleteFlow = async (flowId: string) => {
     if (confirm('Are you sure you want to delete this flow?')) {
@@ -23,6 +18,22 @@ export default function FlowHomepage({ onPreviewFlow, onCreateFlow, onEditFlow, 
         console.error('Failed to delete flow:', error);
       }
     }
+  };
+
+  const handlePreviewFlow = (flow: ApplicationFlow) => {
+    navigate(`/flow/${flow.slug}`);
+  };
+
+  const handleCreateFlow = () => {
+    navigate('/create');
+  };
+
+  const handleEditFlow = (flow: ApplicationFlow) => {
+    navigate(`/edit/${flow.slug}`);
+  };
+
+  const handleViewModuleTemplates = () => {
+    navigate('/modules');
   };
 
   const filteredFlows = flows.filter(flow => {
@@ -51,14 +62,14 @@ export default function FlowHomepage({ onPreviewFlow, onCreateFlow, onEditFlow, 
             </div>
             <div className="flex items-center space-x-2">
                <button
-            onClick={onViewModuleTemplates}
+            onClick={handleViewModuleTemplates}
             className="flex items-center space-x-2 bg-white border border-gray-400 text-gray-600 px-4 py-2 rounded-[10px] hover:bg-gray-200 transition-colors duration-200"
           >
             <Settings className="w-4 h-4" />
             <span>Modules</span>
           </button>
             <button
-              onClick={onCreateFlow}
+              onClick={handleCreateFlow}
               className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-[10px] hover:bg-indigo-700 transition-colors duration-200"
             >
               <Plus className="w-4 h-4" />
@@ -87,7 +98,6 @@ export default function FlowHomepage({ onPreviewFlow, onCreateFlow, onEditFlow, 
 
 </div>
 
-
         {/* Flow Cards */}
         {loading ? (
           <div className="text-center py-12">
@@ -106,7 +116,7 @@ export default function FlowHomepage({ onPreviewFlow, onCreateFlow, onEditFlow, 
             </div>
             {!searchTerm && (
               <button
-                onClick={onCreateFlow}
+                onClick={handleCreateFlow}
                 className="text-indigo-600 hover:text-indigo-700 font-medium"
               >
                 Create your first flow
@@ -119,9 +129,9 @@ export default function FlowHomepage({ onPreviewFlow, onCreateFlow, onEditFlow, 
               <FlowCard
                 key={flow.id}
                 flow={flow}
-                onEdit={onEditFlow}
+                onEdit={handleEditFlow}
                 onDelete={handleDeleteFlow}
-                onPreview={onPreviewFlow}
+                onPreview={handlePreviewFlow}
               />
             ))}
           </div>

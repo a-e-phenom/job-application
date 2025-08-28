@@ -14,6 +14,7 @@ export interface DatabaseFlow {
   id: string;
   name: string;
   description: string;
+  slug: string;
   steps: any[];
   is_active: boolean;
   primary_color: string;

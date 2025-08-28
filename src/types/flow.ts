@@ -33,6 +33,7 @@ export interface ApplicationFlow {
   id: string;
   name: string;
   description: string;
+  slug: string; // URL-friendly identifier
   steps: FlowStep[];
   createdAt: Date;
   updatedAt: Date;

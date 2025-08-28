@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Users, Settings, Edit, Trash2, MoreVertical, MoveRight } from 'lucide-react';
+import { Calendar, Users, Settings, Edit, Trash2, MoreVertical, MoveRight, Copy, Check } from 'lucide-react';
 import { ApplicationFlow } from '../types/flow';
 
 interface FlowCardProps {
@@ -11,6 +11,7 @@ interface FlowCardProps {
 
 export default function FlowCard({ flow, onEdit, onDelete, onPreview }: FlowCardProps) {
   const [showMenu, setShowMenu] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
 
   const getModuleIcon = (moduleId: string) => {
     switch (moduleId) {
@@ -40,6 +41,29 @@ export default function FlowCard({ flow, onEdit, onDelete, onPreview }: FlowCard
     e.stopPropagation();
     setShowMenu(false);
     action();
+  };
+
+  const handleCopyUrl = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = `${window.location.origin}/flow/${flow.slug}`;
+    
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+    
+    setShowMenu(false);
   };
 
   return (
@@ -111,8 +135,15 @@ export default function FlowCard({ flow, onEdit, onDelete, onPreview }: FlowCard
           {showMenu && (
             <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
               <button
-                onClick={(e) => handleActionClick(e, () => onEdit(flow))}
+                onClick={handleCopyUrl}
                 className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg"
+              >
+                {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                <span>{copied ? 'Copied!' : 'Copy URL'}</span>
+              </button>
+              <button
+                onClick={(e) => handleActionClick(e, () => onEdit(flow))}
+                className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
               >
                 <Edit className="w-4 h-4" />
                 <span>Edit</span>

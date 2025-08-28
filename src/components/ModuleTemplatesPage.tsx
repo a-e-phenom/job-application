@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Save, RotateCcw, X, Check, Plus, GripVertical, Airplay } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useTemplates, ModuleTemplate } from '../hooks/useTemplates';
 import GenericModuleRenderer from './GenericModuleRenderer';
 
-interface ModuleTemplatesPageProps {
-  onBack: () => void;
-}
-
-export default function ModuleTemplatesPage({ onBack }: ModuleTemplatesPageProps) {
+export default function ModuleTemplatesPage() {
   const { templates, loading, error, createTemplate, updateTemplate, deleteTemplate, resetTemplate } = useTemplates();
   const [selectedTemplate, setSelectedTemplate] = useState<ModuleTemplate | null>(null);
   const [editedTemplate, setEditedTemplate] = useState<ModuleTemplate | null>(null);
@@ -17,6 +14,7 @@ export default function ModuleTemplatesPage({ onBack }: ModuleTemplatesPageProps
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(true);
   const [saveFeedback, setSaveFeedback] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const navigate = useNavigate();
 
   const handleSelectTemplate = (template: ModuleTemplate) => {
     setIsCreatingNew(false);
@@ -254,7 +252,7 @@ export default function ModuleTemplatesPage({ onBack }: ModuleTemplatesPageProps
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
-                onClick={onBack}
+                onClick={() => navigate(-1)}
                 className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors duration-200"
               >
                 <ArrowLeft className="w-5 h-5" />

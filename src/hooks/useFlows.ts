@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase, DatabaseFlow } from '../lib/supabase';
 import { ApplicationFlow } from '../types/flow';
+import { generateUniqueSlug } from '../lib/utils';
 
 export function useFlows() {
   const [flows, setFlows] = useState<ApplicationFlow[]>([]);
@@ -8,22 +9,46 @@ export function useFlows() {
   const [error, setError] = useState<string | null>(null);
 
   // Convert database flow to application flow
-  const convertToApplicationFlow = (dbFlow: DatabaseFlow): ApplicationFlow => ({
-    id: dbFlow.id,
-    name: dbFlow.name,
-    description: dbFlow.description,
-    steps: dbFlow.steps,
-    isActive: dbFlow.is_active,
-    primaryColor: dbFlow.primary_color,
-    logoUrl: dbFlow.logo_url,
-    createdAt: new Date(dbFlow.created_at),
-    updatedAt: new Date(dbFlow.updated_at)
-  });
+  const convertToApplicationFlow = (dbFlow: DatabaseFlow): ApplicationFlow => {
+    // Generate slug if it doesn't exist (for backward compatibility)
+    let slug = dbFlow.slug;
+    if (!slug) {
+      slug = generateUniqueSlug(dbFlow.name, []);
+      // Update the database with the generated slug
+      updateFlowSlugInDatabase(dbFlow.id, slug);
+    }
+    
+    return {
+      id: dbFlow.id,
+      name: dbFlow.name,
+      description: dbFlow.description,
+      slug,
+      steps: dbFlow.steps,
+      isActive: dbFlow.is_active,
+      primaryColor: dbFlow.primary_color,
+      logoUrl: dbFlow.logo_url,
+      createdAt: new Date(dbFlow.created_at),
+      updatedAt: new Date(dbFlow.updated_at)
+    };
+  };
+
+  // Helper function to update slug in database
+  const updateFlowSlugInDatabase = async (flowId: string, slug: string) => {
+    try {
+      await supabase
+        .from('application_flows')
+        .update({ slug })
+        .eq('id', flowId);
+    } catch (error) {
+      console.error('Failed to update flow slug:', error);
+    }
+  };
 
   // Convert application flow to database format
   const convertToDatabaseFlow = (flow: Omit<ApplicationFlow, 'id' | 'createdAt' | 'updatedAt'>): Omit<DatabaseFlow, 'id' | 'created_at' | 'updated_at'> => ({
     name: flow.name,
     description: flow.description,
+    slug: flow.slug,
     steps: flow.steps,
     is_active: flow.isActive,
     primary_color: flow.primaryColor || '#6366F1',
