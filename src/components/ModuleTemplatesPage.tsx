@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Save, RotateCcw, X, Check, Plus, GripVertical, Airplay, Type, FileText, ChevronDown, Circle, CheckSquare, FolderOpen, Image, Phone, Calendar, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Save, RotateCcw, X, Check, Plus, Airplay, Type, FileText, ChevronDown, ChevronUp, Circle, CheckSquare, FolderOpen, Image, Phone, Calendar, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTemplates, ModuleTemplate } from '../hooks/useTemplates';
 import GenericModuleRenderer from './GenericModuleRenderer';
@@ -10,8 +10,6 @@ export default function ModuleTemplatesPage() {
   const [editedTemplate, setEditedTemplate] = useState<ModuleTemplate | null>(null);
   const [activeTab, setActiveTab] = useState('edit');
   const [isCreatingNew, setIsCreatingNew] = useState(false);
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(true);
   const [saveFeedback, setSaveFeedback] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null); // Track which template to delete
@@ -225,35 +223,13 @@ export default function ModuleTemplatesPage() {
     }));
   };
 
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setDragOverIndex(index);
-  };
-
-  const handleDragLeave = () => {
-    setDragOverIndex(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
-    e.preventDefault();
-    
-    if (draggedIndex === null || !editedTemplate) return;
+  const moveQuestionUp = (index: number) => {
+    if (!editedTemplate || index === 0) return;
     
     const questions = [...(editedTemplate.content.questions || [])];
-    const draggedQuestion = questions[draggedIndex];
-    
-    // Remove the dragged question
-    questions.splice(draggedIndex, 1);
-    
-    // Insert at new position - adjust for removal
-    const insertIndex = draggedIndex < dropIndex ? dropIndex - 1 : dropIndex;
-    questions.splice(insertIndex, 0, draggedQuestion);
+    const temp = questions[index];
+    questions[index] = questions[index - 1];
+    questions[index - 1] = temp;
     
     setEditedTemplate(prev => ({
       ...prev!,
@@ -262,14 +238,23 @@ export default function ModuleTemplatesPage() {
         questions
       }
     }));
-    
-    setDraggedIndex(null);
-    setDragOverIndex(null);
   };
 
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
-    setDragOverIndex(null);
+  const moveQuestionDown = (index: number) => {
+    if (!editedTemplate || index === (editedTemplate.content.questions || []).length - 1) return;
+    
+    const questions = [...(editedTemplate.content.questions || [])];
+    const temp = questions[index];
+    questions[index] = questions[index + 1];
+    questions[index + 1] = temp;
+    
+    setEditedTemplate(prev => ({
+      ...prev!,
+      content: {
+        ...prev!.content,
+        questions
+      }
+    }));
   };
 
   return (
@@ -536,47 +521,15 @@ export default function ModuleTemplatesPage() {
                               </button>
                             </div>
                             
-                            <div className="space-y-3">
+                            <div className="space-y-2 bg-gray-50 rounded-lg p-2 border border-gray-200">
                               {(editedTemplate.content.questions || []).map((question, index) => (
-                                <React.Fragment key={question.id}>
-                                  {/* Drop zone before first element or between elements */}
-                                  <div
-                                    className={`
-                                      h-2 transition-all duration-200 rounded
-                                      ${draggedIndex !== null && draggedIndex !== index
-                                        ? 'bg-indigo-200 border-2 border-dashed border-indigo-400'
-                                        : draggedIndex !== null 
-                                        ? 'bg-gray-100 border-2 border-dashed border-gray-300'
-                                        : 'transparent'
-                                      }
-                                    `}
-                                    onDragOver={(e) => handleDragOver(e, index)}
-                                    onDragLeave={handleDragLeave}
-                                    onDrop={(e) => handleDrop(e, index)}
-                                  />
-                                  
-                                  <div 
-                                    className={`
-                                      border bg-white rounded-lg p-3 transition-all duration-200
-                                      ${draggedIndex === index
-                                        ? 'border-gray-300 bg-gray-50 opacity-50'
-                                        : 'border-gray-200'
-                                      }
-                                    `}
-                                    draggable={isEditing}
-                                    onDragStart={(e) => handleDragStart(e, index)}
-                                    onDragEnd={handleDragEnd}
-                                  >
+                                <div 
+                                  key={question.id}
+                                  className="border bg-white rounded-lg p-3 pb-6 transition-all duration-200 border-gray-200"
+                                >
                                   <div className="flex items-start space-x-3">
-                                    {/* Drag Handle */}
-                                    {isEditing && (
-                                      <div className="flex-shrink-0 mt-2 cursor-grab active:cursor-grabbing">
-                                        <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-                                      </div>
-                                    )}
-                                    
                                     <div className="flex-1">
-                                      {/* First Row: Type Dropdown and Delete Button */}
+                                      {/* First Row: Type Dropdown, Reorder Buttons, and Delete Button */}
                                       <div className="flex items-center justify-between mb-3">
                                         {/* Question Type Dropdown */}
                                         <div className="relative">
@@ -721,13 +674,44 @@ export default function ModuleTemplatesPage() {
                                           )}
                                         </div>
                                         
-                                        {/* Delete Button - Now on the first row */}
-                                        <button
-                                          onClick={() => removeQuestion(question.id)}
-                                          className="text-red-600 hover:text-red-700"
-                                        >
-                                          <X className="w-4 h-4" />
-                                        </button>
+                                        {/* Reorder Buttons and Delete Button */}
+                                        <div className="flex items-center space-x-2">
+                                          {/* Up Arrow */}
+                                          <button
+                                            onClick={() => moveQuestionUp(index)}
+                                            disabled={index === 0}
+                                            className={`p-1 rounded transition-colors duration-200 ${
+                                              index === 0 
+                                                ? 'text-gray-300 cursor-not-allowed' 
+                                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                                            }`}
+                                            title="Move up"
+                                          >
+                                            <ChevronUp className="w-4 h-4" />
+                                          </button>
+                                          
+                                          {/* Down Arrow */}
+                                          <button
+                                            onClick={() => moveQuestionDown(index)}
+                                            disabled={index === (editedTemplate.content.questions || []).length - 1}
+                                            className={`p-1 rounded transition-colors duration-200 ${
+                                              index === (editedTemplate.content.questions || []).length - 1
+                                                ? 'text-gray-300 cursor-not-allowed' 
+                                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                                            }`}
+                                            title="Move down"
+                                          >
+                                            <ChevronDown className="w-4 h-4" />
+                                          </button>
+                                          
+                                          {/* Delete Button */}
+                                          <button
+                                            onClick={() => removeQuestion(question.id)}
+                                            className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                                          >
+                                            <X className="w-4 h-4" />
+                                          </button>
+                                        </div>
                                       </div>
                                       
                                       {/* Question Text Input - Only for non-image and non-message types */}
@@ -752,78 +736,12 @@ export default function ModuleTemplatesPage() {
                                         </div>
                                       )}
                                     
-                                    {/* Rich Text Editor for Message type */}
-                                    {question.type === 'message' && (
-                                      <div className="mt-3">
-                                        <label className="block text-xs font-medium text-gray-600 mb-2">Message Content</label>
-                                        <div className="border border-gray-300 rounded-lg overflow-hidden">
-                                          <div className="flex border-b border-gray-200 bg-gray-50">
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                const textarea = document.getElementById(`message-${question.id}`) as HTMLTextAreaElement;
-                                                if (textarea) {
-                                                  const start = textarea.selectionStart;
-                                                  const end = textarea.selectionEnd;
-                                                  const text = textarea.value;
-                                                  const before = text.substring(0, start);
-                                                  const selected = text.substring(start, end);
-                                                  const after = text.substring(end);
-                                                  textarea.value = before + '**' + selected + '**' + after;
-                                                  textarea.focus();
-                                                  textarea.setSelectionRange(start + 2, end + 2);
-                                                }
-                                              }}
-                                              className="px-3 py-2 text-sm font-semibold hover:bg-gray-100 transition-colors duration-200"
-                                              title="Bold (Ctrl+B)"
-                                            >
-                                              B
-                                            </button>
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                const textarea = document.getElementById(`message-${question.id}`) as HTMLTextAreaElement;
-                                                if (textarea) {
-                                                  const start = textarea.selectionStart;
-                                                  const end = textarea.selectionEnd;
-                                                  const text = textarea.value;
-                                                  const before = text.substring(0, start);
-                                                  const selected = text.substring(start, end);
-                                                  const after = text.substring(end);
-                                                  textarea.value = before + '*' + selected + '*' + after;
-                                                  textarea.focus();
-                                                  textarea.setSelectionRange(start + 1, end + 1);
-                                                }
-                                              }}
-                                              className="px-3 py-2 text-sm italic hover:bg-gray-100 transition-colors duration-200"
-                                              title="Italic (Ctrl+I)"
-                                            >
-                                              I
-                                            </button>
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                const textarea = document.getElementById(`message-${question.id}`) as HTMLTextAreaElement;
-                                                if (textarea) {
-                                                  const start = textarea.selectionStart;
-                                                  const end = textarea.selectionEnd;
-                                                  const text = textarea.value;
-                                                  const before = text.substring(0, start);
-                                                  const selected = text.substring(start, end);
-                                                  const after = text.substring(end);
-                                                  textarea.value = before + '\n' + selected + '\n' + after;
-                                                  textarea.focus();
-                                                  textarea.setSelectionRange(start + 1, end + 1);
-                                                }
-                                              }}
-                                              className="px-3 py-2 text-sm hover:bg-gray-100 transition-colors duration-200"
-                                              title="New Line"
-                                            >
-                                              ↵
-                                            </button>
-                                            
-                                            {/* Text Alignment Buttons */}
-                                            <div className="flex border-l border-gray-300 ml-2">
+                                      {/* Rich Text Editor for Message type */}
+                                      {question.type === 'message' && (
+                                        <div className="mt-3">
+                                          <label className="block text-xs font-medium text-gray-600 mb-2">Message Content</label>
+                                          <div className="border border-gray-300 rounded-lg overflow-hidden">
+                                            <div className="flex border-b border-gray-200 bg-gray-50">
                                               <button
                                                 type="button"
                                                 onClick={() => {
@@ -835,15 +753,15 @@ export default function ModuleTemplatesPage() {
                                                     const before = text.substring(0, start);
                                                     const selected = text.substring(start, end);
                                                     const after = text.substring(end);
-                                                    textarea.value = before + '<left>' + selected + '</left>' + after;
+                                                    textarea.value = before + '**' + selected + '**' + after;
                                                     textarea.focus();
-                                                    textarea.setSelectionRange(start + 7, end + 7);
+                                                    textarea.setSelectionRange(start + 2, end + 2);
                                                   }
                                                 }}
-                                                className="px-3 py-2 text-sm hover:bg-gray-100 transition-colors duration-200 border-r border-gray-300"
-                                                title="Left Align"
+                                                className="px-3 py-2 text-sm font-semibold hover:bg-gray-100 transition-colors duration-200"
+                                                title="Bold (Ctrl+B)"
                                               >
-                                                ←
+                                                B
                                               </button>
                                               <button
                                                 type="button"
@@ -856,195 +774,238 @@ export default function ModuleTemplatesPage() {
                                                     const before = text.substring(0, start);
                                                     const selected = text.substring(start, end);
                                                     const after = text.substring(end);
-                                                    textarea.value = before + '<center>' + selected + '</center>' + after;
+                                                    textarea.value = before + '*' + selected + '*' + after;
                                                     textarea.focus();
-                                                    textarea.setSelectionRange(start + 8, end + 8);
+                                                    textarea.setSelectionRange(start + 1, end + 1);
+                                                  }
+                                                }}
+                                                className="px-3 py-2 text-sm italic hover:bg-gray-100 transition-colors duration-200"
+                                                title="Italic (Ctrl+I)"
+                                              >
+                                                I
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  const textarea = document.getElementById(`message-${question.id}`) as HTMLTextAreaElement;
+                                                  if (textarea) {
+                                                    const start = textarea.selectionStart;
+                                                    const end = textarea.selectionEnd;
+                                                    const text = textarea.value;
+                                                    const before = text.substring(0, start);
+                                                    const selected = text.substring(start, end);
+                                                    const after = text.substring(end);
+                                                    textarea.value = before + '\n' + selected + '\n' + after;
+                                                    textarea.focus();
+                                                    textarea.setSelectionRange(start + 1, end + 1);
                                                   }
                                                 }}
                                                 className="px-3 py-2 text-sm hover:bg-gray-100 transition-colors duration-200"
-                                                title="Center Align"
+                                                title="New Line"
                                               >
-                                                ↔
+                                                ↵
                                               </button>
+                                              
+                                              {/* Text Alignment Buttons */}
+                                              <div className="flex border-l border-gray-300 ml-2">
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    const textarea = document.getElementById(`message-${question.id}`) as HTMLTextAreaElement;
+                                                    if (textarea) {
+                                                      const start = textarea.selectionStart;
+                                                      const end = textarea.selectionEnd;
+                                                      const text = textarea.value;
+                                                      const before = text.substring(0, start);
+                                                      const selected = text.substring(start, end);
+                                                      const after = text.substring(end);
+                                                      textarea.value = before + '<left>' + selected + '</left>' + after;
+                                                      textarea.focus();
+                                                      textarea.setSelectionRange(start + 7, end + 7);
+                                                    }
+                                                  }}
+                                                  className="px-3 py-2 text-sm hover:bg-gray-100 transition-colors duration-200 border-r border-gray-300"
+                                                  title="Left Align"
+                                                >
+                                                  ←
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    const textarea = document.getElementById(`message-${question.id}`) as HTMLTextAreaElement;
+                                                    if (textarea) {
+                                                      const start = textarea.selectionStart;
+                                                      const end = textarea.selectionEnd;
+                                                      const text = textarea.value;
+                                                      const before = text.substring(0, start);
+                                                      const selected = text.substring(start, end);
+                                                      const after = text.substring(end);
+                                                      textarea.value = before + '<center>' + selected + '</center>' + after;
+                                                      textarea.focus();
+                                                      textarea.setSelectionRange(start + 8, end + 8);
+                                                    }
+                                                  }}
+                                                  className="px-3 py-2 text-sm hover:bg-gray-100 transition-colors duration-200"
+                                                  title="Center Align"
+                                                >
+                                                  ↔
+                                                </button>
+                                              </div>
+                                            </div>
+                                            <textarea
+                                              id={`message-${question.id}`}
+                                              value={question.content || ''}
+                                              onChange={(e) => updateQuestion(question.id, 'content', e.target.value)}
+                                              placeholder="Enter your message content. Use **bold**, *italic*, and newlines for formatting."
+                                              rows={6}
+                                              className="w-full px-3 py-2 border-0 focus:outline-none focus:ring-0 resize-vertical"
+                                            />
+                                          </div>
+                                          <p className="text-xs text-gray-500 mt-1">
+                                            Use **text** for bold, *text* for italic, press Enter for new lines, and select text + click alignment buttons for positioning
+                                          </p>
+                                        </div>
+                                      )}
+
+                                      {/* Image Configuration for Image type */}
+                                      {question.type === 'image' && (
+                                        <div className="mt-3">
+                                          <label className="block text-xs font-medium text-gray-600 mb-2">Image Upload</label>
+                                          <div className="border border-gray-300 rounded-lg p-3 bg-gray-50">
+                                            <div className="text-center">
+                                              
+                                              {question.content && (
+                                                <div className="mb-3">
+                                                  <img 
+                                                    src={question.content} 
+                                                    alt="Uploaded image" 
+                                                    className="max-w-full h-auto max-h-32 rounded border"
+                                                  />
+                                                </div>
+                                              )}
+                                              <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                  const file = e.target.files?.[0];
+                                                  if (file) {
+                                                    const reader = new FileReader();
+                                                    reader.onload = (e) => {
+                                                      updateQuestion(question.id, 'content', e.target?.result as string);
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                  }
+                                                }}
+                                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                                              />
                                             </div>
                                           </div>
-                                          <textarea
-                                            id={`message-${question.id}`}
-                                            value={question.content || ''}
-                                            onChange={(e) => updateQuestion(question.id, 'content', e.target.value)}
-                                            placeholder="Enter your message content. Use **bold**, *italic*, and newlines for formatting."
-                                            rows={6}
-                                            className="w-full px-3 py-2 border-0 focus:outline-none focus:ring-0 resize-vertical"
-                                          />
                                         </div>
-                                        <p className="text-xs text-gray-500 mt-1">
-                                          Use **text** for bold, *text* for italic, press Enter for new lines, and select text + click alignment buttons for positioning
-                                        </p>
-                                      </div>
-                                    )}
-
-                                    {/* Image Configuration for Image type */}
-                                    {question.type === 'image' && (
-                                      <div className="mt-3">
-                                        <label className="block text-xs font-medium text-gray-600 mb-2">Image Upload</label>
-                                        <div className="border border-gray-300 rounded-lg p-3 bg-gray-50">
-                                          <div className="text-center">
-                                            
-                                            {question.content && (
-                                              <div className="mb-3">
-                                                <img 
-                                                  src={question.content} 
-                                                  alt="Uploaded image" 
-                                                  className="max-w-full h-auto max-h-32 rounded border"
-                                                />
-                                              </div>
-                                            )}
-                                            <input
-                                              type="file"
-                                              accept="image/*"
-                                              onChange={(e) => {
-                                                const file = e.target.files?.[0];
-                                                if (file) {
-                                                  const reader = new FileReader();
-                                                  reader.onload = (e) => {
-                                                    updateQuestion(question.id, 'content', e.target?.result as string);
-                                                  };
-                                                  reader.readAsDataURL(file);
-                                                }
-                                              }}
-                                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                                            />
-                                          </div>
-                                        </div>
-                                        
-                                      </div>
-                                    )}
-                                  
-                                  {(question.type === 'select' || question.type === 'radio' || question.type === 'checkbox') && (
-                                    <div className="mt-3">
-                                      <div className="flex items-center justify-between mb-2">
-                                        <label className="block text-xs font-medium text-gray-600">Options</label>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const currentOptions = question.options || [];
-                                            updateQuestion(question.id, 'options', [...currentOptions, '']);
-                                          }}
-                                          className="text-xs text-indigo-600 hover:text-indigo-700"
-                                        >
-                                          + Add Option
-                                        </button>
-                                      </div>
-                                      <div className="space-y-2">
-                                        {(question.options || []).map((option, optionIndex) => (
-                                          <div key={optionIndex} className="flex items-center space-x-2">
-                                            <input
-                                              type="text"
-                                              value={option}
-                                              onChange={(e) => {
-                                                const newOptions = [...(question.options || [])];
-                                                newOptions[optionIndex] = e.target.value;
-                                                updateQuestion(question.id, 'options', newOptions);
-                                              }}
-                                              placeholder={`Option ${optionIndex + 1}`}
-                                              className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                            />
+                                      )}
+                                    
+                                      {(question.type === 'select' || question.type === 'radio' || question.type === 'checkbox') && (
+                                        <div className="mt-3">
+                                          <div className="flex items-center justify-between mb-2">
+                                            <label className="block text-xs font-medium text-gray-600">Options</label>
                                             <button
                                               type="button"
                                               onClick={() => {
-                                                const newOptions = question.options?.filter((_, i) => i !== optionIndex) || [];
-                                                updateQuestion(question.id, 'options', newOptions);
+                                                const currentOptions = question.options || [];
+                                                updateQuestion(question.id, 'options', [...currentOptions, '']);
                                               }}
-                                              className="text-red-600 hover:text-red-700"
+                                              className="text-xs text-indigo-600 hover:text-indigo-700"
                                             >
-                                              <X className="w-4 h-4" />
+                                              + Add Option
                                             </button>
                                           </div>
-                                        ))}
-                                        {(!question.options || question.options.length === 0) && (
-                                          <div className="text-xs text-gray-500 italic">
-                                            Click "Add Option" to add choices
+                                          <div className="space-y-2">
+                                            {(question.options || []).map((option, optionIndex) => (
+                                              <div key={optionIndex} className="flex items-center space-x-2">
+                                                <input
+                                                  type="text"
+                                                  value={option}
+                                                  onChange={(e) => {
+                                                    const newOptions = [...(question.options || [])];
+                                                    newOptions[optionIndex] = e.target.value;
+                                                    updateQuestion(question.id, 'options', newOptions);
+                                                  }}
+                                                  placeholder={`Option ${optionIndex + 1}`}
+                                                  className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                                />
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    const newOptions = question.options?.filter((_, i) => i !== optionIndex) || [];
+                                                    updateQuestion(question.id, 'options', newOptions);
+                                                  }}
+                                                  className="text-red-600 hover:text-red-700"
+                                                >
+                                                  <X className="w-4 h-4" />
+                                                </button>
+                                              </div>
+                                            ))}
+                                            {(!question.options || question.options.length === 0) && (
+                                              <div className="text-xs text-gray-500 italic">
+                                                Click "Add Option" to add choices
+                                              </div>
+                                            )}
                                           </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-                                  
-                                  {/* Layout selection for radio questions */}
-                                 {question.type === 'radio' && (
-  <div className="mt-3">
-    <label className="block text-xs font-medium text-gray-600 mb-2">Layout</label>
-    <div className="inline-flex space-x-1 bg-gray-100 rounded-lg p-1">
-      <button
-        type="button"
-        onClick={() => updateQuestion(question.id, 'layout', 'vertical')}
-        className={`
-          px-3 py-1 text-xs rounded-md transition-colors duration-200
-          ${(question.layout || 'vertical') === 'vertical'
-            ? 'bg-white text-gray-900 shadow-sm'
-            : 'text-gray-600 hover:text-gray-900'
-          }
-        `}
-      >
-        Vertical
-      </button>
-      <button
-        type="button"
-        onClick={() => updateQuestion(question.id, 'layout', 'horizontal')}
-        className={`
-          px-3 py-1 text-xs rounded-md transition-colors duration-200
-          ${question.layout === 'horizontal'
-            ? 'bg-white text-gray-900 shadow-sm'
-            : 'text-gray-600 hover:text-gray-900'
-          }
-        `}
-      >
-        Horizontal
-      </button>
-    </div>
-  </div>
-)}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Layout selection for radio questions */}
+                                      {question.type === 'radio' && (
+                                        <div className="mt-3">
+                                          <label className="block text-xs font-medium text-gray-600 mb-2">Layout</label>
+                                          <div className="inline-flex space-x-1 bg-gray-100 rounded-lg p-1">
+                                            <button
+                                              type="button"
+                                              onClick={() => updateQuestion(question.id, 'layout', 'vertical')}
+                                              className={`
+                                                px-3 py-1 text-xs rounded-md transition-colors duration-200
+                                                ${(question.layout || 'vertical') === 'vertical'
+                                                  ? 'bg-white text-gray-900 shadow-sm'
+                                                  : 'text-gray-600 hover:text-gray-900'
+                                                }
+                                              `}
+                                            >
+                                              Vertical
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => updateQuestion(question.id, 'layout', 'horizontal')}
+                                              className={`
+                                                px-3 py-1 text-xs rounded-md transition-colors duration-200
+                                                ${question.layout === 'horizontal'
+                                                  ? 'bg-white text-gray-900 shadow-sm'
+                                                  : 'text-gray-600 hover:text-gray-900'
+                                                }
+                                              `}
+                                            >
+                                              Horizontal
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )}
 
-                                </div>
-                                  </div>
-                                  
-                                  {/* Half-size checkbox for text and select inputs */}
-                                  {(question.type === 'text' || question.type === 'select') && (
-                                    <div className="mt-3 mx-7">
-                                      <label className="flex items-center">
-                                        <input
-                                          type="checkbox"
-                                          checked={question.halfWidth || false}
-                                          onChange={(e) => updateQuestion(question.id, 'halfWidth', e.target.checked)}
-                                          disabled={!isEditing}
-                                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 disabled:opacity-50"
-                                        />
-                                        <span className="ml-2 text-xs text-gray-600">Half-size input</span>
-                                      </label>
+                                      {/* Half-size checkbox for text and select inputs */}
+                                      {(question.type === 'text' || question.type === 'select') && (
+                                        <div className="mt-3 mx-7">
+                                          <label className="flex items-center">
+                                            <input
+                                              type="checkbox"
+                                              checked={question.halfWidth || false}
+                                              onChange={(e) => updateQuestion(question.id, 'halfWidth', e.target.checked)}
+                                              disabled={!isEditing}
+                                              className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 disabled:opacity-50"
+                                            />
+                                            <span className="ml-2 text-xs text-gray-600">Half-size input</span>
+                                          </label>
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
+                                  </div>
                                 </div>
-                                
-                                {/* Drop zone after last element */}
-                                {index === (editedTemplate.content.questions || []).length - 1 && (
-                                  <div
-                                    className={`
-                                      h-2 transition-all duration-200 rounded
-                                      ${draggedIndex !== null
-                                        ? 'bg-indigo-200 border-2 border-dashed border-indigo-400'
-                                        : 'transparent'
-                                      }
-                                      ${dragOverIndex === (editedTemplate.content.questions || []).length && draggedIndex !== null
-                                        ? 'bg-indigo-200 border-2 border-dashed border-indigo-400'
-                                        : ''
-                                      }
-                                    `}
-                                    onDragOver={(e) => handleDragOver(e, (editedTemplate.content.questions || []).length)}
-                                    onDragLeave={handleDragLeave}
-                                    onDrop={(e) => handleDrop(e, (editedTemplate.content.questions || []).length)}
-                                  />
-                                )}
-                              </React.Fragment>
                               ))}
                             </div>
                           </div>
