@@ -6,10 +6,11 @@ import { ModuleTemplate } from '../hooks/useTemplates';
 interface LocalOverrides {
   title: string;
   subtitle: string;
+  centerTitle: boolean;
   questions: Array<{
     id: string;
     text: string;
-    type: 'text' | 'select' | 'radio' | 'checkbox' | 'textarea' | 'file' | 'phone' | 'interview-scheduler' | 'message';
+    type: 'text' | 'select' | 'radio' | 'checkbox' | 'textarea' | 'file' | 'image' | 'phone' | 'interview-scheduler' | 'message';
     options?: string[];
     required?: boolean;
     halfWidth?: boolean;
@@ -36,6 +37,7 @@ export default function ModuleConfigPanel({
   const [localOverrides, setLocalOverrides] = useState<LocalOverrides>({
     title: '',
     subtitle: '',
+    centerTitle: false,
     questions: []
   });
   const [hasChanges, setHasChanges] = useState(false);
@@ -45,6 +47,7 @@ export default function ModuleConfigPanel({
     const initialOverrides: LocalOverrides = {
       title: module.templateOverrides?.title || globalTemplate?.content.title || '',
       subtitle: module.templateOverrides?.subtitle || globalTemplate?.content.subtitle || '',
+      centerTitle: module.templateOverrides?.centerTitle || globalTemplate?.content.centerTitle || false,
       questions: module.templateOverrides?.questions || globalTemplate?.content.questions || []
     };
     
@@ -76,6 +79,7 @@ export default function ModuleConfigPanel({
     const initialOverrides: LocalOverrides = {
       title: globalTemplate?.content.title || '',
       subtitle: globalTemplate?.content.subtitle || '',
+      centerTitle: globalTemplate?.content.centerTitle || false,
       questions: globalTemplate?.content.questions || []
     };
     setLocalOverrides(initialOverrides);
@@ -175,6 +179,23 @@ export default function ModuleConfigPanel({
               </p>
             )}
           </div>
+
+          <div>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={localOverrides.centerTitle}
+                onChange={(e) => updateField('centerTitle', e.target.checked)}
+                className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+              />
+              <span className="ml-2 text-sm text-gray-700">Center title and subtitle</span>
+            </label>
+            {globalTemplate?.content.centerTitle !== undefined && !module.templateOverrides?.centerTitle && (
+              <p className="text-xs text-gray-500 mt-1">
+                Using global: {globalTemplate.content.centerTitle ? 'Centered' : 'Left-aligned'}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Questions */}
@@ -206,7 +227,9 @@ export default function ModuleConfigPanel({
                 value={question.text}
                 onChange={(e) => updateQuestion(index, 'text', e.target.value)}
                 placeholder="Question text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  question.type === 'image' ? 'hidden' : ''
+                }`}
               />
 
               <select
@@ -220,6 +243,7 @@ export default function ModuleConfigPanel({
                 <option value="radio">Radio Buttons</option>
                 <option value="checkbox">Checkboxes</option>
                 <option value="file">File Upload</option>
+                <option value="image">Image Upload</option>
                 <option value="phone">Phone Number</option>
               </select>
 
@@ -307,6 +331,47 @@ export default function ModuleConfigPanel({
                       Horizontal
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Image Configuration for Image type */}
+              {question.type === 'image' && (
+                <div className="mt-3">
+                  <label className="block text-xs font-medium text-gray-600 mb-2">Image Upload</label>
+                  <div className="border border-gray-300 rounded-lg p-3 bg-gray-50">
+                    <div className="text-center">
+                      <div className="text-sm text-gray-600 mb-2">
+                        {question.content ? 'Image uploaded' : 'No image selected'}
+                      </div>
+                      {question.content && (
+                        <div className="mb-3">
+                          <img 
+                            src={question.content} 
+                            alt="Uploaded image" 
+                            className="max-w-full h-auto max-h-32 rounded border"
+                          />
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                              updateQuestion(index, 'content', e.target?.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Upload an image file. It will be displayed full width in the application.
+                  </p>
                 </div>
               )}
 
