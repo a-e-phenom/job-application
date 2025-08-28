@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Save, RotateCcw, Plus, Type, FileText, ChevronDown, Circle, CheckSquare, FolderOpen, Image, Phone } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Save, RotateCcw, Plus, Type, FileText, ChevronDown, Circle, CheckSquare, FolderOpen, Image, Phone, Calendar, MessageSquare } from 'lucide-react';
 import { FlowModule } from '../types/flow';
 import { ModuleTemplate } from '../hooks/useTemplates';
 
@@ -41,15 +41,25 @@ export default function ModuleConfigPanel({
     centerTitle: false,
     questions: []
   });
-  const [hasChanges, setHasChanges] = useState(false);
-
+    const [hasChanges, setHasChanges] = useState(false);
+  
+  // Debug: Monitor questions state changes
+  useEffect(() => {
+    console.log('Questions state changed:', localOverrides.questions);
+  }, [localOverrides.questions]);
+  
   // Initialize local overrides with existing values or global template values
   useEffect(() => {
+    const questions = (module.templateOverrides?.questions || globalTemplate?.content.questions || []).map(q => ({
+      ...q,
+      typeSelectorOpen: false // Ensure all questions have this property initialized
+    }));
+    
     const initialOverrides: LocalOverrides = {
       title: module.templateOverrides?.title || globalTemplate?.content.title || '',
       subtitle: module.templateOverrides?.subtitle || globalTemplate?.content.subtitle || '',
       centerTitle: module.templateOverrides?.centerTitle || globalTemplate?.content.centerTitle || false,
-      questions: module.templateOverrides?.questions || globalTemplate?.content.questions || []
+      questions
     };
     
     setLocalOverrides(initialOverrides);
@@ -95,13 +105,24 @@ export default function ModuleConfigPanel({
   };
 
   const updateQuestion = (index: number, field: string, value: any) => {
-    const updatedQuestions = [...localOverrides.questions];
-    updatedQuestions[index] = {
-      ...updatedQuestions[index],
-      [field]: value
-    };
+    console.log('updateQuestion called:', { index, field, value });
+    console.log('Current questions:', localOverrides.questions);
     
-    updateField('questions', updatedQuestions);
+    setLocalOverrides(prev => {
+      const updatedQuestions = [...prev.questions];
+      updatedQuestions[index] = {
+        ...updatedQuestions[index],
+        [field]: value
+      };
+      
+      console.log('Updated question at index', index, ':', updatedQuestions[index]);
+      console.log('All updated questions:', updatedQuestions);
+      
+      return {
+        ...prev,
+        questions: updatedQuestions
+      };
+    });
   };
 
   const addQuestion = () => {
@@ -109,7 +130,8 @@ export default function ModuleConfigPanel({
       id: `question_${Date.now()}`,
       text: 'New Question',
       type: 'text' as const,
-      required: false
+      required: false,
+      typeSelectorOpen: false
     };
     
     const questions = [...localOverrides.questions, newQuestion];
@@ -126,7 +148,7 @@ export default function ModuleConfigPanel({
   return (
     <div className="fixed inset-y-0 right-0 w-96 bg-white shadow-xl border-l border-gray-200 z-50 overflow-y-auto">
       {/* Header */}
-      <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
+      <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-[60]">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Edit content</h2>
           <button
@@ -203,50 +225,52 @@ export default function ModuleConfigPanel({
           {localOverrides.questions.map((question, index) => (
             <div key={question.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Element {index + 1}</span>
-                <button
-  onClick={() => removeQuestion(index)}
-  className="text-red-600 hover:text-red-700 p-1 rounded"
->
-  <X className="w-4 h-4" />
-</button>
-              </div>
-              {/* Element Type Selector */}
               <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => updateQuestion(index, 'typeSelectorOpen', !question.typeSelectorOpen)}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center justify-between"
-                >
-                  <div className="flex items-center space-x-2">
-                    {question.type === 'text' && <Type className="w-4 h-4" />}
-                    {question.type === 'textarea' && <FileText className="w-4 h-4" />}
-                    {question.type === 'select' && <ChevronDown className="w-4 h-4" />}
-                    {question.type === 'radio' && <Circle className="w-4 h-4" />}
-                    {question.type === 'checkbox' && <CheckSquare className="w-4 h-4" />}
-                    {question.type === 'file' && <FolderOpen className="w-4 h-4" />}
-                    {question.type === 'image' && <Image className="w-4 h-4" />}
-                    {question.type === 'phone' && <Phone className="w-4 h-4" />}
-                    <span>
-                      {question.type === 'text' && 'Text input'}
-                      {question.type === 'textarea' && 'Text Area'}
-                      {question.type === 'select' && 'Dropdown input'}
-                      {question.type === 'radio' && 'Radio Buttons'}
-                      {question.type === 'checkbox' && 'Checkboxes'}
-                      {question.type === 'file' && 'File uploader'}
-                      {question.type === 'image' && 'Image Upload'}
-                      {question.type === 'phone' && 'Phone Number'}
-                    </span>
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
-                </button>
+              <button
+  type="button"
+  onClick={(e) => {
+    e.stopPropagation();
+    console.log('Button clicked for index:', index, 'Current typeSelectorOpen:', question.typeSelectorOpen);
+    updateQuestion(index, 'typeSelectorOpen', !question.typeSelectorOpen);
+  }}
+  className="w-auto inline-flex px-1 py-1 text-sm text-indigo-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center justify-between"
+>
+  <div className="flex items-center space-x-2">
+    {question.type === 'text' && <Type className="w-4 h-4" />}
+    {question.type === 'textarea' && <FileText className="w-4 h-4" />}
+    {question.type === 'select' && <ChevronDown className="w-4 h-4" />}
+    {question.type === 'radio' && <Circle className="w-4 h-4" />}
+    {question.type === 'checkbox' && <CheckSquare className="w-4 h-4" />}
+    {question.type === 'file' && <FolderOpen className="w-4 h-4" />}
+    {question.type === 'image' && <Image className="w-4 h-4" />}
+    {question.type === 'phone' && <Phone className="w-4 h-4" />}
+    {question.type === 'interview-scheduler' && <Calendar className="w-4 h-4" />}
+    {question.type === 'message' && <MessageSquare className="w-4 h-4" />}
+    <span>
+      {question.type === 'text' && 'Text input'}
+      {question.type === 'textarea' && 'Text Area'}
+      {question.type === 'select' && 'Dropdown input'}
+      {question.type === 'radio' && 'Radio Buttons'}
+      {question.type === 'checkbox' && 'Checkboxes'}
+      {question.type === 'file' && 'File uploader'}
+      {question.type === 'image' && 'Image Upload'}
+      {question.type === 'phone' && 'Phone Number'}
+      {question.type === 'interview-scheduler' && 'Interview Scheduler'}
+      {question.type === 'message' && 'Message'}
+    </span>
+  </div>
+  <ChevronDown className="w-4 h-4 ml-2 text-indigo-700" />
+</button>
+
                 
                 {/* Dropdown Menu */}
                 {question.typeSelectorOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                  <div className="absolute w-60 top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
                     <div 
                       className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log('Text option clicked for index:', index);
                         updateQuestion(index, 'type', 'text');
                         updateQuestion(index, 'typeSelectorOpen', false);
                       }}
@@ -256,7 +280,8 @@ export default function ModuleConfigPanel({
                     </div>
                     <div 
                       className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         updateQuestion(index, 'type', 'textarea');
                         updateQuestion(index, 'typeSelectorOpen', false);
                       }}
@@ -266,7 +291,8 @@ export default function ModuleConfigPanel({
                     </div>
                     <div 
                       className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         updateQuestion(index, 'type', 'select');
                         updateQuestion(index, 'typeSelectorOpen', false);
                       }}
@@ -276,7 +302,8 @@ export default function ModuleConfigPanel({
                     </div>
                     <div 
                       className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         updateQuestion(index, 'type', 'radio');
                         updateQuestion(index, 'typeSelectorOpen', false);
                       }}
@@ -286,7 +313,8 @@ export default function ModuleConfigPanel({
                     </div>
                     <div 
                       className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         updateQuestion(index, 'type', 'checkbox');
                         updateQuestion(index, 'typeSelectorOpen', false);
                       }}
@@ -296,7 +324,8 @@ export default function ModuleConfigPanel({
                     </div>
                     <div 
                       className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         updateQuestion(index, 'type', 'file');
                         updateQuestion(index, 'typeSelectorOpen', false);
                       }}
@@ -306,7 +335,8 @@ export default function ModuleConfigPanel({
                     </div>
                     <div 
                       className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         updateQuestion(index, 'type', 'image');
                         updateQuestion(index, 'typeSelectorOpen', false);
                       }}
@@ -315,8 +345,9 @@ export default function ModuleConfigPanel({
                       <span>Image Upload</span>
                     </div>
                     <div 
-                      className="px-2 py-1 hover:bg-gray-1 cursor-pointer flex items-center space-x-2"
-                      onClick={() => {
+                      className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
                         updateQuestion(index, 'type', 'phone');
                         updateQuestion(index, 'typeSelectorOpen', false);
                       }}
@@ -324,18 +355,51 @@ export default function ModuleConfigPanel({
                       <Phone className="w-4 h-4" />
                       <span>Phone Number</span>
                     </div>
+                    <div 
+                      className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        updateQuestion(index, 'type', 'interview-scheduler');
+                        updateQuestion(index, 'typeSelectorOpen', false);
+                      }}
+                    >
+                      <Calendar className="w-4 h-4" />
+                      <span>Interview Scheduler</span>
+                    </div>
+                    <div 
+                      className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        updateQuestion(index, 'type', 'message');
+                        updateQuestion(index, 'typeSelectorOpen', false);
+                      }}
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span>Message</span>
+                    </div>
                   </div>
                 )}
               </div>
-              <input
-                type="text"
-                value={question.text}
-                onChange={(e) => updateQuestion(index, 'text', e.target.value)}
-                placeholder="Element text"
-                className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  question.type === 'image' ? 'hidden' : ''
-                }`}
-              />
+
+                <button
+  onClick={() => removeQuestion(index)}
+  className="text-red-600 hover:text-red-700 p-1 rounded"
+>
+  <X className="w-4 h-4" />
+</button>
+              </div>
+              {/* Element Type Selector */}
+             
+              {/* Element Text Input - Hidden for image and message types */}
+              {question.type !== 'image' && question.type !== 'message' && (
+                <input
+                  type="text"
+                  value={question.text}
+                  onChange={(e) => updateQuestion(index, 'text', e.target.value)}
+                  placeholder="Element text"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              )}
 
             
 
@@ -432,9 +496,7 @@ export default function ModuleConfigPanel({
                   <label className="block text-xs font-medium text-gray-600 mb-2">Image Upload</label>
                   <div className="border border-gray-300 rounded-lg p-3 bg-gray-50">
                     <div className="text-center">
-                      <div className="text-sm text-gray-600 mb-2">
-                        {question.content ? 'Image uploaded' : 'No image selected'}
-                      </div>
+                     
                       {question.content && (
                         <div className="mb-3">
                           <img 
@@ -461,8 +523,146 @@ export default function ModuleConfigPanel({
                       />
                     </div>
                   </div>
+                  
+                </div>
+              )}
+
+              {/* Interview Scheduler Info */}
+              {question.type === 'interview-scheduler' && (
+                <div className="mt-3">
+                  <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600">
+                    The calendar widget will be displayed
+                  </div>
+                </div>
+              )}
+
+              {/* Rich Text Editor for Message type */}
+              {question.type === 'message' && (
+                <div className="mt-3">
+                  <label className="block text-xs font-medium text-gray-600 mb-2">Message Content</label>
+                  <div className="border border-gray-300 rounded-lg overflow-hidden">
+                    <div className="flex border-b border-gray-200 bg-gray-50">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const textarea = document.getElementById(`message-${question.id}`) as HTMLTextAreaElement;
+                          if (textarea) {
+                            const start = textarea.selectionStart;
+                            const end = textarea.selectionEnd;
+                            const text = textarea.value;
+                            const before = text.substring(0, start);
+                            const selected = text.substring(start, end);
+                            const after = text.substring(end);
+                            textarea.value = before + '**' + selected + '**' + after;
+                            textarea.focus();
+                            textarea.setSelectionRange(start + 2, end + 2);
+                          }
+                        }}
+                        className="px-3 py-2 text-sm font-semibold hover:bg-gray-100 transition-colors duration-200"
+                        title="Bold (Ctrl+B)"
+                      >
+                        B
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const textarea = document.getElementById(`message-${question.id}`) as HTMLTextAreaElement;
+                          if (textarea) {
+                            const start = textarea.selectionStart;
+                            const end = textarea.selectionEnd;
+                            const text = textarea.value;
+                            const before = text.substring(0, start);
+                            const selected = text.substring(start, end);
+                            const after = text.substring(end);
+                            textarea.value = before + '*' + selected + '*' + after;
+                            textarea.focus();
+                            textarea.setSelectionRange(start + 1, end + 1);
+                          }
+                        }}
+                        className="px-3 py-2 text-sm italic hover:bg-gray-100 transition-colors duration-200"
+                        title="Italic (Ctrl+I)"
+                      >
+                        I
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const textarea = document.getElementById(`message-${question.id}`) as HTMLTextAreaElement;
+                          if (textarea) {
+                            const start = textarea.selectionStart;
+                            const end = textarea.selectionEnd;
+                            const text = textarea.value;
+                            const before = text.substring(0, start);
+                            const selected = text.substring(start, end);
+                            const after = text.substring(end);
+                            textarea.value = before + '\n' + selected + '\n' + after;
+                            textarea.focus();
+                            textarea.setSelectionRange(start + 1, end + 1);
+                          }
+                        }}
+                        className="px-3 py-2 text-sm hover:bg-gray-100 transition-colors duration-200"
+                        title="New Line"
+                      >
+                        ↵
+                      </button>
+                      
+                      {/* Text Alignment Buttons */}
+                      <div className="flex border-l border-gray-300 ml-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const textarea = document.getElementById(`message-${question.id}`) as HTMLTextAreaElement;
+                            if (textarea) {
+                              const start = textarea.selectionStart;
+                              const end = textarea.selectionEnd;
+                              const text = textarea.value;
+                              const before = text.substring(0, start);
+                              const selected = text.substring(start, end);
+                              const after = text.substring(end);
+                              textarea.value = before + '<left>' + selected + '</left>' + after;
+                              textarea.focus();
+                              textarea.setSelectionRange(start + 7, end + 7);
+                            }
+                          }}
+                          className="px-3 py-2 text-sm hover:bg-gray-100 transition-colors duration-200 border-r border-gray-300"
+                          title="Left Align"
+                        >
+                          ←
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const textarea = document.getElementById(`message-${question.id}`) as HTMLTextAreaElement;
+                            if (textarea) {
+                              const start = textarea.selectionStart;
+                              const end = textarea.selectionEnd;
+                              const text = textarea.value;
+                              const before = text.substring(0, start);
+                              const selected = text.substring(start, end);
+                              const after = text.substring(end);
+                              textarea.value = before + '<center>' + selected + '</center>' + after;
+                              textarea.focus();
+                              textarea.setSelectionRange(start + 8, end + 8);
+                            }
+                          }}
+                          className="px-3 py-2 text-sm hover:bg-gray-100 transition-colors duration-200"
+                          title="Center Align"
+                        >
+                          ↔
+                        </button>
+                      </div>
+                    </div>
+                    <textarea
+                      id={`message-${question.id}`}
+                      value={question.content || ''}
+                      onChange={(e) => updateQuestion(index, 'content', e.target.value)}
+                      placeholder="Enter your message content. Use **bold**, *italic*, and newlines for formatting."
+                      rows={6}
+                      className="w-full px-3 py-2 border-0 focus:outline-none focus:ring-0 resize-vertical"
+                    />
+                  </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    Upload an image file. It will be displayed full width in the application.
+                    Use **text** for bold, *text* for italic, press Enter for new lines, and select text + click alignment buttons for positioning
                   </p>
                 </div>
               )}
@@ -497,7 +697,7 @@ export default function ModuleConfigPanel({
       </div>
 
       {/* Footer Actions */}
-      <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4">
+      <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 z-[60]">
         <div className="flex items-center justify-between">
           <button
             onClick={handleReset}
