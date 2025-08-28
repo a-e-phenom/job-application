@@ -43,7 +43,26 @@ export default function CreateFlowPage() {
   const [draggedModuleIndex, setDraggedModuleIndex] = useState<number | null>(null);
   const [draggedFromStep, setDraggedFromStep] = useState<string | null>(null);
   const [dragOverModuleIndex, setDragOverModuleIndex] = useState<number | null>(null);
-  
+
+  // Update state when editingFlow changes
+  React.useEffect(() => {
+    if (editingFlow) {
+      setName(editingFlow.name);
+      setDescription(editingFlow.description);
+      setLogoUrl(editingFlow.logoUrl || 'https://mms.businesswire.com/media/20240122372572/en/1546931/5/Phenom_Lockup_RGB_Black.jpg?download=1');
+      setSteps(editingFlow.steps);
+      setIsActive(editingFlow.isActive);
+      setPrimaryColor(editingFlow.primaryColor || '#6366F1');
+    } else {
+      setName('');
+      setDescription('');
+      setLogoUrl('https://mms.businesswire.com/media/20240122372572/en/1546931/5/Phenom_Lockup_RGB_Black.jpg?download=1');
+      setSteps([{ id: '1', name: 'Step 1', modules: [] }]);
+      setIsActive(false);
+      setPrimaryColor('#6366F1');
+    }
+  }, [editingFlow]);
+
   // Show loading state while flows are being fetched (only when editing)
   if (slug && flowsLoading) {
     return (
@@ -68,25 +87,6 @@ export default function CreateFlowPage() {
     description: template.description,
     component: template.component
   }));
-
-  // Update state when editingFlow changes
-  React.useEffect(() => {
-    if (editingFlow) {
-      setName(editingFlow.name);
-      setDescription(editingFlow.description);
-      setLogoUrl(editingFlow.logoUrl || 'https://mms.businesswire.com/media/20240122372572/en/1546931/5/Phenom_Lockup_RGB_Black.jpg?download=1');
-      setSteps(editingFlow.steps);
-      setIsActive(editingFlow.isActive);
-      setPrimaryColor(editingFlow.primaryColor || '#6366F1');
-    } else {
-      setName('');
-      setDescription('');
-      setLogoUrl('https://mms.businesswire.com/media/20240122372572/en/1546931/5/Phenom_Lockup_RGB_Black.jpg?download=1');
-      setSteps([{ id: '1', name: 'Step 1', modules: [] }]);
-      setIsActive(false);
-      setPrimaryColor('#6366F1');
-    }
-  }, [editingFlow]);
 
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

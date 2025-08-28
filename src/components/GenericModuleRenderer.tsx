@@ -873,39 +873,37 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
     return (
       <div className="max-w-2xl mx-auto text-center">
         <div className="mb-8">
-          <h2 className="text-[32px] font-semibold text-[#353B46] mb-4">
+          <h2 className="text-4xl font-semibold text-[#353B46] mb-6 text-center">
             {template.content.title || 'Thank you! 🎉'}
           </h2>
-          <p className="text-[16px] text-[#464F5E] mb-6 whitespace-pre-line">
+          <p className="text-[18px] text-[#464F5E] mb-8 whitespace-pre-line text-center">
             {template.content.subtitle || 'We received your submission and will get back to you as soon as possible.\nGood luck!'}
           </p>
           
-
-          
-                                      {/* Render Message questions */}
-                            {template.content.questions && template.content.questions.length > 0 && (
-                              <div className="space-y-6 mt-8">
-                                {template.content.questions.map((question) => {
-                                  if (question.type === 'message' && question.content) {
-                                    return (
-                                      <div
-                                        key={question.id}
-                                        className="w-full px-4 py-3 text-gray-700"
-                                        dangerouslySetInnerHTML={{
-                                          __html: question.content
-                                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                                            .replace(/<left>(.*?)<\/left>/g, '<div style="text-align: left;">$1</div>')
-                                            .replace(/<center>(.*?)<\/center>/g, '<div style="text-align: center;">$1</div>')
-                                            .replace(/\n/g, '<br>')
-                                        }}
-                                      />
-                                    );
-                                  }
-                                  return null;
-                                })}
-                              </div>
-                            )}
+          {/* Render Message questions */}
+          {template.content.questions && template.content.questions.length > 0 && (
+            <div className="space-y-6 mt-8">
+              {template.content.questions.map((question) => {
+                if (question.type === 'message' && question.content) {
+                  return (
+                    <div
+                      key={question.id}
+                      className="w-full px-4 py-3 text-gray-700 text-center"
+                      dangerouslySetInnerHTML={{
+                        __html: question.content
+                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                          .replace(/<left>(.*?)<\/left>/g, '<div style="text-align: left;">$1</div>')
+                          .replace(/<center>(.*?)<\/center>/g, '<div style="text-align: center;">$1</div>')
+                          .replace(/\n/g, '<br>')
+                      }}
+                    />
+                  );
+                }
+                return null;
+              })}
+            </div>
+          )}
         </div>
       </div>
     );
