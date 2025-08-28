@@ -557,7 +557,7 @@ export default function ModuleTemplatesPage() {
                                   
                                   <div 
                                     className={`
-                                      border rounded-lg p-3 transition-all duration-200
+                                      border bg-white rounded-lg p-3 transition-all duration-200
                                       ${draggedIndex === index
                                         ? 'border-gray-300 bg-gray-50 opacity-50'
                                         : 'border-gray-200'
