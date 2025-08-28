@@ -550,11 +550,7 @@ export default function CreateFlowPage() {
                 placeholder="e.g., Software Engineer Application"
                 className="w-full px-4 py-2 border border-gray-300 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               />
-              {name.trim() && (
-                <div className="mt-2 text-xs text-gray-500">
-                  URL: <span className="font-mono text-gray-700">{window.location.origin}/flow/{generateSlug(name.trim())}</span>
-                </div>
-              )}
+              
             </div>
 
             <div>
