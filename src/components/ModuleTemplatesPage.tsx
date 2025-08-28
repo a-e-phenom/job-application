@@ -182,11 +182,9 @@ export default function ModuleTemplatesPage() {
   };
 
   const addQuestion = () => {
-    if (!editedTemplate) return;
-    
     const newQuestion = {
-      id: `question_${Date.now()}`,
-      text: 'New Question',
+      id: `element_${Date.now()}`,
+      text: 'New Element',
       type: 'text' as const,
       required: false
     };
@@ -528,12 +526,12 @@ export default function ModuleTemplatesPage() {
                         {(editedTemplate?.content.questions !== undefined || editedTemplate?.component === 'InterviewSchedulingStep' || editedTemplate?.component === 'AssessmentStep') && (
                           <div>
                             <div className="flex items-center justify-between mb-3">
-                              <h5 className="text-sm font-medium text-gray-700">Questions</h5>
+                              <h5 className="text-sm font-medium text-gray-700">Elements</h5>
                               <button
                                 onClick={addQuestion}
                                 className="text-sm text-indigo-600 hover:text-indigo-700"
                               >
-                                + Add Question
+                                + Add Element
                               </button>
                             </div>
                             
@@ -589,12 +587,12 @@ export default function ModuleTemplatesPage() {
                                         onChange={(e) => updateQuestion(question.id, 'type', e.target.value)}
                                         className="w-[340px] px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                       >
-                                        <option value="text">Text</option>
+                                        <option value="text">Text input</option>
                                         <option value="textarea">Textarea</option>
-                                        <option value="select">Select</option>
+                                        <option value="select">Dropdown input</option>
                                         <option value="radio">Radio</option>
                                         <option value="checkbox">Checkbox</option>
-                                        <option value="file">File</option>
+                                        <option value="file">File uploader</option>
                                         <option value="image">Image</option>
                                         <option value="phone">Phone Number</option>
                                         <option value="interview-scheduler">Interview Scheduler</option>
@@ -614,7 +612,7 @@ export default function ModuleTemplatesPage() {
                                             type="text"
                                             value={question.text}
                                             onChange={(e) => updateQuestion(question.id, 'text', e.target.value)}
-                                            placeholder="Question text"
+                                            placeholder="Element text"
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                           />
                                         )}

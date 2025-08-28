@@ -850,13 +850,13 @@ const FileUploadComponent = React.memo(({ questionId, value, onChange, primaryCo
         <div>
           <div className="mb-4">
             <div className="w-12 h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
-              <Upload className="w-6 h-6 text-gray-400" />
+              <Upload className="w-6 h-6 text-gray-700" />
             </div>
           </div>
-          <p className="text-[16px] text-[#464F5E] mb-2">
+          <p className="text-[14px] text-[#464F5E] mb-2">
             Drop file here or <span 
-              className="font-medium cursor-pointer"
-              style={{ color: primaryColor }}
+              className="font-medium cursor-pointer text-[#464F5E]"
+              
             >
               select a file to upload
             </span>
@@ -948,7 +948,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
             value={value}
             onChange={(e) => updateFormData(question.id, e.target.value)}
             rows={4}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-vertical"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-vertical"
             onFocus={(e) => {
               e.target.style.borderColor = primaryColor;
               e.target.style.boxShadow = `0 0 0 3px ${primaryColor}33`;
@@ -1028,9 +1028,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
                         }
                       }}
                       onMouseLeave={(e) => {
-                        if (!isSelected) {
-                          e.currentTarget.style.borderColor = '#D1D5DB';
-                        }
+                        e.currentTarget.style.borderColor = '#D1D5DB';
                       }}
                     >
                       {isSelected && (
@@ -1155,7 +1153,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
               placeholder="Type phone number"
               value={phoneData.number}
               onChange={(e) => updateFormData(question.id, { ...phoneData, number: e.target.value })}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-indigo-500"
               onFocus={(e) => {
                 e.target.style.borderColor = primaryColor;
                 e.target.style.boxShadow = `0 0 0 3px ${primaryColor}33`;
@@ -1185,7 +1183,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
             <div key={question.id} className="w-full">
               <img 
                 src={question.content} 
-                alt="Question image" 
+                alt="Element image" 
                 className="w-full h-auto rounded-lg border border-gray-200"
               />
             </div>
@@ -1226,7 +1224,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
         );
 
       default:
-        console.warn('Unknown question type:', question.type, question);
+        console.warn('Unknown element type:', question.type, question);
         return null;
     }
   };
