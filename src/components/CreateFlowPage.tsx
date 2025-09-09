@@ -955,9 +955,7 @@ export default function CreateFlowPage() {
 
     {/* Center: Title */}
     <div className="flex-1 flex justify-center">
-      <h1 className="text-lg font-semibold text-gray-900">
-        {editingFlow ? 'Edit Flow' : 'Create Flow'}
-      </h1>
+      
     </div>
 
     {/* Right: Close Button */}
@@ -975,7 +973,7 @@ export default function CreateFlowPage() {
      
 
       {/* Main Content */}
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-3xl mx-auto px-6 py-8">
         <div className="bg-white rounded-xl shadow-sm p-8">
           {renderContent()}
         </div>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, RotateCcw, Plus, Type, FileText, ChevronDown, Circle, CheckSquare, FolderOpen, Image, Phone, Calendar, MessageSquare, ChevronUp, ChevronDown as ChevronDownIcon } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, RotateCcw, Plus, Type, FileText, ChevronDown, Circle, CheckSquare, FolderOpen, Image, Phone, Calendar, MessageSquare, ClipboardList, ChevronUp, ChevronDown as ChevronDownIcon, MoveUp, MoveDown, Trash2 } from 'lucide-react';
 import { FlowModule } from '../types/flow';
 import { ModuleTemplate } from '../hooks/useTemplates';
 
@@ -10,15 +10,600 @@ interface LocalOverrides {
   questions: Array<{
     id: string;
     text: string;
-    type: 'text' | 'select' | 'radio' | 'checkbox' | 'textarea' | 'file' | 'image' | 'phone' | 'interview-scheduler' | 'message';
+    type: 'text' | 'select' | 'radio' | 'checkbox' | 'textarea' | 'file' | 'image' | 'phone' | 'interview-scheduler' | 'message' | 'assessment';
     options?: string[];
     required?: boolean;
     halfWidth?: boolean;
     layout?: 'vertical' | 'horizontal';
     content?: string;
     typeSelectorOpen?: boolean; // Added for custom dropdown
+    assessmentConfig?: {
+      screens: Array<{
+        id: string;
+        type: 'welcome' | 'best-worst' | 'agree-scale' | 'single-select';
+        title: string;
+        content: {
+          welcomeTitle?: string;
+          welcomeDescription?: string;
+          welcomeImage?: string;
+          scenarioTitle?: string;
+          scenarioDescription?: string;
+          scenarioImage?: string;
+          scenarioResponses?: string[];
+          instructionText?: string;
+          agreementTitle?: string;
+          agreementStatement?: string;
+          scaleLabels?: {
+            left: string;
+            right: string;
+          };
+          singleSelectTitle?: string;
+          singleSelectQuestion?: string;
+          singleSelectDescription?: string;
+          singleSelectOptions?: string[];
+        };
+      }>;
+    };
   }>;
 }
+
+// Assessment Screen Types
+type AssessmentScreenType = 'welcome' | 'best-worst' | 'agree-scale' | 'single-select';
+
+interface AssessmentScreen {
+  id: string;
+  type: AssessmentScreenType;
+  title: string;
+  content: {
+    // Welcome screen
+    welcomeTitle?: string;
+    welcomeDescription?: string;
+    welcomeImage?: string;
+    
+    // Best-worst screen
+    scenarioTitle?: string;
+    scenarioDescription?: string;
+    scenarioImage?: string;
+    scenarioResponses?: string[];
+    instructionText?: string;
+    
+    // Agree scale screen
+    agreementTitle?: string;
+    agreementStatement?: string;
+    scaleLabels?: {
+      left: string;
+      right: string;
+    };
+    
+    // Single select screen
+    singleSelectTitle?: string;
+    singleSelectQuestion?: string;
+    singleSelectDescription?: string;
+    singleSelectOptions?: string[];
+  };
+}
+
+interface AssessmentConfigurationProps {
+  question: any;
+  onUpdate: (config: any) => void;
+}
+
+const AssessmentConfiguration: React.FC<AssessmentConfigurationProps> = ({ question, onUpdate }) => {
+  const [screens, setScreens] = useState<AssessmentScreen[]>(
+    question.assessmentConfig?.screens || [
+      {
+        id: 'welcome-1',
+        type: 'welcome',
+        title: 'Welcome Screen',
+        content: {
+          welcomeTitle: 'Welcome to the assessment!',
+          welcomeDescription: 'You will choose the most suitable and least suitable response for each scenario.',
+          welcomeImage: 'https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=800'
+        }
+      },
+      {
+        id: 'best-worst-1',
+        type: 'best-worst',
+        title: 'Best/Worst Response',
+        content: {
+          scenarioTitle: 'Scenario Question',
+          scenarioDescription: 'A customer approaches you with a complaint about a product they purchased last week.',
+          scenarioImage: 'https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=800',
+          scenarioResponses: [
+            'Listen to their concern and offer a full refund',
+            'Ask them to provide a receipt before helping',
+            'Explain the return policy and suggest alternatives',
+            'Refer them to customer service'
+          ],
+          instructionText: 'Select the ✔ next to the response you feel is the best response. Then, select the ✘ next to the response you feel is the worst response.'
+        }
+      },
+      {
+        id: 'agree-scale-1',
+        type: 'agree-scale',
+        title: 'Agreement Scale',
+        content: {
+          agreementTitle: 'Do you agree with the statement below?',
+          agreementStatement: 'I believe that customer satisfaction is the most important aspect of our business.',
+          scaleLabels: {
+            left: 'Strongly disagree',
+            right: 'Strongly agree'
+          }
+        }
+      },
+      {
+        id: 'single-select-1',
+        type: 'single-select',
+        title: 'Single Select Question',
+        content: {
+          singleSelectTitle: 'Math Question',
+          singleSelectQuestion: 'What is 15% of $2,000?',
+          singleSelectDescription: 'Choose the correct answer from the options below.',
+          singleSelectOptions: ['$300', '$350', '$400', '$450']
+        }
+      }
+    ]
+  );
+
+  const updateScreens = (newScreens: AssessmentScreen[]) => {
+    setScreens(newScreens);
+    onUpdate({ screens: newScreens });
+  };
+
+  const addScreen = (type: AssessmentScreenType) => {
+    const newScreen: AssessmentScreen = {
+      id: `${type}-${Date.now()}`,
+      type,
+      title: getDefaultTitle(type),
+      content: getDefaultContent(type)
+    };
+    updateScreens([...screens, newScreen]);
+  };
+
+  const removeScreen = (screenId: string) => {
+    updateScreens(screens.filter(s => s.id !== screenId));
+  };
+
+  const moveScreenUp = (index: number) => {
+    if (index === 0) return;
+    const newScreens = [...screens];
+    [newScreens[index], newScreens[index - 1]] = [newScreens[index - 1], newScreens[index]];
+    updateScreens(newScreens);
+  };
+
+  const moveScreenDown = (index: number) => {
+    if (index === screens.length - 1) return;
+    const newScreens = [...screens];
+    [newScreens[index], newScreens[index + 1]] = [newScreens[index + 1], newScreens[index]];
+    updateScreens(newScreens);
+  };
+
+  const updateScreen = (screenId: string, updates: Partial<AssessmentScreen>) => {
+    const newScreens = screens.map(s => 
+      s.id === screenId ? { ...s, ...updates } : s
+    );
+    updateScreens(newScreens);
+  };
+
+  const updateScreenContent = (screenId: string, contentUpdates: Partial<AssessmentScreen['content']>) => {
+    const newScreens = screens.map(s => 
+      s.id === screenId 
+        ? { ...s, content: { ...s.content, ...contentUpdates } }
+        : s
+    );
+    updateScreens(newScreens);
+  };
+
+  const getDefaultTitle = (type: AssessmentScreenType): string => {
+    switch (type) {
+      case 'welcome': return 'Welcome Screen';
+      case 'best-worst': return 'Best/Worst Response';
+      case 'agree-scale': return 'Agreement Scale';
+      case 'single-select': return 'Single Select Question';
+      default: return 'New Screen';
+    }
+  };
+
+  const getDefaultContent = (type: AssessmentScreenType): AssessmentScreen['content'] => {
+    switch (type) {
+      case 'welcome':
+        return {
+          welcomeTitle: 'Welcome to the assessment!',
+          welcomeDescription: 'You will choose the most suitable and least suitable response for each scenario.',
+          welcomeImage: 'https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=800'
+        };
+      case 'best-worst':
+        return {
+          scenarioTitle: 'Scenario Question',
+          scenarioDescription: 'A customer approaches you with a complaint about a product they purchased last week.',
+          scenarioImage: 'https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=800',
+          scenarioResponses: [
+            'Listen to their concern and offer a full refund',
+            'Ask them to provide a receipt before helping',
+            'Explain the return policy and suggest alternatives',
+            'Refer them to customer service'
+          ],
+          instructionText: 'Select the ✔ next to the response you feel is the best response. Then, select the ✘ next to the response you feel is the worst response.'
+        };
+      case 'agree-scale':
+        return {
+          agreementTitle: 'Do you agree with the statement below?',
+          agreementStatement: 'I believe that customer satisfaction is the most important aspect of our business.',
+          scaleLabels: {
+            left: 'Strongly disagree',
+            right: 'Strongly agree'
+          }
+        };
+      case 'single-select':
+        return {
+          singleSelectTitle: 'Math Question',
+          singleSelectQuestion: 'What is 15% of $2,000?',
+          singleSelectDescription: 'Choose the correct answer from the options below.',
+          singleSelectOptions: ['$300', '$350', '$400', '$450']
+        };
+      default:
+        return {};
+    }
+  };
+
+  const addResponseOption = (screenId: string) => {
+    const screen = screens.find(s => s.id === screenId);
+    if (screen && screen.type === 'best-worst') {
+      const newResponses = [...(screen.content.scenarioResponses || []), 'New response option'];
+      updateScreenContent(screenId, { scenarioResponses: newResponses });
+    }
+  };
+
+  const updateResponseOption = (screenId: string, index: number, value: string) => {
+    const screen = screens.find(s => s.id === screenId);
+    if (screen && screen.type === 'best-worst') {
+      const newResponses = [...(screen.content.scenarioResponses || [])];
+      newResponses[index] = value;
+      updateScreenContent(screenId, { scenarioResponses: newResponses });
+    }
+  };
+
+  const removeResponseOption = (screenId: string, index: number) => {
+    const screen = screens.find(s => s.id === screenId);
+    if (screen && screen.type === 'best-worst') {
+      const newResponses = (screen.content.scenarioResponses || []).filter((_, i) => i !== index);
+      updateScreenContent(screenId, { scenarioResponses: newResponses });
+    }
+  };
+
+  const addSelectOption = (screenId: string) => {
+    const screen = screens.find(s => s.id === screenId);
+    if (screen && screen.type === 'single-select') {
+      const newOptions = [...(screen.content.singleSelectOptions || []), 'New option'];
+      updateScreenContent(screenId, { singleSelectOptions: newOptions });
+    }
+  };
+
+  const updateSelectOption = (screenId: string, index: number, value: string) => {
+    const screen = screens.find(s => s.id === screenId);
+    if (screen && screen.type === 'single-select') {
+      const newOptions = [...(screen.content.singleSelectOptions || [])];
+      newOptions[index] = value;
+      updateScreenContent(screenId, { singleSelectOptions: newOptions });
+    }
+  };
+
+  const removeSelectOption = (screenId: string, index: number) => {
+    const screen = screens.find(s => s.id === screenId);
+    if (screen && screen.type === 'single-select') {
+      const newOptions = (screen.content.singleSelectOptions || []).filter((_, i) => i !== index);
+      updateScreenContent(screenId, { singleSelectOptions: newOptions });
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <label className="block text-xs font-medium text-gray-600">Assessment Screens</label>
+        <div className="relative">
+          <select
+            onChange={(e) => {
+              if (e.target.value) {
+                addScreen(e.target.value as AssessmentScreenType);
+                e.target.value = '';
+              }
+            }}
+            className="text-xs text-indigo-600 hover:text-indigo-700 border border-indigo-200 rounded px-2 py-1 bg-white"
+          >
+            <option value="">+ Add Screen</option>
+            <option value="welcome">Welcome Screen</option>
+            <option value="best-worst">Best/Worst Response</option>
+            <option value="agree-scale">Agreement Scale</option>
+            <option value="single-select">Single Select Question</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {screens.map((screen, index) => (
+          <div key={screen.id} className="border border-gray-200 rounded-lg p-4 bg-white">
+            {/* Screen Header */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-gray-700">{screen.title}</span>
+                {/* <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                  {screen.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </span> */}
+              </div>
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={() => moveScreenUp(index)}
+                  disabled={index === 0}
+                  className={`p-1 rounded transition-colors duration-200 ${
+                    index === 0 
+                      ? 'text-gray-300 cursor-not-allowed' 
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                  }`}
+                  title="Move up"
+                >
+                  <MoveUp className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => moveScreenDown(index)}
+                  disabled={index === screens.length - 1}
+                  className={`p-1 rounded transition-colors duration-200 ${
+                    index === screens.length - 1
+                      ? 'text-gray-300 cursor-not-allowed' 
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                  }`}
+                  title="Move down"
+                >
+                  <MoveDown className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => removeScreen(screen.id)}
+                  className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                  title="Remove screen"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Screen Configuration */}
+            <div className="space-y-3">
+              {/* Screen Title */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Screen Title</label>
+                <input
+                  type="text"
+                  value={screen.title}
+                  onChange={(e) => updateScreen(screen.id, { title: e.target.value })}
+                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+
+              {/* Welcome Screen Configuration */}
+              {screen.type === 'welcome' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Welcome Title</label>
+                    <input
+                      type="text"
+                      value={screen.content.welcomeTitle || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { welcomeTitle: e.target.value })}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                    <textarea
+                      value={screen.content.welcomeDescription || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { welcomeDescription: e.target.value })}
+                      rows={3}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Image URL</label>
+                    <input
+                      type="text"
+                      value={screen.content.welcomeImage || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { welcomeImage: e.target.value })}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Best-Worst Screen Configuration */}
+              {screen.type === 'best-worst' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Scenario Title</label>
+                    <input
+                      type="text"
+                      value={screen.content.scenarioTitle || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { scenarioTitle: e.target.value })}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Scenario Description</label>
+                    <textarea
+                      value={screen.content.scenarioDescription || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { scenarioDescription: e.target.value })}
+                      rows={2}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Scenario Image URL</label>
+                    <input
+                      type="text"
+                      value={screen.content.scenarioImage || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { scenarioImage: e.target.value })}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Instruction Text</label>
+                    <textarea
+                      value={screen.content.instructionText || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { instructionText: e.target.value })}
+                      rows={2}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-xs font-medium text-gray-600">Response Options</label>
+                      <button
+                        onClick={() => addResponseOption(screen.id)}
+                        className="text-xs text-indigo-600 hover:text-indigo-700"
+                      >
+                        + Add Option
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {(screen.content.scenarioResponses || []).map((response, responseIndex) => (
+                        <div key={responseIndex} className="flex items-center space-x-2">
+                          <input
+                            type="text"
+                            value={response}
+                            onChange={(e) => updateResponseOption(screen.id, responseIndex, e.target.value)}
+                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          />
+                          <button
+                            onClick={() => removeResponseOption(screen.id, responseIndex)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Agree Scale Screen Configuration */}
+              {screen.type === 'agree-scale' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Agreement Title</label>
+                    <input
+                      type="text"
+                      value={screen.content.agreementTitle || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { agreementTitle: e.target.value })}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Statement</label>
+                    <textarea
+                      value={screen.content.agreementStatement || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { agreementStatement: e.target.value })}
+                      rows={3}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Left Label</label>
+                      <input
+                        type="text"
+                        value={screen.content.scaleLabels?.left || ''}
+                        onChange={(e) => updateScreenContent(screen.id, { 
+                          scaleLabels: { 
+                            left: e.target.value,
+                            right: screen.content.scaleLabels?.right || 'Strongly agree'
+                          } 
+                        })}
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Right Label</label>
+                      <input
+                        type="text"
+                        value={screen.content.scaleLabels?.right || ''}
+                        onChange={(e) => updateScreenContent(screen.id, { 
+                          scaleLabels: { 
+                            left: screen.content.scaleLabels?.left || 'Strongly disagree',
+                            right: e.target.value
+                          } 
+                        })}
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Single Select Screen Configuration */}
+              {screen.type === 'single-select' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Question Title</label>
+                    <input
+                      type="text"
+                      value={screen.content.singleSelectTitle || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { singleSelectTitle: e.target.value })}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Question Text</label>
+                    <input
+                      type="text"
+                      value={screen.content.singleSelectQuestion || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { singleSelectQuestion: e.target.value })}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                    <textarea
+                      value={screen.content.singleSelectDescription || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { singleSelectDescription: e.target.value })}
+                      rows={2}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-xs font-medium text-gray-600">Answer Options</label>
+                      <button
+                        onClick={() => addSelectOption(screen.id)}
+                        className="text-xs text-indigo-600 hover:text-indigo-700"
+                      >
+                        + Add Option
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {(screen.content.singleSelectOptions || []).map((option, optionIndex) => (
+                        <div key={optionIndex} className="flex items-center space-x-2">
+                          <input
+                            type="text"
+                            value={option}
+                            onChange={(e) => updateSelectOption(screen.id, optionIndex, e.target.value)}
+                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          />
+                          <button
+                            onClick={() => removeSelectOption(screen.id, optionIndex)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 interface ModuleConfigPanelProps {
   isOpen: boolean;
@@ -195,51 +780,53 @@ export default function ModuleConfigPanel({
 
       {/* Content */}
       <div className="p-6 pt-4 space-y-6">
-        {/* Basic Fields */}
-        <div className="space-y-3">
-          {/* <h3 className="text-md font-medium text-gray-900">Basic Configuration</h3> */}
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Title
-            </label>
-            <input
-              type="text"
-              value={localOverrides.title}
-              onChange={(e) => updateField('title', e.target.value)}
-              placeholder="Enter title"
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+        {/* Basic Fields - Hidden for Assessment modules */}
+        {module.component !== 'AssessmentStep' && (
+          <div className="space-y-3">
+            {/* <h3 className="text-md font-medium text-gray-900">Basic Configuration</h3> */}
             
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Subtitle
-            </label>
-            <textarea
-              value={localOverrides.subtitle}
-              onChange={(e) => updateField('subtitle', e.target.value)}
-              placeholder="Enter subtitle"
-              rows={3}
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            
-          </div>
-
-          <div>
-            <label className="flex items-center">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Title
+              </label>
               <input
-                type="checkbox"
-                checked={localOverrides.centerTitle}
-                onChange={(e) => updateField('centerTitle', e.target.checked)}
-                className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                type="text"
+                value={localOverrides.title}
+                onChange={(e) => updateField('title', e.target.value)}
+                placeholder="Enter title"
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-              <span className="ml-2 text-sm text-gray-700">Center title and subtitle</span>
-            </label>
-            
+              
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Subtitle
+              </label>
+              <textarea
+                value={localOverrides.subtitle}
+                onChange={(e) => updateField('subtitle', e.target.value)}
+                placeholder="Enter subtitle"
+                rows={3}
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              
+            </div>
+
+            <div>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={localOverrides.centerTitle}
+                  onChange={(e) => updateField('centerTitle', e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="ml-2 text-sm text-gray-700">Center title and subtitle</span>
+              </label>
+              
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Questions */}
         <div className="space-y-4">
@@ -279,6 +866,7 @@ export default function ModuleConfigPanel({
     {question.type === 'phone' && <Phone className="w-4 h-4" />}
     {question.type === 'interview-scheduler' && <Calendar className="w-4 h-4" />}
     {question.type === 'message' && <MessageSquare className="w-4 h-4" />}
+    {question.type === 'assessment' && <ClipboardList className="w-4 h-4" />}
     <span>
       {question.type === 'text' && 'Text input'}
       {question.type === 'textarea' && 'Text Area'}
@@ -290,6 +878,7 @@ export default function ModuleConfigPanel({
       {question.type === 'phone' && 'Phone Number'}
       {question.type === 'interview-scheduler' && 'Interview Scheduler'}
       {question.type === 'message' && 'Message'}
+      {question.type === 'assessment' && 'Assessments'}
     </span>
   </div>
   <ChevronDown className="w-4 h-4 ml-2 text-indigo-700" />
@@ -410,6 +999,17 @@ export default function ModuleConfigPanel({
                       <MessageSquare className="w-4 h-4" />
                       <span>Message</span>
                     </div>
+                    <div 
+                      className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        updateQuestion(index, 'type', 'assessment');
+                        updateQuestion(index, 'typeSelectorOpen', false);
+                      }}
+                    >
+                      <ClipboardList className="w-4 h-4" />
+                      <span>Assessments</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -450,8 +1050,8 @@ export default function ModuleConfigPanel({
               </div>
               {/* Element Type Selector */}
              
-              {/* Element Text Input - Hidden for image and message types */}
-              {question.type !== 'image' && question.type !== 'message' && (
+              {/* Element Text Input - Hidden for image, message, and assessment types */}
+              {question.type !== 'image' && question.type !== 'message' && question.type !== 'assessment' && (
                 <input
                   type="text"
                   value={question.text}
@@ -459,6 +1059,16 @@ export default function ModuleConfigPanel({
                   placeholder="Element text"
                   className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+              )}
+
+              {/* Assessment Configuration - Only for assessment type */}
+              {question.type === 'assessment' && (
+                <div className="mt-3">
+                  <AssessmentConfiguration
+                    question={question}
+                    onUpdate={(updatedQuestion) => updateQuestion(index, 'assessmentConfig', updatedQuestion)}
+                  />
+                </div>
               )}
 
             

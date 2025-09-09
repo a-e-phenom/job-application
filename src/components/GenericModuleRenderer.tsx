@@ -9,22 +9,46 @@ interface GenericModuleRendererProps {
 }
 
 interface FileUploadComponentProps {
-  questionId: string;
   value: File | null;
   onChange: (file: File | null) => void;
-  primaryColor: string;
 }
 
 
 
 const AssessmentComponent = React.memo(({ 
-  questionId, 
   primaryColor,
-  onNext
+  onNext,
+  assessmentConfig
 }: {
-  questionId: string;
   primaryColor: string;
   onNext?: () => void;
+  assessmentConfig?: {
+    screens: Array<{
+      id: string;
+      type: 'welcome' | 'best-worst' | 'agree-scale' | 'single-select';
+      title: string;
+      content: {
+        welcomeTitle?: string;
+        welcomeDescription?: string;
+        welcomeImage?: string;
+        scenarioTitle?: string;
+        scenarioDescription?: string;
+        scenarioImage?: string;
+        scenarioResponses?: string[];
+        instructionText?: string;
+        agreementTitle?: string;
+        agreementStatement?: string;
+        scaleLabels?: {
+          left: string;
+          right: string;
+        };
+        singleSelectTitle?: string;
+        singleSelectQuestion?: string;
+        singleSelectDescription?: string;
+        singleSelectOptions?: string[];
+      };
+    }>;
+  };
 }) => {
   const [currentSubStep, setCurrentSubStep] = useState(0);
   const [scenarioAnswers, setScenarioAnswers] = useState<Array<{
@@ -41,34 +65,58 @@ const AssessmentComponent = React.memo(({
     answer: string;
   }>>([]);
 
-  const SCENARIO_QUESTIONS = [
+  // Use assessmentConfig screens or fallback to default screens
+  const screens = assessmentConfig?.screens || [
     {
-      id: 'scenario1',
-      title: '1. What do you do?',
-      description: 'You are waiting for a colleague to take over at the end of your shift, but they don\'t show up and you have plans. What do you do?',
-      image: 'https://images.pexels.com/photos/4386321/pexels-photo-4386321.jpeg?auto=compress&cs=tinysrgb&w=600',
-      responses: [
-        'You contact your store manager with a situation update. You decide to delay meeting your friends until the situation is solved.',
-        'You check if someone else is available by calling other colleagues in other stores.',
-        'You contact your store manager and tell them that you have to leave as it\'s the end of your shift and you will have to close the store.'
-      ]
-    }
-  ];
-
-  const AGREEMENT_QUESTIONS = [
+      id: 'welcome-1',
+      type: 'welcome' as const,
+      title: 'Welcome Screen',
+      content: {
+        welcomeTitle: 'Welcome to the assessment!',
+        welcomeDescription: 'You will choose the most suitable and least suitable response for each scenario.',
+        welcomeImage: 'https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=800'
+      }
+    },
     {
-      id: 'agreement1',
-      statement: 'When faced with challenges in store management, I tend to stick to the strategies I already know, rather than seeking new approaches.'
-    }
-  ];
-
-  const MATH_QUESTIONS = [
+      id: 'best-worst-1',
+      type: 'best-worst' as const,
+      title: 'Best/Worst Response',
+      content: {
+        scenarioTitle: 'Scenario Question',
+        scenarioDescription: 'A customer approaches you with a complaint about a product they purchased last week.',
+        scenarioImage: 'https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=800',
+        scenarioResponses: [
+          'Listen to their concern and offer a full refund',
+          'Ask them to provide a receipt before helping',
+          'Explain the return policy and suggest alternatives',
+          'Refer them to customer service'
+        ],
+        instructionText: 'Select the ✔ next to the response you feel is the best response. Then, select the ✘ next to the response you feel is the worst response.'
+      }
+    },
     {
-      id: 'math1',
-      title: '3. Read the text',
-      question: 'What are the total monthly earnings of Sarah?',
-      description: 'Sarah, a Store Associate, earned a base salary of $1,500 per month and a commission of 5% on her total monthly sales. If she made $3,800 in sales this month, what is her total monthly earnings?',
-      options: ['$1,700', '$1,850', '$1,950', '$2,000']
+      id: 'agree-scale-1',
+      type: 'agree-scale' as const,
+      title: 'Agreement Scale',
+      content: {
+        agreementTitle: 'Do you agree with the statement below?',
+        agreementStatement: 'I believe that customer satisfaction is the most important aspect of our business.',
+        scaleLabels: {
+          left: 'Strongly disagree',
+          right: 'Strongly agree'
+        }
+      }
+    },
+    {
+      id: 'single-select-1',
+      type: 'single-select' as const,
+      title: 'Single Select Question',
+      content: {
+        singleSelectTitle: 'Math Question',
+        singleSelectQuestion: 'What is 15% of $2,000?',
+        singleSelectDescription: 'Choose the correct answer from the options below.',
+        singleSelectOptions: ['$300', '$350', '$400', '$450']
+      }
     }
   ];
 
@@ -156,65 +204,72 @@ const AssessmentComponent = React.memo(({
     }
   };
 
-  const renderIntroStep = () => (
-    <div className="w-full bg-white flex items-center justify-center m-0 p-0" style={{ minHeight: 'calc(100vh - 140px)' }}>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center w-full max-w-6xl mx-auto px-6 md:px-8 lg:px-12">
-        <div>
-          <img
-            src="https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=800"
-            alt="Store interior"
-            className="w-full h-80 object-cover rounded-lg"
-          />
-        </div>
-        <div>
-          <h2 className="text-[28px] font-semibold text-[#353B46] mb-6">Welcome to the assessment!</h2>
-          
-          <div className="space-y-4 text-[16px] text-[#464F5E] leading-relaxed">
-            <p>You will choose the most suitable and least suitable response for each scenario.</p>
+  const renderIntroStep = () => {
+    const currentScreen = screens[currentSubStep];
+    if (!currentScreen || currentScreen.type !== 'welcome') return null;
+
+    return (
+      <div className="w-full bg-white flex items-center justify-center m-0 p-0" style={{ minHeight: 'calc(100vh - 140px)' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center w-full max-w-6xl mx-auto px-6 md:px-8 lg:px-12">
+          <div>
+            <img
+              src={currentScreen.content.welcomeImage || "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=800"}
+              alt="Assessment welcome"
+              className="w-full h-80 object-cover rounded-lg"
+            />
+          </div>
+          <div>
+            <h2 className="text-[28px] font-semibold text-[#353B46] mb-6">
+              {currentScreen.content.welcomeTitle || 'Welcome to the assessment!'}
+            </h2>
             
-            <p>We're excited for you to get a glimpse of life as part of our team! In the upcoming section, you'll see different scenarios that you may experience while on the job. Each scenario will have a set of responses listed below it.</p>
-            
-            <p>After that section, you'll see a series of statements. You will choose how strongly you agree or disagree with each statement.</p>
-            
-            <p>This will only take about 10 minutes to complete. Let's begin!</p>
+            <div className="space-y-4 text-[16px] text-[#464F5E] leading-relaxed">
+              <p className="whitespace-pre-line">{currentScreen.content.welcomeDescription || 'You will choose the most suitable and least suitable response for each scenario.'}</p>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderScenarioStep = () => {
-    const question = SCENARIO_QUESTIONS[0];
-    const answer = getScenarioAnswer(question.id);
+    const currentScreen = screens[currentSubStep];
+    if (!currentScreen || currentScreen.type !== 'best-worst') return null;
+
+    const answer = getScenarioAnswer(currentScreen.id);
     
     return (
       <div className="w-full bg-white m-0 p-0 overflow-x-hidden" style={{ minHeight: 'calc(100vh - 140px)' }}>
         <div className="grid grid-cols-1 lg:grid-cols-2 h-full w-full m-0 p-0" style={{ minHeight: 'calc(100vh - 140px)' }}>
           <div className="px-8 md:px-12 lg:px-16 py-8 md:py-12 flex flex-col justify-center w-full">
-            <h2 className="text-[20px] font-medium text-[#353B46] mb-4">{question.title}</h2>
+            <h2 className="text-[20px] font-medium text-[#353B46] mb-4">
+              {currentScreen.content.scenarioTitle || 'Scenario Question'}
+            </h2>
             <img
-              src={question.image}
+              src={currentScreen.content.scenarioImage || "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=800"}
               alt="Scenario"
               className="w-full h-64 object-cover rounded-lg mb-4"
             />
-            <p className="text-[16px] text-[#464F5E] leading-relaxed">{question.description}</p>
+            <p className="text-[16px] text-[#464F5E] leading-relaxed whitespace-pre-line">
+              {currentScreen.content.scenarioDescription || 'A customer approaches you with a complaint about a product they purchased last week.'}
+            </p>
           </div>
           
           <div className="px-8 md:px-12 lg:px-16 py-8 md:py-12 flex flex-col justify-center w-full bg-[#F8F9FB]">
             <div>
-              <p className="text-[14px] text-[#637085] leading-relaxed">
-                Select the ✔ next to the response you feel is the best response. Then, select the ✘ next to the response you feel is the worst response. You must select one ✔and one ✘ to advance to the next question.
+              <p className="text-[14px] text-[#637085] leading-relaxed whitespace-pre-line">
+                {currentScreen.content.instructionText || 'Select the ✔ next to the response you feel is the best response. Then, select the ✘ next to the response you feel is the worst response. You must select one ✔and one ✘ to advance to the next question.'}
               </p>
             </div>
             
             <div className="space-y-4 mt-6">
-              {question.responses.map((response, index) => (
+              {(currentScreen.content.scenarioResponses || []).map((response, index) => (
                 <div key={index} className="border border-gray-200 bg-white rounded-lg p-4">
                   <div className="flex items-start justify-between">
-                    <p className="text-[16px] text-[#464F5E] flex-1 pr-4">{response}</p>
+                    <p className="text-[16px] text-[#464F5E] flex-1 pr-4 whitespace-pre-line">{response}</p>
                     <div className="flex items-center space-x-2">
                       <button
-                        onClick={() => handleScenarioAnswer(question.id, 'best', index)}
+                        onClick={() => handleScenarioAnswer(currentScreen.id, 'best', index)}
                         className={`
                           w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors duration-200
                           ${answer?.bestResponse === index.toString()
@@ -226,7 +281,7 @@ const AssessmentComponent = React.memo(({
                         <Check className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleScenarioAnswer(question.id, 'worst', index)}
+                        onClick={() => handleScenarioAnswer(currentScreen.id, 'worst', index)}
                         className={`
                           w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors duration-200
                           ${answer?.worstResponse === index.toString()
@@ -249,18 +304,22 @@ const AssessmentComponent = React.memo(({
   };
 
   const renderAgreementStep = () => {
-    const question = AGREEMENT_QUESTIONS[0];
-    const answer = getAgreementAnswer(question.id);
+    const currentScreen = screens[currentSubStep];
+    if (!currentScreen || currentScreen.type !== 'agree-scale') return null;
+
+    const answer = getAgreementAnswer(currentScreen.id);
     
     return (
       <div className="w-full bg-white m-0 p-0 overflow-x-hidden" style={{ minHeight: 'calc(100vh - 140px)' }}>
         <div className="grid grid-cols-1 lg:grid-cols-2 h-full w-full m-0 p-0" style={{ minHeight: 'calc(100vh - 140px)' }}>
           <div className="flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full">
-            <h2 className="text-[20px] font-medium text-[#353B46] mb-8">2. Do you agree with the statement below?</h2>
+            <h2 className="text-[20px] font-medium text-[#353B46] mb-8">
+              {currentScreen.content.agreementTitle || 'Do you agree with the statement below?'}
+            </h2>
             
             <div className="bg-gray-50 rounded-lg p-8 text-center">
-              <p className="text-[18px] text-[#353B46] font-medium leading-relaxed">
-                {question.statement}
+              <p className="text-[18px] text-[#353B46] font-medium leading-relaxed whitespace-pre-line">
+                {currentScreen.content.agreementStatement || 'I believe that customer satisfaction is the most important aspect of our business.'}
               </p>
             </div>
           </div>
@@ -270,7 +329,7 @@ const AssessmentComponent = React.memo(({
               {[1, 2, 3, 4, 5].map((rating) => (
                 <button
                   key={rating}
-                  onClick={() => handleAgreementAnswer(question.id, rating)}
+                  onClick={() => handleAgreementAnswer(currentScreen.id, rating)}
                   className={`
                     ${getSizeClasses(rating)} rounded-full border-2 transition-all duration-200 flex items-center justify-center
                     ${answer?.rating === rating
@@ -298,8 +357,8 @@ const AssessmentComponent = React.memo(({
             </div>
             
             <div className="flex justify-between text-[14px] text-[#637085]">
-              <span>Strongly disagree</span>
-              <span>Strongly agree</span>
+              <span>{currentScreen.content.scaleLabels?.left || 'Strongly disagree'}</span>
+              <span>{currentScreen.content.scaleLabels?.right || 'Strongly agree'}</span>
             </div>
           </div>
         </div>
@@ -308,19 +367,25 @@ const AssessmentComponent = React.memo(({
   };
 
   const renderMathStep = () => {
-    const question = MATH_QUESTIONS[0];
-    const answer = getMathAnswer(question.id);
+    const currentScreen = screens[currentSubStep];
+    if (!currentScreen || currentScreen.type !== 'single-select') return null;
+
+    const answer = getMathAnswer(currentScreen.id);
     
     return (
       <div className="w-full bg-white m-0 p-0 overflow-x-hidden" style={{ minHeight: 'calc(100vh - 140px)' }}>
         <div className="grid grid-cols-1 lg:grid-cols-2 h-full w-full m-0 p-0" style={{ minHeight: 'calc(100vh - 140px)' }}>
           <div className="flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full">
-            <h2 className="text-[20px] font-medium text-[#353B46] mb-4">{question.title}</h2>
-            <p className="text-[16px] text-[#464F5E] mb-6">{question.question}</p>
+            <h2 className="text-[20px] font-medium text-[#353B46] mb-4">
+              {currentScreen.content.singleSelectTitle || 'Math Question'}
+            </h2>
+            <p className="text-[16px] text-[#464F5E] mb-6">
+              {currentScreen.content.singleSelectQuestion || 'What is 15% of $2,000?'}
+            </p>
             
             <div className="bg-gray-50 rounded-lg p-6">
-              <p className="text-[16px] text-[#353B46] text-center leading-relaxed">
-                {question.description}
+              <p className="text-[16px] text-[#353B46] text-center leading-relaxed whitespace-pre-line">
+                {currentScreen.content.singleSelectDescription || 'Choose the correct answer from the options below.'}
               </p>
             </div>
           </div>
@@ -330,10 +395,10 @@ const AssessmentComponent = React.memo(({
             style={{ backgroundColor: '#F8F9FB' }}
           >
             <div className="space-y-3">
-              {question.options.map((option, index) => (
+              {(currentScreen.content.singleSelectOptions || []).map((option, index) => (
                 <button
                   key={index}
-                  onClick={() => handleMathAnswer(question.id, option)}
+                  onClick={() => handleMathAnswer(currentScreen.id, option)}
                   className={`
                     w-full p-4 rounded-lg border-2 text-left transition-all duration-200
                     ${answer?.answer === option
@@ -356,14 +421,17 @@ const AssessmentComponent = React.memo(({
   };
 
   const renderCurrentSubStep = () => {
-    switch (currentSubStep) {
-      case 0:
+    const currentScreen = screens[currentSubStep];
+    if (!currentScreen) return renderIntroStep();
+
+    switch (currentScreen.type) {
+      case 'welcome':
         return renderIntroStep();
-      case 1:
+      case 'best-worst':
         return renderScenarioStep();
-      case 2:
+      case 'agree-scale':
         return renderAgreementStep();
-      case 3:
+      case 'single-select':
         return renderMathStep();
       default:
         return renderIntroStep();
@@ -371,18 +439,23 @@ const AssessmentComponent = React.memo(({
   };
 
   const getSubStepTitle = (step: number) => {
-    switch (step) {
-      case 0:
-        return 'Introduction';
-      case 1:
-        return 'Question 1 of 3';
-      case 2:
-        return 'Question 2 of 3';
-      case 3:
-        return 'Question 3 of 3';
-      default:
-        return '';
+    const currentScreen = screens[step];
+    if (!currentScreen) return '';
+
+    if (step === 0) {
+      return 'Introduction';
     }
+
+    const questionScreens = screens.filter(screen => 
+      screen.type === 'best-worst' || screen.type === 'agree-scale' || screen.type === 'single-select'
+    );
+    const questionIndex = questionScreens.findIndex(screen => screen.id === currentScreen.id);
+    
+    if (questionIndex >= 0) {
+      return `Question ${questionIndex + 1} of ${questionScreens.length}`;
+    }
+
+    return currentScreen.title;
   };
 
   return (
@@ -395,15 +468,20 @@ const AssessmentComponent = React.memo(({
         {currentSubStep > 0 && (
           <div className="w-full px-0 pb-4">
             <div className="flex w-full gap-2">
-              {[1, 2, 3].map((step) => (
-                <div
-                  key={step}
-                  className="h-1 rounded-full transition-all duration-300 flex-1"
-                  style={{
-                    backgroundColor: currentSubStep >= step ? primaryColor : '#E5E7EB',
-                  }}
-                />
-              ))}
+              {screens.filter(screen => 
+                screen.type === 'best-worst' || screen.type === 'agree-scale' || screen.type === 'single-select'
+              ).map((screen) => {
+                const screenIndex = screens.findIndex(s => s.id === screen.id);
+                return (
+                  <div
+                    key={screen.id}
+                    className="h-1 rounded-full transition-all duration-300 flex-1"
+                    style={{
+                      backgroundColor: currentSubStep > screenIndex ? primaryColor : '#E5E7EB',
+                    }}
+                  />
+                );
+              })}
             </div>
           </div>
         )}
@@ -430,7 +508,7 @@ const AssessmentComponent = React.memo(({
            <button
   onClick={() => {
     console.log('Complete button clicked in GenericModuleRenderer!');
-    if (currentSubStep < 3) {
+    if (currentSubStep < screens.length - 1) {
       setCurrentSubStep(currentSubStep + 1);
     } else {
       console.log('Assessment complete - final step reached');
@@ -455,7 +533,7 @@ const AssessmentComponent = React.memo(({
   <span>
     {currentSubStep === 0 
       ? 'Start' 
-      : currentSubStep === 3 
+      : currentSubStep === screens.length - 1 
         ? 'Complete' 
         : 'Next'}
   </span>
@@ -738,7 +816,7 @@ const InterviewSchedulerComponent = React.memo(({ primaryColor }: { primaryColor
   );
 });
 
-const FileUploadComponent = React.memo(({ questionId, value, onChange, primaryColor }: FileUploadComponentProps) => {
+const FileUploadComponent = React.memo(({ value, onChange }: FileUploadComponentProps) => {
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -916,7 +994,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
     setFormData(prev => ({ ...prev, [questionId]: value }));
   };
 
-  const renderQuestion = (question: any, index: number, onNext?: () => void) => {
+  const renderQuestion = (question: any, onNext?: () => void) => {
     const value = formData[question.id] || '';
 
     switch (question.type) {
@@ -1170,10 +1248,8 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
         return (
           <FileUploadComponent
             key={question.id}
-            questionId={question.id}
             value={value}
             onChange={(file) => updateFormData(question.id, file)}
-            primaryColor={primaryColor}
           />
         );
 
@@ -1195,9 +1271,9 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
         return (
           <AssessmentComponent
             key={question.id}
-            questionId={question.id}
             primaryColor={primaryColor}
             onNext={onNext}
+            assessmentConfig={question.assessmentConfig}
           />
         );
 
@@ -1252,7 +1328,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
                 {question.required && <span className="text-red-500 ml-1"></span>}
               </label>
             )}
-            {renderQuestion(question, i, onNext)}
+            {renderQuestion(question, onNext)}
           </div>
           <div className="space-y-2">
             {nextQuestion.type !== 'image' && nextQuestion.type !== 'assessment' && (
@@ -1261,7 +1337,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
                 {nextQuestion.required && <span className="text-red-500 ml-1"></span>}
               </label>
             )}
-            {renderQuestion(nextQuestion, i + 1, onNext)}
+            {renderQuestion(nextQuestion, onNext)}
           </div>
         </div>
       );
@@ -1278,7 +1354,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
           )}
           
           <div className={question.halfWidth && (question.type === 'text' || question.type === 'select') ? "w-1/2" : "w-full"}>
-            {renderQuestion(question, i, onNext)}
+            {renderQuestion(question, onNext)}
           </div>
         </div>
       );
