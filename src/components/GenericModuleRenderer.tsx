@@ -1246,7 +1246,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
       elements.push(
         <div key={`${question.id}-${nextQuestion.id}`} className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            {question.type !== 'image' && (
+            {question.type !== 'image' && question.type !== 'assessment' && (
               <label className="block text-[14px] text-[#464F5E] mb-2">
                 {question.text}
                 {question.required && <span className="text-red-500 ml-1"></span>}
@@ -1255,7 +1255,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
             {renderQuestion(question, i, onNext)}
           </div>
           <div className="space-y-2">
-            {nextQuestion.type !== 'image' && (
+            {nextQuestion.type !== 'image' && nextQuestion.type !== 'assessment' && (
               <label className="block text-[14px] text-[#464F5E] mb-2">
                 {nextQuestion.text}
                 {nextQuestion.required && <span className="text-red-500 ml-1"></span>}
@@ -1270,7 +1270,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
       // Render single question (full width or half width but no consecutive half)
       elements.push(
         <div key={question.id} className="space-y-2">
-          {question.type !== 'checkbox' && question.type !== 'message' && question.type !== 'image' && (
+          {question.type !== 'checkbox' && question.type !== 'message' && question.type !== 'image' && question.type !== 'assessment' && (
             <label className="block text-[14px] text-[#464F5E] mb-2">
               {question.text}
               {question.required && <span className="text-red-500 ml-1"></span>}

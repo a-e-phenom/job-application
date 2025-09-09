@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Save, RotateCcw, X, Check, Plus, Airplay, Type, FileText, ChevronDown, ChevronUp, Circle, CheckSquare, FolderOpen, Image, Phone, Calendar, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Save, RotateCcw, X, Check, Plus, Airplay, Type, FileText, ChevronDown, ChevronUp, Circle, CheckSquare, FolderOpen, Image, Phone, Calendar, MessageSquare, ClipboardList } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTemplates, ModuleTemplate } from '../hooks/useTemplates';
 import GenericModuleRenderer from './GenericModuleRenderer';
@@ -551,6 +551,7 @@ export default function ModuleTemplatesPage() {
                                               {question.type === 'phone' && <Phone className="w-4 h-4" />}
                                               {question.type === 'interview-scheduler' && <Calendar className="w-4 h-4" />}
                                               {question.type === 'message' && <MessageSquare className="w-4 h-4" />}
+                                              {question.type === 'assessment' && <ClipboardList className="w-4 h-4" />}
                                               <span>
                                                 {question.type === 'text' && 'Text input'}
                                                 {question.type === 'textarea' && 'Textarea'}
@@ -562,6 +563,7 @@ export default function ModuleTemplatesPage() {
                                                 {question.type === 'phone' && 'Phone Number'}
                                                 {question.type === 'interview-scheduler' && 'Interview Scheduler'}
                                                 {question.type === 'message' && 'Message'}
+                                                {question.type === 'assessment' && 'Assessments'}
                                               </span>
                                             </div>
                                             <ChevronDown className="w-4 h-4 ml-2 text-indigo-700" />
@@ -670,6 +672,16 @@ export default function ModuleTemplatesPage() {
                                                 <MessageSquare className="w-4 h-4" />
                                                 <span>Message</span>
                                               </div>
+                                              <div 
+                                                className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                                                onClick={() => {
+                                                  updateQuestion(question.id, 'type', 'assessment');
+                                                  updateQuestion(question.id, 'typeSelectorOpen', false);
+                                                }}
+                                              >
+                                                <ClipboardList className="w-4 h-4" />
+                                                <span>Assessments</span>
+                                              </div>
                                             </div>
                                           )}
                                         </div>
@@ -714,8 +726,8 @@ export default function ModuleTemplatesPage() {
                                         </div>
                                       </div>
                                       
-                                      {/* Question Text Input - Only for non-image and non-message types */}
-                                      {question.type !== 'image' && question.type !== 'message' && question.type !== 'interview-scheduler' && (
+                                      {/* Question Text Input - Only for non-image, non-message, and non-assessment types */}
+                                      {question.type !== 'image' && question.type !== 'message' && question.type !== 'interview-scheduler' && question.type !== 'assessment' && (
                                         <div className="mb-3">
                                           <input
                                             type="text"
@@ -732,6 +744,15 @@ export default function ModuleTemplatesPage() {
                                         <div className="mb-3">
                                           <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600">
                                             The calendar widget will be displayed
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* Assessment Info - Only for assessment type */}
+                                      {question.type === 'assessment' && (
+                                        <div className="mb-3">
+                                          <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600">
+                                            The assessment screens will be displayed
                                           </div>
                                         </div>
                                       )}

@@ -14,7 +14,7 @@ export interface ModuleTemplate {
     questions?: Array<{
       id: string;
       text: string;
-      type: 'text' | 'select' | 'radio' | 'checkbox' | 'textarea' | 'file' | 'image' | 'phone' | 'interview-scheduler' | 'message';
+      type: 'text' | 'select' | 'radio' | 'checkbox' | 'textarea' | 'file' | 'image' | 'phone' | 'interview-scheduler' | 'message' | 'assessment';
       options?: string[];
       required?: boolean;
       halfWidth?: boolean;
