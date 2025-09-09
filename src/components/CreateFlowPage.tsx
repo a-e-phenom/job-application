@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Plus, Check, Trash2, GripVertical, Upload, X, ChevronRight, ChevronLeft, ChevronUp, ChevronDown, Edit } from 'lucide-react';
+import { ArrowLeft, Check, Upload, X, ChevronUp, ChevronDown, Plus, Edit } from 'lucide-react';
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
-import { FlowModule, ApplicationFlow, FlowStep, PRESET_COLORS } from '../types/flow';
+import { FlowModule, FlowStep, PRESET_COLORS } from '../types/flow';
 import { useTemplates } from '../hooks/useTemplates';
 import { useFlows } from '../hooks/useFlows';
 import { uploadLogoImage } from '../lib/supabase';
-import { generateUniqueSlug, generateSlug } from '../lib/utils';
+import { generateUniqueSlug } from '../lib/utils';
 
 export default function CreateFlowPage() {
   const { templates, loading: templatesLoading } = useTemplates();
@@ -16,9 +16,7 @@ export default function CreateFlowPage() {
   // Determine if we're editing an existing flow
   const editingFlow = slug ? flows.find(f => f.slug === slug) : null;
   
-  // Step management
-  const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 2;
+  // Remove step management - everything on one page
   
   // Form data
   const [name, setName] = useState(editingFlow?.name || '');
@@ -36,13 +34,11 @@ export default function CreateFlowPage() {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [colorFormat, setColorFormat] = useState<'hex' | 'rgb' | 'hsl'>('hex');
   const [tempColor, setTempColor] = useState(primaryColor);
+  const [showModuleSelector, setShowModuleSelector] = useState<string | null>(null);
+  const [selectedModules, setSelectedModules] = useState<{[stepId: string]: FlowModule[]}>({});
+  const [editingStepName, setEditingStepName] = useState<string | null>(null);
 
-  // Drag and drop state
-  const [draggedModule, setDraggedModule] = useState<FlowModule | null>(null);
-  const [dragOverStep, setDragOverStep] = useState<string | null>(null);
-  const [draggedModuleIndex, setDraggedModuleIndex] = useState<number | null>(null);
-  const [draggedFromStep, setDraggedFromStep] = useState<string | null>(null);
-  const [dragOverModuleIndex, setDragOverModuleIndex] = useState<number | null>(null);
+  // Remove drag and drop state - no longer needed
 
   // Update state when editingFlow changes
   React.useEffect(() => {
@@ -53,6 +49,13 @@ export default function CreateFlowPage() {
       setSteps(editingFlow.steps);
       setIsActive(editingFlow.isActive);
       setPrimaryColor(editingFlow.primaryColor || '#6366F1');
+      
+      // Initialize selectedModules for each step
+      const modulesByStep: {[stepId: string]: FlowModule[]} = {};
+      editingFlow.steps.forEach(step => {
+        modulesByStep[step.id] = step.modules || [];
+      });
+      setSelectedModules(modulesByStep);
     } else {
       setName('');
       setDescription('');
@@ -60,8 +63,32 @@ export default function CreateFlowPage() {
       setSteps([{ id: '1', name: 'Step 1', modules: [] }]);
       setIsActive(false);
       setPrimaryColor('#6366F1');
+      setSelectedModules({ '1': [] });
     }
   }, [editingFlow]);
+
+  // Sync selectedModules with steps
+  React.useEffect(() => {
+    setSteps(prevSteps => prevSteps.map(step => ({
+      ...step,
+      modules: selectedModules[step.id] || []
+    })));
+  }, [selectedModules]);
+
+  // Close module selector when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (showModuleSelector && !target.closest('.module-selector')) {
+        setShowModuleSelector(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showModuleSelector]);
 
   // Show loading state while flows are being fetched (only when editing)
   if (slug && flowsLoading) {
@@ -121,18 +148,32 @@ export default function CreateFlowPage() {
     setLogoPreview(null);
   };
 
+  const getTotalModules = () => {
+    return Object.values(selectedModules).reduce((total, modules) => total + modules.length, 0);
+  };
+
   const addStep = () => {
+    const newStepId = Date.now().toString();
     const newStep: FlowStep = {
-      id: Date.now().toString(),
+      id: newStepId,
       name: `Step ${steps.length + 1}`,
       modules: []
     };
     setSteps([...steps, newStep]);
+    setSelectedModules(prev => ({
+      ...prev,
+      [newStepId]: []
+    }));
   };
 
   const removeStep = (stepId: string) => {
     if (steps.length > 1) {
       setSteps(steps.filter(s => s.id !== stepId));
+      setSelectedModules(prev => {
+        const newModules = { ...prev };
+        delete newModules[stepId];
+        return newModules;
+      });
     }
   };
 
@@ -140,177 +181,43 @@ export default function CreateFlowPage() {
     setSteps(steps.map(s => s.id === stepId ? { ...s, name } : s));
   };
 
-  const isModuleInStep = (stepId: string, moduleId: string) => {
-    const step = steps.find(s => s.id === stepId);
-    return step?.modules.some(m => m.id === moduleId) || false;
+  const getStepModules = (stepId: string) => {
+    return selectedModules[stepId] || [];
   };
 
-  const getTotalModules = () => {
-    return steps.reduce((total, step) => total + step.modules.length, 0);
-  };
-
-  const isModuleUsed = (moduleId: string) => {
-    return steps.some(step => step.modules.some(m => m.id === moduleId));
-  };
-
-  // Drag and drop handlers
-  const handleDragStart = (e: React.DragEvent, module: FlowModule) => {
-    setDraggedModule(module);
-    e.dataTransfer.effectAllowed = 'copy';
-  };
-
-  const handleStepDragOver = (e: React.DragEvent, stepId: string) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-    setDragOverStep(stepId);
-  };
-
-  const handleStepDragLeave = () => {
-    setDragOverStep(null);
-  };
-
-  const handleStepDrop = (e: React.DragEvent, stepId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOverStep(null);
-    
-    if (draggedModule) {
-      // If module is already in the target step, don't do anything
-      if (isModuleInStep(stepId, draggedModule.id)) {
-        setDraggedModule(null);
-        return;
-      }
-      
-      // Update steps in a single operation
-      setSteps(prevSteps => prevSteps.map(step => {
-        if (step.id === stepId) {
-          // Add module to target step
-          return { ...step, modules: [...step.modules, draggedModule] };
-        } else {
-          // Remove module from other steps
-          return { ...step, modules: step.modules.filter(m => m.id !== draggedModule.id) };
-        }
-      }));
-    }
-    
-    setDraggedModule(null);
-  };
-
-  const removeModuleFromStep = (stepId: string, moduleId: string) => {
-    setSteps(steps.map(step => {
-      if (step.id === stepId) {
-        return { ...step, modules: step.modules.filter(m => m.id !== moduleId) };
-      }
-      return step;
+  const updateStepModules = (stepId: string, modules: FlowModule[]) => {
+    setSelectedModules(prev => ({
+      ...prev,
+      [stepId]: modules
     }));
   };
 
   const moveModuleUp = (stepId: string, moduleIndex: number) => {
     if (moduleIndex === 0) return; // Can't move up if already at top
     
-    setSteps(steps.map(step => {
-      if (step.id === stepId) {
-        const newModules = [...step.modules];
-        const temp = newModules[moduleIndex];
-        newModules[moduleIndex] = newModules[moduleIndex - 1];
-        newModules[moduleIndex - 1] = temp;
-        return { ...step, modules: newModules };
-      }
-      return step;
-    }));
+    const stepModules = getStepModules(stepId);
+    const newModules = [...stepModules];
+    const temp = newModules[moduleIndex];
+    newModules[moduleIndex] = newModules[moduleIndex - 1];
+    newModules[moduleIndex - 1] = temp;
+    updateStepModules(stepId, newModules);
   };
 
   const moveModuleDown = (stepId: string, moduleIndex: number) => {
-    const step = steps.find(s => s.id === stepId);
-    if (!step || moduleIndex === step.modules.length - 1) return; // Can't move down if already at bottom
+    const stepModules = getStepModules(stepId);
+    if (moduleIndex === stepModules.length - 1) return; // Can't move down if already at bottom
     
-    setSteps(steps.map(step => {
-      if (step.id === stepId) {
-        const newModules = [...step.modules];
-        const temp = newModules[moduleIndex];
-        newModules[moduleIndex] = newModules[moduleIndex + 1];
-        newModules[moduleIndex + 1] = temp;
-        return { ...step, modules: newModules };
-      }
-      return step;
-    }));
-  };
-
-  // Module reordering within steps
-  const handleModuleDragStart = (e: React.DragEvent, module: FlowModule, moduleIndex: number, stepId: string) => {
-    setDraggedModule(module);
-    setDraggedModuleIndex(moduleIndex);
-    setDraggedFromStep(stepId);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleModuleDragOver = (e: React.DragEvent, moduleIndex: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setDragOverModuleIndex(moduleIndex);
-  };
-
-  const handleModuleDragLeave = () => {
-    setDragOverModuleIndex(null);
-  };
-
-  const handleModuleDrop = (e: React.DragEvent, dropIndex: number, stepId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOverModuleIndex(null);
-    
-    if (draggedModuleIndex === null || !draggedFromStep || !draggedModule) return;
-    
-    setSteps(prevSteps => prevSteps.map(step => {
-      if (draggedFromStep === stepId && step.id === stepId) {
-        // Reordering within the same step
-        const newModules = [...step.modules];
-        const draggedModuleItem = newModules[draggedModuleIndex];
-        
-        // Remove the dragged module
-        newModules.splice(draggedModuleIndex, 1);
-        
-        // Insert at new position - adjust for removal
-        const insertIndex = draggedModuleIndex < dropIndex ? dropIndex - 1 : dropIndex;
-        newModules.splice(insertIndex, 0, draggedModuleItem);
-        
-        return { ...step, modules: newModules };
-      } else if (draggedFromStep !== stepId && step.id === stepId) {
-        // Moving to a different step - add at specific position
-        const newModules = [...step.modules];
-        newModules.splice(dropIndex, 0, draggedModule);
-        return { ...step, modules: newModules };
-      } else if (step.id === draggedFromStep) {
-        // Remove from source step (only if moving to different step)
-        if (step.id === stepId) {
-          return step; // Don't modify if it's the same step (handled above)
-        } else {
-          return { ...step, modules: step.modules.filter((_, index) => index !== draggedModuleIndex) };
-        }
-      }
-      return step;
-    }));
-    
-    setDraggedModule(null);
-    setDraggedModuleIndex(null);
-    setDraggedFromStep(null);
-  };
-
-  const handleModuleDragEnd = () => {
-    setDraggedModule(null);
-    setDraggedModuleIndex(null);
-    setDraggedFromStep(null);
-    setDragOverModuleIndex(null);
+    const newModules = [...stepModules];
+    const temp = newModules[moduleIndex];
+    newModules[moduleIndex] = newModules[moduleIndex + 1];
+    newModules[moduleIndex + 1] = temp;
+    updateStepModules(stepId, newModules);
   };
 
   const handleColorSelect = (color: string) => {
     setPrimaryColor(color);
   };
 
-  const handleCustomColorChange = (color: string) => {
-    setPrimaryColor(color);
-    setTempColor(color);
-  };
 
   // Color conversion utilities
   const hexToRgb = (hex: string) => {
@@ -508,12 +415,7 @@ export default function CreateFlowPage() {
     }
   };
 
-  const canProceedToNextStep = () => {
-    if (currentStep === 1) {
-      return name.trim().length > 0;
-    }
-    return getTotalModules() > 0;
-  };
+  // Remove step navigation functions
 
   const canSave = () => {
     return name.trim().length > 0 && getTotalModules() > 0;
@@ -530,385 +432,332 @@ export default function CreateFlowPage() {
     });
   }
 
-  const renderStepContent = () => {
-    if (currentStep === 1) {
-      return (
+  const renderContent = () => {
+    return (
+      <div className="space-y-8">
+        {/* Basic Information */}
         <div className="space-y-4">
-          {/* Basic Information */}
-          <div className="space-y-4">
-            {/* <h2 className="text-md font-semibold text-gray-700">General details</h2> */}
-            
-            <div>
-              <label htmlFor="flowName" className="block text-sm font-medium text-gray-700 mb-2">
-                Flow Name
-              </label>
-              <input
-                type="text"
-                id="flowName"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Software Engineer Application"
-                className="w-full px-4 py-2 border border-gray-300 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-              
-            </div>
-
-            <div>
-              <label htmlFor="flowDescription" className="block text-sm font-medium text-gray-700 mb-2">
-                Description
-              </label>
-              <textarea
-                id="flowDescription"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Brief description of this application flow..."
-                rows={3}
-                className="w-full px-4 py-2 border border-gray-300 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-vertical"
-              />
-            </div>
+          <div>
+            <label htmlFor="flowName" className="block text-sm font-medium text-gray-700 mb-2">
+              Flow Name
+            </label>
+            <input
+              type="text"
+              id="flowName"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Software Engineer Application"
+              className="w-full px-4 py-2 border border-gray-300 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
           </div>
 
-          {/* Appearance */}
-          <div className="space-y-4">
-            
+          <div>
+            <label htmlFor="flowDescription" className="block text-sm font-medium text-gray-700 mb-2">
+              Description
+            </label>
+            <textarea
+              id="flowDescription"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Brief description of this application flow..."
+              rows={3}
+              className="w-full px-4 py-2 border border-gray-300 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-vertical"
+            />
+          </div>
+        </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Primary Color
-              </label>
-              <div className="space-y-4">
-                
-                {/* Color Picker Row */}
-                <div className="flex flex-row gap-2">
-                  {displayColors.map((color) => (
-                    <button
-                      key={color.value}
-                      type="button"
-                      onClick={() => handleColorSelect(color.value)}
-                      className={`
-                        w-8 h-8 rounded-lg border-2 transition-all duration-200 relative
-                        ${primaryColor === color.value 
-                          ? 'border-gray-400 ring-2 ring-offset-2 ring-gray-300' 
-                          : 'border-gray-200 hover:border-gray-300'
-                        }
-                      `}
-                      style={{ backgroundColor: color.value }}
-                      title={color.name}
-                    >
-                      {primaryColor === color.value && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Check className="w-4 h-4 text-white drop-shadow-sm" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-
-                  {/* HTML5 Color Picker */}
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTempColor(primaryColor);
-                        setShowColorPicker(!showColorPicker);
-                      }}
-                      className="w-8 h-8 rounded-lg border-2 border-gray-200 hover:border-gray-300 cursor-pointer flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors duration-200"
-                      title="Choose custom color"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                    </button>
-                    
-                    {showColorPicker && (
-                      <div className="absolute top-10 left-0 z-50 bg-white rounded-lg shadow-xl border border-gray-200 p-4 w-80">
-                        {/* Tabs */}
-                        <div className="flex space-x-1 mb-4 bg-gray-100 rounded-lg p-1">
-                          {(['hex', 'rgb', 'hsl'] as const).map((format) => (
-                            <button
-                              key={format}
-                              type="button"
-                              onClick={() => setColorFormat(format)}
-                              className={`
-                                flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200
-                                ${colorFormat === format
-                                  ? 'bg-white text-gray-900 shadow-sm'
-                                  : 'text-gray-600 hover:text-gray-900'
-                                }
-                              `}
-                            >
-                              {format.toUpperCase()}
-                            </button>
-                          ))}
-                        </div>
-                        
-                        {/* Color Wheel */}
-                        <div className="mb-4">
-                          {/* Main Color Area */}
-                          <div className="relative w-full h-64 mb-4 rounded-lg overflow-hidden">
-                            <div 
-                              className="w-full h-full cursor-crosshair relative"
-                              style={{
-                                background: `linear-gradient(to bottom, transparent, black), linear-gradient(to right, white, ${getCurrentHueColor()})`
-                              }}
-                              onClick={(e) => {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                const x = (e.clientX - rect.left) / rect.width;
-                                const y = (e.clientY - rect.top) / rect.height;
-                                const currentHsl = hexToHsl(tempColor);
-                                if (currentHsl) {
-                                  const saturation = x * 100;
-                                  const lightness = Math.max(0, Math.min(100, (1 - y) * 100));
-                                  const newColor = hslToHex(currentHsl.h, saturation, lightness);
-                                  setTempColor(newColor);
-                                }
-                              }}
-                            >
-                              {/* Color picker dot */}
-                              <div 
-                                className="absolute w-4 h-4 border-2 border-white rounded-full shadow-lg pointer-events-none transform -translate-x-2 -translate-y-2"
-                                style={{
-                                  left: `${getSaturationPosition()}%`,
-                                  top: `${100 - getLightnessPosition()}%`,
-                                  boxShadow: '0 0 0 1px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)'
-                                }}
-                              />
-                            </div>
-                          </div>
-                          
-                          {/* Hue Slider */}
-                          <div className="relative w-full h-4 mb-4 rounded-full overflow-hidden">
-                            <div 
-                              className="w-full h-full cursor-pointer"
-                              style={{
-                                background: 'linear-gradient(to right, #ff0000 0%, #ffff00 16.66%, #00ff00 33.33%, #00ffff 50%, #0000ff 66.66%, #ff00ff 83.33%, #ff0000 100%)'
-                              }}
-                              onClick={(e) => {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                const x = (e.clientX - rect.left) / rect.width;
-                                const hue = x * 360;
-                                const currentHsl = hexToHsl(tempColor);
-                                if (currentHsl) {
-                                  const newColor = hslToHex(hue, currentHsl.s, currentHsl.l);
-                                  setTempColor(newColor);
-                                }
-                              }}
-                            >
-                              {/* Hue slider handle */}
-                              <div 
-                                className="absolute w-4 h-4 bg-white border-2 border-gray-300 rounded-full shadow-lg pointer-events-none transform -translate-x-2 -translate-y-0"
-                                style={{
-                                  left: `${getHuePosition()}%`,
-                                  top: '0px',
-                                  boxShadow: '0 0 0 1px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)'
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Color Input */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            {colorFormat.toUpperCase()} Value
-                          </label>
-                          <input
-                            type="text"
-                            value={colorFormat === 'hex' ? tempColor : getCurrentColorValues()[colorFormat]}
-                            onChange={(e) => {
-                              if (colorFormat === 'hex') {
-                                const value = e.target.value;
-                                if (value.startsWith('#') && value.length <= 7) {
-                                  setTempColor(value);
-                                } else if (!value.startsWith('#') && value.length <= 6) {
-                                  setTempColor('#' + value);
-                                }
-                              } else {
-                                handleColorInputChange(e.target.value, colorFormat);
-                              }
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
-                            placeholder={
-                              colorFormat === 'hex' ? '#6366F1' :
-                              colorFormat === 'rgb' ? '99, 102, 241' :
-                              '248°, 85%, 67%'
-                            }
-                          />
-                        </div>
-                        
-                        {/* Actions */}
-                        <div className="flex items-center justify-end space-x-2">
-                          <button
-                            type="button"
-                            onClick={() => setShowColorPicker(false)}
-                            className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors duration-200"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            onClick={applyColor}
-                            className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-colors duration-200"
-                          >
-                            Apply
-                          </button>
-                        </div>
+        {/* Appearance */}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Primary Color
+            </label>
+            <div className="space-y-4">
+              {/* Color Picker Row */}
+              <div className="flex flex-row gap-2">
+                {displayColors.map((color) => (
+                  <button
+                    key={color.value}
+                    type="button"
+                    onClick={() => handleColorSelect(color.value)}
+                    className={`
+                      w-8 h-8 rounded-lg border-2 transition-all duration-200 relative
+                      ${primaryColor === color.value 
+                        ? 'border-gray-400 ring-2 ring-offset-2 ring-gray-300' 
+                        : 'border-gray-200 hover:border-gray-300'
+                      }
+                    `}
+                    style={{ backgroundColor: color.value }}
+                    title={color.name}
+                  >
+                    {primaryColor === color.value && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Check className="w-4 h-4 text-white drop-shadow-sm" />
                       </div>
                     )}
-                  </div>
-                </div>
-              </div>
-            </div>
+                  </button>
+                ))}
 
-            {/* Logo Section */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Logo
-              </label>
-              
-              {/* Logo Upload Mode Toggle */}
-              <div className="flex space-x-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
-                <button
-                  type="button"
-                  onClick={() => setLogoUploadMode('url')}
-                  className={`
-                    px-3 py-2 text-xs font-medium rounded-md transition-colors duration-200
-                    ${logoUploadMode === 'url'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                    }
-                  `}
-                >
-                  URL
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLogoUploadMode('upload')}
-                  className={`
-                    px-3 py-2 text-xs font-medium rounded-md transition-colors duration-200
-                    ${logoUploadMode === 'upload'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                    }
-                  `}
-                >
-                  Upload
-                </button>
-              </div>
-
-              {logoUploadMode === 'url' ? (
-                <input
-                  type="url"
-                  value={logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
-                  placeholder="https://example.com/logo.png"
-                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              ) : (
-                <div className="space-y-4">
-                  {!uploadedLogoFile ? (
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors duration-200">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoFileChange}
-                        className="hidden"
-                        id="logo-upload"
-                      />
-                      <label htmlFor="logo-upload" className="cursor-pointer">
-                        <div className="w-12 h-12 mx-auto bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                          <Upload className="w-6 h-6 text-gray-400" />
-                        </div>
-                        <p className="text-gray-600 mb-2">
-                          Drop logo here or <span className="text-indigo-600 font-medium">click to upload</span>
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Supports JPEG, PNG, GIF, SVG (max 5MB)
-                        </p>
-                      </label>
-                    </div>
-                  ) : (
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          {logoPreview && (
-                            <img
-                              src={logoPreview}
-                              alt="Logo preview"
-                              className="w-12 h-12 object-contain rounded border"
+                {/* HTML5 Color Picker */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTempColor(primaryColor);
+                      setShowColorPicker(!showColorPicker);
+                    }}
+                    className="w-8 h-8 rounded-lg border-2 border-gray-200 hover:border-gray-300 cursor-pointer flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                    title="Choose custom color"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </button>
+                  
+                  {showColorPicker && (
+                    <div className="absolute top-10 left-0 z-50 bg-white rounded-lg shadow-xl border border-gray-200 p-4 w-80">
+                      {/* Tabs */}
+                      <div className="flex space-x-1 mb-4 bg-gray-100 rounded-lg p-1">
+                        {(['hex', 'rgb', 'hsl'] as const).map((format) => (
+                          <button
+                            key={format}
+                            type="button"
+                            onClick={() => setColorFormat(format)}
+                            className={`
+                              flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200
+                              ${colorFormat === format
+                                ? 'bg-white text-gray-900 shadow-sm'
+                                : 'text-gray-600 hover:text-gray-900'
+                              }
+                            `}
+                          >
+                            {format.toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
+                      
+                      {/* Color Wheel */}
+                      <div className="mb-4">
+                        {/* Main Color Area */}
+                        <div className="relative w-full h-64 mb-4 rounded-lg overflow-hidden">
+                          <div 
+                            className="w-full h-full cursor-crosshair relative"
+                            style={{
+                              background: `linear-gradient(to bottom, transparent, black), linear-gradient(to right, white, ${getCurrentHueColor()})`
+                            }}
+                            onClick={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const x = (e.clientX - rect.left) / rect.width;
+                              const y = (e.clientY - rect.top) / rect.height;
+                              const currentHsl = hexToHsl(tempColor);
+                              if (currentHsl) {
+                                const saturation = x * 100;
+                                const lightness = Math.max(0, Math.min(100, (1 - y) * 100));
+                                const newColor = hslToHex(currentHsl.h, saturation, lightness);
+                                setTempColor(newColor);
+                              }
+                            }}
+                          >
+                            {/* Color picker dot */}
+                            <div 
+                              className="absolute w-4 h-4 border-2 border-white rounded-full shadow-lg pointer-events-none transform -translate-x-2 -translate-y-2"
+                              style={{
+                                left: `${getSaturationPosition()}%`,
+                                top: `${100 - getLightnessPosition()}%`,
+                                boxShadow: '0 0 0 1px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)'
+                              }}
                             />
-                          )}
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">{uploadedLogoFile.name}</p>
-                            <p className="text-sm text-gray-500">
-                              {(uploadedLogoFile.size / 1024 / 1024).toFixed(2)} MB
-                            </p>
                           </div>
                         </div>
+                        
+                        {/* Hue Slider */}
+                        <div className="relative w-full h-4 mb-4 rounded-full overflow-hidden">
+                          <div 
+                            className="w-full h-full cursor-pointer"
+                            style={{
+                              background: 'linear-gradient(to right, #ff0000 0%, #ffff00 16.66%, #00ff00 33.33%, #00ffff 50%, #0000ff 66.66%, #ff00ff 83.33%, #ff0000 100%)'
+                            }}
+                            onClick={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const x = (e.clientX - rect.left) / rect.width;
+                              const hue = x * 360;
+                              const currentHsl = hexToHsl(tempColor);
+                              if (currentHsl) {
+                                const newColor = hslToHex(hue, currentHsl.s, currentHsl.l);
+                                setTempColor(newColor);
+                              }
+                            }}
+                          >
+                            {/* Hue slider handle */}
+                            <div 
+                              className="absolute w-4 h-4 bg-white border-2 border-gray-300 rounded-full shadow-lg pointer-events-none transform -translate-x-2 -translate-y-0"
+                              style={{
+                                left: `${getHuePosition()}%`,
+                                top: '0px',
+                                boxShadow: '0 0 0 1px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Color Input */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {colorFormat.toUpperCase()} Value
+                        </label>
+                        <input
+                          type="text"
+                          value={colorFormat === 'hex' ? tempColor : getCurrentColorValues()[colorFormat]}
+                          onChange={(e) => {
+                            if (colorFormat === 'hex') {
+                              const value = e.target.value;
+                              if (value.startsWith('#') && value.length <= 7) {
+                                setTempColor(value);
+                              } else if (!value.startsWith('#') && value.length <= 6) {
+                                setTempColor('#' + value);
+                              }
+                            } else {
+                              handleColorInputChange(e.target.value, colorFormat);
+                            }
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+                          placeholder={
+                            colorFormat === 'hex' ? '#6366F1' :
+                            colorFormat === 'rgb' ? '99, 102, 241' :
+                            '248°, 85%, 67%'
+                          }
+                        />
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex items-center justify-end space-x-2">
                         <button
                           type="button"
-                          onClick={removeLogo}
-                          className="text-red-500 hover:text-red-700 transition-colors duration-200"
+                          onClick={() => setShowColorPicker(false)}
+                          className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors duration-200"
                         >
-                          <X className="w-5 h-5" />
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={applyColor}
+                          className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-colors duration-200"
+                        >
+                          Apply
                         </button>
                       </div>
                     </div>
                   )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
-        </div>
-      );
-    }
 
-    // Step 2: Flow Steps
-    return (
-      <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 ">
-        {/* Left Column - Available Modules */}
-        <div className="lg:col-span-1  bg-gray-50 p-4 rounded-xl">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">Modules</h3>
-          <div className="space-y-2 max-h-[550px] overflow-y-auto">
-            {templatesLoading ? (
-              <div className="text-center py-8 text-gray-500">Loading modules...</div>
-            ) : availableModules.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No modules available</div>
+          {/* Logo Section */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Logo
+            </label>
+            
+            {/* Logo Upload Mode Toggle */}
+            <div className="flex space-x-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
+              <button
+                type="button"
+                onClick={() => setLogoUploadMode('url')}
+                className={`
+                  px-3 py-2 text-xs font-medium rounded-md transition-colors duration-200
+                  ${logoUploadMode === 'url'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                  }
+                `}
+              >
+                URL
+              </button>
+              <button
+                type="button"
+                onClick={() => setLogoUploadMode('upload')}
+                className={`
+                  px-3 py-2 text-xs font-medium rounded-md transition-colors duration-200
+                  ${logoUploadMode === 'upload'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                  }
+                `}
+              >
+                Upload
+              </button>
+            </div>
+
+            {logoUploadMode === 'url' ? (
+              <input
+                type="url"
+                value={logoUrl}
+                onChange={(e) => setLogoUrl(e.target.value)}
+                placeholder="https://example.com/logo.png"
+                className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
             ) : (
-              availableModules.map((module) => (
-                <div
-                  key={module.id}
-                  draggable={!isModuleUsed(module.id)}
-                  onDragStart={(e) => handleDragStart(e, module)}
-                  className={`
-                    p-3 pl-2 border rounded-lg transition-all duration-200 cursor-grab active:cursor-grabbing bg-white
-                    ${isModuleUsed(module.id)
-                      ? 'border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed'
-                      : 'border-gray-200 hover:border-indigo-300 hover:bg-indigo-50'
-                    }
-                    ${draggedModule?.id === module.id ? 'opacity-50' : ''}
-                  `}
-                >
-                  <div className="flex items-start space-x-2">
-                    <GripVertical className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-gray-900 text-sm">{module.name}</h4>
-                      {/* <p className="text-xs text-gray-600 mt-0 line-clamp-2">{module.description}</p> */}
+              <div className="space-y-4">
+                {!uploadedLogoFile ? (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors duration-200">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoFileChange}
+                      className="hidden"
+                      id="logo-upload"
+                    />
+                    <label htmlFor="logo-upload" className="cursor-pointer">
+                      <div className="w-12 h-12 mx-auto bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                        <Upload className="w-6 h-6 text-gray-400" />
+                      </div>
+                      <p className="text-gray-600 mb-2">
+                        Drop logo here or <span className="text-indigo-600 font-medium">click to upload</span>
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Supports JPEG, PNG, GIF, SVG (max 5MB)
+                      </p>
+                    </label>
+                  </div>
+                ) : (
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        {logoPreview && (
+                          <img
+                            src={logoPreview}
+                            alt="Logo preview"
+                            className="w-12 h-12 object-contain rounded border"
+                          />
+                        )}
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{uploadedLogoFile.name}</p>
+                          <p className="text-sm text-gray-500">
+                            {(uploadedLogoFile.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeLogo}
+                        className="text-red-500 hover:text-red-700 transition-colors duration-200"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
                     </div>
                   </div>
-                </div>
-              ))
+                )}
+              </div>
             )}
           </div>
         </div>
-    
-        {/* Right Column - Flow Steps */}
-        <div className="lg:col-span-2">
-          {/* Header with Flow Steps + Add Step button */}
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-gray-900">
-              Flow Steps
-            </h3>
+
+        {/* Flow Steps - Multiple Steps with Multiselect */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-gray-900">Flow Steps</h3>
             <button
               type="button"
               onClick={addStep}
@@ -918,76 +767,121 @@ export default function CreateFlowPage() {
               <span>Add Step</span>
             </button>
           </div>
-    
-          {/* Flow Steps List */}
+          
+          {/* Steps List */}
           <div className="space-y-4">
-            {steps.map((step, stepIndex) => (
+            {steps.map((step) => (
               <div key={step.id} className="border border-gray-200 rounded-xl p-4 bg-white">
                 <div className="flex items-center justify-between mb-4">
-  {/* Step name with hover edit icon */}
-  <div className="inline-flex items-center group">
-    <input
-      type="text"
-      value={step.name}
-      onChange={(e) => updateStepName(step.id, e.target.value)}
-      className="text-sm font-medium text-gray-800 bg-transparent border-none focus:outline-none focus:ring-0 p-0 w-auto"
-      placeholder="Step name"
-      size={Math.max(step.name.length, 1)} // auto-size input to text
-    />
-    <Edit className="w-4 h-4 ml-1 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" />
-  </div>
-
-  {/* Right side (modules + remove) */}
-  <div className="flex items-center space-x-2">
-    <span className="text-sm text-gray-500">
-      {step.modules.length} modules
-    </span>
-    {steps.length > 1 && (
-      <button
-        type="button"
-        onClick={() => removeStep(step.id)}
-        className="text-red-500 hover:text-red-700"
-      >
-        <X className="w-4 h-4" />
-      </button>
-    )}
-  </div>
-</div>
-    
-                {/* Drop Zone */}
-                <div
-                  onDragOver={(e) => handleStepDragOver(e, step.id)}
-                  onDragLeave={handleStepDragLeave}
-                  onDrop={(e) => handleStepDrop(e, step.id)}
-                  onDragEnter={(e) => e.preventDefault()}
-                  className={`
-                    min-h-[80px] bg-indigo-50 border-2 border-dashed rounded-lg p-4 transition-all duration-200 border-spacing-dashed
-                    ${dragOverStep === step.id
-                      ? 'border-indigo-300 bg-indigo-50'
-                      : 'border-indigo-300'
-                    }
-                  `}
-                >
-                  {step.modules.length === 0 ? (
-                    <div className="flex items-center justify-center min-h-[80px] font-normal text-gray-600 text-sm">
-                      Drag modules here to add them to this step
-                    </div>
-                  ) : (
+                  <div className="flex items-center space-x-2">
+                    {editingStepName === step.id ? (
+                      <input
+                        type="text"
+                        value={step.name}
+                        onChange={(e) => updateStepName(step.id, e.target.value)}
+                        onBlur={() => setEditingStepName(null)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            setEditingStepName(null);
+                          }
+                        }}
+                        className="text-sm font-medium text-gray-800 bg-transparent border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        autoFocus
+                      />
+                    ) : (
+                      <h4 
+                        className="text-sm font-medium text-gray-800 cursor-pointer hover:text-indigo-600"
+                        onClick={() => setEditingStepName(step.id)}
+                      >
+                        {step.name}
+                      </h4>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setEditingStepName(step.id)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <Edit className="w-3 h-3" />
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-500">
+                      {getStepModules(step.id).length} modules
+                    </span>
+                    {steps.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeStep(step.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Module Selection */}
+                <div className="space-y-3">
+                  <div className="relative module-selector">
+                    <button
+                      type="button"
+                      onClick={() => setShowModuleSelector(showModuleSelector === step.id ? null : step.id)}
+                      className="w-full px-4 py-2 text-left border border-gray-300 rounded-lg bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                      <span className="text-sm text-gray-700">
+                        {getStepModules(step.id).length > 0 
+                          ? `${getStepModules(step.id).length} modules selected`
+                          : 'Add modules to this step'
+                        }
+                      </span>
+                      <ChevronDown className="w-4 h-4 float-right mt-0.5" />
+                    </button>
+                    
+                    {showModuleSelector === step.id && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                        {availableModules.map((module) => (
+                          <label
+                            key={module.id}
+                            className="flex items-center px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={getStepModules(step.id).some(m => m.id === module.id)}
+                              onChange={(e) => {
+                                const currentModules = getStepModules(step.id);
+                                if (e.target.checked) {
+                                  updateStepModules(step.id, [...currentModules, module]);
+                                } else {
+                                  updateStepModules(step.id, currentModules.filter(m => m.id !== module.id));
+                                }
+                              }}
+                              className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                            />
+                            <span className="ml-3 text-sm text-gray-700">{module.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Selected Modules Display */}
+                  {getStepModules(step.id).length > 0 && (
                     <div className="space-y-2">
-                      {step.modules.map((module, moduleIndex) => (
+                      {getStepModules(step.id).map((module, index) => (
                         <div
                           key={module.id}
-                          className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg transition-all duration-200 hover:shadow-sm"
+                          className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg"
                         >
                           <div className="flex items-center space-x-3">
                             <div className="flex flex-col space-y-1">
                               <button
                                 type="button"
-                                onClick={() => moveModuleUp(step.id, moduleIndex)}
-                                disabled={moduleIndex === 0}
+                                onClick={() => moveModuleUp(step.id, index)}
+                                disabled={index === 0}
                                 className={`
                                   p-1 rounded transition-colors duration-200
-                                  ${moduleIndex === 0
+                                  ${index === 0
                                     ? 'text-gray-300 cursor-not-allowed'
                                     : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                                   }
@@ -998,11 +892,11 @@ export default function CreateFlowPage() {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => moveModuleDown(step.id, moduleIndex)}
-                                disabled={moduleIndex === step.modules.length - 1}
+                                onClick={() => moveModuleDown(step.id, index)}
+                                disabled={index === getStepModules(step.id).length - 1}
                                 className={`
                                   p-1 rounded transition-colors duration-200
-                                  ${moduleIndex === step.modules.length - 1
+                                  ${index === getStepModules(step.id).length - 1
                                     ? 'text-gray-300 cursor-not-allowed'
                                     : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                                   }
@@ -1019,7 +913,10 @@ export default function CreateFlowPage() {
                           </div>
                           <button
                             type="button"
-                            onClick={() => removeModuleFromStep(step.id, module.id)}
+                            onClick={() => {
+                              const currentModules = getStepModules(step.id);
+                              updateStepModules(step.id, currentModules.filter(m => m.id !== module.id));
+                            }}
                             className="text-red-500 hover:text-red-700 transition-colors duration-200"
                           >
                             <X className="w-4 h-4" />
@@ -1034,8 +931,6 @@ export default function CreateFlowPage() {
           </div>
         </div>
       </div>
-    </div>
-    
     );
   };
 
@@ -1058,45 +953,11 @@ export default function CreateFlowPage() {
       </span>
     </div>
 
-    {/* Center: Stepper */}
+    {/* Center: Title */}
     <div className="flex-1 flex justify-center">
-      <div className="flex items-center">
-        {[1, 2].map((step, index) => (
-          <React.Fragment key={step}>
-            <div className="flex items-center">
-              <div
-                className={`
-                  w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-300
-                  ${
-                    step < currentStep
-                      ? 'bg-indigo-600 text-white'
-                      : step === currentStep
-                      ? 'bg-indigo-600 text-white ring-4 ring-indigo-100'
-                      : 'bg-gray-200 text-gray-600'
-                  }
-                `}
-              >
-                {step < currentStep ? <Check className="w-4 h-4" /> : <span>{step}</span>}
-              </div>
-              <span
-                className={`
-                  ml-3 text-sm font-medium transition-colors duration-300
-                  ${step <= currentStep ? 'text-indigo-600' : 'text-gray-500'}
-                `}
-              >
-                {step === 1 ? 'General Details' : 'Flow Steps'}
-              </span>
-            </div>
-            {index < 1 && (
-              <div
-                className={`w-16 h-0.5 mx-6 transition-colors duration-300 ${
-                  step < currentStep ? 'bg-indigo-600' : 'bg-gray-200'
-                }`}
-              />
-            )}
-          </React.Fragment>
-        ))}
-      </div>
+      <h1 className="text-lg font-semibold text-gray-900">
+        {editingFlow ? 'Edit Flow' : 'Create Flow'}
+      </h1>
     </div>
 
     {/* Right: Close Button */}
@@ -1116,59 +977,28 @@ export default function CreateFlowPage() {
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-6 py-8">
         <div className="bg-white rounded-xl shadow-sm p-8">
-          {renderStepContent()}
+          {renderContent()}
         </div>
       </div>
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4">
-        <div className="w-full flex items-right justify-between">
-          <div className="flex items-center space-x-3">
-            {currentStep > 1 && (
-              <button
-                onClick={() => setCurrentStep(currentStep - 1)}
-                className="flex items-center space-x-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                <span>Previous</span>
-              </button>
-            )}
-          </div>
-          
-          <div className="flex items-center space-x-3">
-            {currentStep < totalSteps ? (
-              <button
-                onClick={() => setCurrentStep(currentStep + 1)}
-                disabled={!canProceedToNextStep()}
-                className={`
-                  flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-200
-                  ${canProceedToNextStep()
-                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }
-                `}
-              >
-                <span>Next</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            ) : (
-              <button
-                onClick={handleSave}
-                disabled={!canSave() || templatesLoading || isSaving}
-                className={`
-                  px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2
-                  ${canSave() && !templatesLoading && !isSaving
-                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }
-                `}
-              >
-                <span>
-                  {isSaving ? 'Saving...' : editingFlow ? 'Update flow' : 'Create flow'}
-                </span>
-              </button>
-            )}
-          </div>
+        <div className="w-full flex justify-end">
+          <button
+            onClick={handleSave}
+            disabled={!canSave() || templatesLoading || isSaving}
+            className={`
+              px-6 py-3 rounded-lg transition-colors duration-200 flex items-center space-x-2
+              ${canSave() && !templatesLoading && !isSaving
+                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }
+            `}
+          >
+            <span>
+              {isSaving ? 'Saving...' : editingFlow ? 'Update flow' : 'Create flow'}
+            </span>
+          </button>
         </div>
       </div>
     </div>
