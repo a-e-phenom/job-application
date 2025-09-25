@@ -14,7 +14,7 @@ export interface ModuleTemplate {
     questions?: Array<{
       id: string;
       text: string;
-      type: 'text' | 'select' | 'radio' | 'checkbox' | 'textarea' | 'file' | 'image' | 'phone' | 'interview-scheduler' | 'message' | 'assessment';
+      type: 'text' | 'select' | 'radio' | 'checkbox' | 'textarea' | 'file' | 'image' | 'phone' | 'interview-scheduler' | 'message' | 'assessment' | 'video-interview';
       options?: string[];
       required?: boolean;
       halfWidth?: boolean;
@@ -99,14 +99,21 @@ export function useTemplates() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Handle specific constraint violations
+        if (error.code === '23505') {
+          throw new Error(`A template with component name "${templateData.component}" already exists. Please choose a different component name.`);
+        }
+        throw error;
+      }
 
       const newTemplate = convertToModuleTemplate(data);
       setTemplates(prev => [newTemplate, ...prev]);
       return newTemplate;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create template');
-      throw err;
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create template';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 

@@ -1,11 +1,25 @@
 import React, { useState } from 'react';
-import { ArrowLeft, X, Check, Plus, Airplay, Type, FileText, ChevronDown, ChevronUp, Circle, CheckSquare, FolderOpen, Image, Phone, Calendar, MessageSquare, ClipboardList, Trash2, MoveUp, MoveDown } from 'lucide-react';
+import { ArrowLeft, X, Check, Plus, Airplay, Type, FileText, ChevronDown, ChevronUp, Circle, CheckSquare, FolderOpen, Image, Phone, Calendar, MessageSquare, ClipboardList, Video, Trash2, MoveUp, MoveDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTemplates, ModuleTemplate } from '../hooks/useTemplates';
 import GenericModuleRenderer from './GenericModuleRenderer';
 
 // Assessment Screen Types
 type AssessmentScreenType = 'welcome' | 'best-worst' | 'agree-scale' | 'single-select';
+
+// Video Interview Step Types
+type VideoInterviewStepType = 'question';
+
+interface VideoInterviewStep {
+  id: string;
+  type: VideoInterviewStepType;
+  title: string;
+  content: {
+    question?: string;
+    timeLimit?: number;
+    attempts?: number;
+  };
+}
 
 interface AssessmentScreen {
   id: string;
@@ -562,6 +576,193 @@ const AssessmentConfiguration: React.FC<AssessmentConfigurationProps> = ({ quest
   );
 };
 
+interface VideoInterviewConfigurationProps {
+  question: any;
+  onUpdate: (config: any) => void;
+}
+
+const VideoInterviewConfiguration: React.FC<VideoInterviewConfigurationProps> = ({ question, onUpdate }) => {
+  const [steps, setSteps] = useState<VideoInterviewStep[]>(
+    question.videoInterviewConfig?.steps || [
+      {
+        id: 'question-1',
+        type: 'question',
+        title: 'Question 1',
+        content: {
+          question: 'What role do you believe technology (e.g., CRM systems, analytics) plays in modern sales management?',
+          timeLimit: 90,
+          attempts: 3
+        }
+      }
+    ]
+  );
+
+  const updateSteps = (newSteps: VideoInterviewStep[]) => {
+    setSteps(newSteps);
+    onUpdate({ steps: newSteps });
+  };
+
+  const addStep = () => {
+    const newStep: VideoInterviewStep = {
+      id: `question-${Date.now()}`,
+      type: 'question',
+      title: `Question ${steps.length + 1}`,
+      content: {
+        question: 'Enter your interview question here...',
+        timeLimit: 90,
+        attempts: 3
+      }
+    };
+    updateSteps([...steps, newStep]);
+  };
+
+  const removeStep = (stepId: string) => {
+    updateSteps(steps.filter(s => s.id !== stepId));
+  };
+
+  const moveStepUp = (index: number) => {
+    if (index === 0) return;
+    const newSteps = [...steps];
+    [newSteps[index], newSteps[index - 1]] = [newSteps[index - 1], newSteps[index]];
+    updateSteps(newSteps);
+  };
+
+  const moveStepDown = (index: number) => {
+    if (index === steps.length - 1) return;
+    const newSteps = [...steps];
+    [newSteps[index], newSteps[index + 1]] = [newSteps[index + 1], newSteps[index]];
+    updateSteps(newSteps);
+  };
+
+  const updateStep = (stepId: string, updates: Partial<VideoInterviewStep>) => {
+    const newSteps = steps.map(s => 
+      s.id === stepId ? { ...s, ...updates } : s
+    );
+    updateSteps(newSteps);
+  };
+
+  const updateStepContent = (stepId: string, contentUpdates: Partial<VideoInterviewStep['content']>) => {
+    const newSteps = steps.map(s => 
+      s.id === stepId 
+        ? { ...s, content: { ...s.content, ...contentUpdates } }
+        : s
+    );
+    updateSteps(newSteps);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <label className="block text-xs font-medium text-gray-600">Video Interview Questions</label>
+        <button
+          onClick={addStep}
+          className="text-xs text-indigo-600 hover:text-indigo-700 border border-indigo-200 rounded px-2 py-1 bg-white"
+        >
+          + Add Question
+        </button>
+      </div>
+
+      <div className="space-y-3">
+        {steps.map((step, index) => (
+          <div key={step.id} className="border border-gray-200 rounded-lg p-4 bg-white">
+            {/* Step Header */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-gray-700">{step.title}</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={() => moveStepUp(index)}
+                  disabled={index === 0}
+                  className={`p-1 rounded transition-colors duration-200 ${
+                    index === 0 
+                      ? 'text-gray-300 cursor-not-allowed' 
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                  }`}
+                  title="Move up"
+                >
+                  <MoveUp className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => moveStepDown(index)}
+                  disabled={index === steps.length - 1}
+                  className={`p-1 rounded transition-colors duration-200 ${
+                    index === steps.length - 1
+                      ? 'text-gray-300 cursor-not-allowed' 
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                  }`}
+                  title="Move down"
+                >
+                  <MoveDown className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => removeStep(step.id)}
+                  className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                  title="Remove question"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Step Configuration */}
+            <div className="space-y-3">
+              {/* Question Title */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Question Title</label>
+                <input
+                  type="text"
+                  value={step.title}
+                  onChange={(e) => updateStep(step.id, { title: e.target.value })}
+                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+
+              {/* Question Text */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Question</label>
+                <textarea
+                  value={step.content.question || ''}
+                  onChange={(e) => updateStepContent(step.id, { question: e.target.value })}
+                  rows={3}
+                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
+                  placeholder="Enter your interview question here..."
+                />
+              </div>
+
+              {/* Time Limit and Attempts */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Time Limit (seconds)</label>
+                  <input
+                    type="number"
+                    value={step.content.timeLimit || 90}
+                    onChange={(e) => updateStepContent(step.id, { timeLimit: parseInt(e.target.value) || 90 })}
+                    min="30"
+                    max="600"
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Attempts</label>
+                  <input
+                    type="number"
+                    value={step.content.attempts || 3}
+                    onChange={(e) => updateStepContent(step.id, { attempts: parseInt(e.target.value) || 3 })}
+                    min="1"
+                    max="10"
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export default function ModuleTemplatesPage() {
   const { templates, loading, error, createTemplate, updateTemplate, deleteTemplate } = useTemplates();
   const [selectedTemplate, setSelectedTemplate] = useState<ModuleTemplate | null>(null);
@@ -585,10 +786,13 @@ export default function ModuleTemplatesPage() {
     setSaveFeedback('saving');
     try {
       if (isCreatingNew) {
+        // Generate unique component name based on module name
+        const componentName = generateUniqueComponentName(editedTemplate.name, templates);
+        
         await createTemplate({
           name: editedTemplate.name,
           description: editedTemplate.description,
-          component: editedTemplate.component,
+          component: componentName,
           content: editedTemplate.content
         });
         setIsCreatingNew(false);
@@ -615,12 +819,31 @@ export default function ModuleTemplatesPage() {
   };
 
 
+  const generateUniqueComponentName = (baseName: string, existingTemplates: ModuleTemplate[]): string => {
+    // Convert module name to a valid component name (remove spaces, special chars, capitalize)
+    const cleanName = baseName
+      .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters
+      .replace(/\s+/g, '') // Remove spaces
+      .replace(/^[a-z]/, (char) => char.toUpperCase()); // Capitalize first letter
+    
+    let componentName = cleanName || 'CustomStep';
+    let counter = 1;
+    
+    // Check if component name already exists and add number if needed
+    while (existingTemplates.some(template => template.component === componentName)) {
+      componentName = `${cleanName || 'CustomStep'}${counter}`;
+      counter++;
+    }
+    
+    return componentName;
+  };
+
   const handleCreateNew = () => {
     const newTemplate: ModuleTemplate = {
       id: '',
       name: 'New Module',
       description: 'Custom module description',
-      component: 'CustomStep', // Provide a default component name
+      component: '', // Will be generated when saving
       content: {
         title: 'New Module Title',
         subtitle: 'Module subtitle',
@@ -970,6 +1193,9 @@ export default function ModuleTemplatesPage() {
                           onChange={(e) => updateEditedTemplate('name', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
+                        <p className="text-xs text-gray-500 mt-1">
+                          A unique component name will be automatically generated based on this name
+                        </p>
                       </div>
 
                       <div>
@@ -1021,7 +1247,7 @@ export default function ModuleTemplatesPage() {
                         </div>
 
                         {/* Questions */}
-                        {(editedTemplate?.content.questions !== undefined || editedTemplate?.component === 'InterviewSchedulingStep' || editedTemplate?.component === 'AssessmentStep') && (
+                        {(editedTemplate?.content.questions !== undefined || editedTemplate?.component === 'InterviewSchedulingStep' || editedTemplate?.component === 'AssessmentStep' || editedTemplate?.component === 'VideoInterviewStep') && (
                           <div>
                             <div className="flex items-center justify-between mb-3">
                               <h5 className="text-sm font-medium text-gray-700">Elements</h5>
@@ -1064,6 +1290,7 @@ export default function ModuleTemplatesPage() {
                                               {question.type === 'interview-scheduler' && <Calendar className="w-4 h-4" />}
                                               {question.type === 'message' && <MessageSquare className="w-4 h-4" />}
                                               {question.type === 'assessment' && <ClipboardList className="w-4 h-4" />}
+                                              {question.type === 'video-interview' && <Video className="w-4 h-4" />}
                                               <span>
                                                 {question.type === 'text' && 'Text input'}
                                                 {question.type === 'textarea' && 'Textarea'}
@@ -1076,6 +1303,7 @@ export default function ModuleTemplatesPage() {
                                                 {question.type === 'interview-scheduler' && 'Interview Scheduler'}
                                                 {question.type === 'message' && 'Message'}
                                                 {question.type === 'assessment' && 'Assessments'}
+                                                {question.type === 'video-interview' && 'Video Interview'}
                                               </span>
                                             </div>
                                             <ChevronDown className="w-4 h-4 ml-2 text-indigo-700" />
@@ -1194,6 +1422,16 @@ export default function ModuleTemplatesPage() {
                                                 <ClipboardList className="w-4 h-4" />
                                                 <span>Assessments</span>
                                               </div>
+                                              <div 
+                                                className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                                                onClick={() => {
+                                                  updateQuestion(question.id, 'type', 'video-interview');
+                                                  updateQuestion(question.id, 'typeSelectorOpen', false);
+                                                }}
+                                              >
+                                                <Video className="w-4 h-4" />
+                                                <span>Video Interview</span>
+                                              </div>
                                             </div>
                                           )}
                                         </div>
@@ -1239,7 +1477,7 @@ export default function ModuleTemplatesPage() {
                                       </div>
                                       
                                       {/* Question Text Input - Only for non-image, non-message, and non-assessment types */}
-                                      {question.type !== 'image' && question.type !== 'message' && question.type !== 'interview-scheduler' && question.type !== 'assessment' && (
+                                      {question.type !== 'image' && question.type !== 'message' && question.type !== 'interview-scheduler' && question.type !== 'assessment' && question.type !== 'video-interview' && (
                                         <div className="mb-3">
                                           <input
                                             type="text"
@@ -1266,6 +1504,16 @@ export default function ModuleTemplatesPage() {
                                           <AssessmentConfiguration
                                             question={question}
                                             onUpdate={(updatedQuestion) => updateQuestion(question.id, 'assessmentConfig', updatedQuestion)}
+                                          />
+                                        </div>
+                                      )}
+
+                                      {/* Video Interview Configuration - Only for video-interview type */}
+                                      {question.type === 'video-interview' && (
+                                        <div className="mt-3">
+                                          <VideoInterviewConfiguration
+                                            question={question}
+                                            onUpdate={(updatedQuestion) => updateQuestion(question.id, 'videoInterviewConfig', updatedQuestion)}
                                           />
                                         </div>
                                       )}

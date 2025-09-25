@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, RotateCcw, Plus, Type, FileText, ChevronDown, Circle, CheckSquare, FolderOpen, Image, Phone, Calendar, MessageSquare, ClipboardList, ChevronUp, ChevronDown as ChevronDownIcon, MoveUp, MoveDown, Trash2 } from 'lucide-react';
+import { X, RotateCcw, Plus, Type, FileText, ChevronDown, Circle, CheckSquare, FolderOpen, Image, Phone, Calendar, MessageSquare, ClipboardList, Video, ChevronUp, ChevronDown as ChevronDownIcon, MoveUp, MoveDown, Trash2 } from 'lucide-react';
 import { FlowModule } from '../types/flow';
 import { ModuleTemplate } from '../hooks/useTemplates';
 
@@ -10,7 +10,7 @@ interface LocalOverrides {
   questions: Array<{
     id: string;
     text: string;
-    type: 'text' | 'select' | 'radio' | 'checkbox' | 'textarea' | 'file' | 'image' | 'phone' | 'interview-scheduler' | 'message' | 'assessment';
+    type: 'text' | 'select' | 'radio' | 'checkbox' | 'textarea' | 'file' | 'image' | 'phone' | 'interview-scheduler' | 'message' | 'assessment' | 'video-interview';
     options?: string[];
     required?: boolean;
     halfWidth?: boolean;
@@ -605,6 +605,207 @@ const AssessmentConfiguration: React.FC<AssessmentConfigurationProps> = ({ quest
   );
 };
 
+// Video Interview Step Types
+type VideoInterviewStepType = 'question';
+
+interface VideoInterviewStep {
+  id: string;
+  type: VideoInterviewStepType;
+  title: string;
+  content: {
+    question?: string;
+    timeLimit?: number;
+    attempts?: number;
+  };
+}
+
+interface VideoInterviewConfigurationProps {
+  question: any;
+  onUpdate: (config: any) => void;
+}
+
+const VideoInterviewConfiguration: React.FC<VideoInterviewConfigurationProps> = ({ question, onUpdate }) => {
+  const [steps, setSteps] = useState<VideoInterviewStep[]>(
+    question.videoInterviewConfig?.steps || [
+      {
+        id: 'question-1',
+        type: 'question',
+        title: 'Question 1',
+        content: {
+          question: 'What role do you believe technology (e.g., CRM systems, analytics) plays in modern sales management?',
+          timeLimit: 90,
+          attempts: 3
+        }
+      }
+    ]
+  );
+
+  const updateSteps = (newSteps: VideoInterviewStep[]) => {
+    setSteps(newSteps);
+    onUpdate({ steps: newSteps });
+  };
+
+  const addStep = () => {
+    const newStep: VideoInterviewStep = {
+      id: `question-${Date.now()}`,
+      type: 'question',
+      title: `Question ${steps.length + 1}`,
+      content: {
+        question: 'Enter your interview question here...',
+        timeLimit: 90,
+        attempts: 3
+      }
+    };
+    updateSteps([...steps, newStep]);
+  };
+
+  const removeStep = (stepId: string) => {
+    updateSteps(steps.filter(s => s.id !== stepId));
+  };
+
+  const moveStepUp = (index: number) => {
+    if (index === 0) return;
+    const newSteps = [...steps];
+    [newSteps[index], newSteps[index - 1]] = [newSteps[index - 1], newSteps[index]];
+    updateSteps(newSteps);
+  };
+
+  const moveStepDown = (index: number) => {
+    if (index === steps.length - 1) return;
+    const newSteps = [...steps];
+    [newSteps[index], newSteps[index + 1]] = [newSteps[index + 1], newSteps[index]];
+    updateSteps(newSteps);
+  };
+
+  const updateStep = (stepId: string, updates: Partial<VideoInterviewStep>) => {
+    const newSteps = steps.map(s => 
+      s.id === stepId ? { ...s, ...updates } : s
+    );
+    updateSteps(newSteps);
+  };
+
+  const updateStepContent = (stepId: string, contentUpdates: Partial<VideoInterviewStep['content']>) => {
+    const newSteps = steps.map(s => 
+      s.id === stepId 
+        ? { ...s, content: { ...s.content, ...contentUpdates } }
+        : s
+    );
+    updateSteps(newSteps);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <label className="block text-xs font-medium text-gray-600">Video Interview Questions</label>
+        <button
+          onClick={addStep}
+          className="text-xs text-indigo-600 hover:text-indigo-700 border border-indigo-200 rounded px-2 py-1 bg-white"
+        >
+          + Add Question
+        </button>
+      </div>
+
+      <div className="space-y-3">
+        {steps.map((step, index) => (
+          <div key={step.id} className="border border-gray-200 rounded-lg p-4 bg-white">
+            {/* Step Header */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-gray-700">{step.title}</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={() => moveStepUp(index)}
+                  disabled={index === 0}
+                  className={`p-1 rounded transition-colors duration-200 ${
+                    index === 0 
+                      ? 'text-gray-300 cursor-not-allowed' 
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                  }`}
+                  title="Move up"
+                >
+                  <MoveUp className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => moveStepDown(index)}
+                  disabled={index === steps.length - 1}
+                  className={`p-1 rounded transition-colors duration-200 ${
+                    index === steps.length - 1
+                      ? 'text-gray-300 cursor-not-allowed' 
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                  }`}
+                  title="Move down"
+                >
+                  <MoveDown className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => removeStep(step.id)}
+                  className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                  title="Remove question"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Step Configuration */}
+            <div className="space-y-3">
+              {/* Question Title */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Question Title</label>
+                <input
+                  type="text"
+                  value={step.title}
+                  onChange={(e) => updateStep(step.id, { title: e.target.value })}
+                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+
+              {/* Question Text */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Question</label>
+                <textarea
+                  value={step.content.question || ''}
+                  onChange={(e) => updateStepContent(step.id, { question: e.target.value })}
+                  rows={3}
+                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
+                  placeholder="Enter your interview question here..."
+                />
+              </div>
+
+              {/* Time Limit and Attempts */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Time Limit (sec)</label>
+                  <input
+                    type="number"
+                    value={step.content.timeLimit || 90}
+                    onChange={(e) => updateStepContent(step.id, { timeLimit: parseInt(e.target.value) || 90 })}
+                    min="30"
+                    max="600"
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Attempts</label>
+                  <input
+                    type="number"
+                    value={step.content.attempts || 3}
+                    onChange={(e) => updateStepContent(step.id, { attempts: parseInt(e.target.value) || 3 })}
+                    min="1"
+                    max="10"
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 interface ModuleConfigPanelProps {
   isOpen: boolean;
   onClose: () => void;
@@ -780,8 +981,8 @@ export default function ModuleConfigPanel({
 
       {/* Content */}
       <div className="p-6 pt-4 space-y-6">
-        {/* Basic Fields - Hidden for Assessment modules */}
-        {module.component !== 'AssessmentStep' && (
+        {/* Basic Fields - Hidden for Assessment and Video Interview modules */}
+        {module.component !== 'AssessmentStep' && !localOverrides.questions.some(q => q.type === 'video-interview') && (
           <div className="space-y-3">
             {/* <h3 className="text-md font-medium text-gray-900">Basic Configuration</h3> */}
             
@@ -867,6 +1068,7 @@ export default function ModuleConfigPanel({
     {question.type === 'interview-scheduler' && <Calendar className="w-4 h-4" />}
     {question.type === 'message' && <MessageSquare className="w-4 h-4" />}
     {question.type === 'assessment' && <ClipboardList className="w-4 h-4" />}
+    {question.type === 'video-interview' && <Video className="w-4 h-4" />}
     <span>
       {question.type === 'text' && 'Text input'}
       {question.type === 'textarea' && 'Text Area'}
@@ -879,6 +1081,7 @@ export default function ModuleConfigPanel({
       {question.type === 'interview-scheduler' && 'Interview Scheduler'}
       {question.type === 'message' && 'Message'}
       {question.type === 'assessment' && 'Assessments'}
+      {question.type === 'video-interview' && 'Video Interview'}
     </span>
   </div>
   <ChevronDown className="w-4 h-4 ml-2 text-indigo-700" />
@@ -1010,6 +1213,17 @@ export default function ModuleConfigPanel({
                       <ClipboardList className="w-4 h-4" />
                       <span>Assessments</span>
                     </div>
+                    <div 
+                      className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        updateQuestion(index, 'type', 'video-interview');
+                        updateQuestion(index, 'typeSelectorOpen', false);
+                      }}
+                    >
+                      <Video className="w-4 h-4" />
+                      <span>Video Interview</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1050,8 +1264,8 @@ export default function ModuleConfigPanel({
               </div>
               {/* Element Type Selector */}
              
-              {/* Element Text Input - Hidden for image, message, and assessment types */}
-              {question.type !== 'image' && question.type !== 'message' && question.type !== 'assessment' && (
+              {/* Element Text Input - Hidden for image, message, assessment, and video-interview types */}
+              {question.type !== 'image' && question.type !== 'message' && question.type !== 'assessment' && question.type !== 'video-interview' && (
                 <input
                   type="text"
                   value={question.text}
@@ -1067,6 +1281,16 @@ export default function ModuleConfigPanel({
                   <AssessmentConfiguration
                     question={question}
                     onUpdate={(updatedQuestion) => updateQuestion(index, 'assessmentConfig', updatedQuestion)}
+                  />
+                </div>
+              )}
+
+              {/* Video Interview Configuration - Only for video-interview type */}
+              {question.type === 'video-interview' && (
+                <div className="mt-3">
+                  <VideoInterviewConfiguration
+                    question={question}
+                    onUpdate={(updatedQuestion) => updateQuestion(index, 'videoInterviewConfig', updatedQuestion)}
                   />
                 </div>
               )}

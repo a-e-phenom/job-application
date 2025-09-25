@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Check, Upload, X, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, ArrowLeft } from 'lucide-react';
 import { ModuleTemplate } from '../hooks/useTemplates';
+import VideoInterviewStep from './VideoInterviewStep';
 
 interface GenericModuleRendererProps {
   template: ModuleTemplate;
@@ -1284,6 +1285,19 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
           />
         );
 
+      case 'video-interview':
+        return (
+          <VideoInterviewStep
+            key={question.id}
+            data={{}}
+            onUpdate={() => {}}
+            onValidate={() => {}}
+            primaryColor={primaryColor}
+            onNext={onNext || (() => {})}
+            template={template}
+          />
+        );
+
       case 'message':
         return (
           <div
@@ -1346,7 +1360,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
       // Render single question (full width or half width but no consecutive half)
       elements.push(
         <div key={question.id} className="space-y-2">
-          {question.type !== 'checkbox' && question.type !== 'message' && question.type !== 'image' && question.type !== 'assessment' && (
+          {question.type !== 'checkbox' && question.type !== 'message' && question.type !== 'image' && question.type !== 'assessment' && question.type !== 'video-interview' && (
             <label className="block text-[14px] text-[#464F5E] mb-2">
               {question.text}
               {question.required && <span className="text-red-500 ml-1"></span>}
@@ -1364,8 +1378,8 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
 
   return (
     <div className="w-full">
-      {/* Title and Subtitle for all modules except Assessment */}
-      {template.component !== 'AssessmentStep' && (
+      {/* Title and Subtitle for all modules except Assessment and Video Interview */}
+      {template.component !== 'AssessmentStep' && !questions.some(q => q.type === 'video-interview') && (
         <div className={`mb-8 ${template.content.centerTitle ? 'text-center' : ''}`}>
           {template.content.title && (
             <h2 className="text-[18px] font-semibold text-[#353B46] mb-1">
