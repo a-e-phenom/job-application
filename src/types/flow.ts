@@ -10,6 +10,7 @@ export interface FlowModule {
     subtitle?: string;
     instructions?: string;
     centerTitle?: boolean;
+    comments?: string;
     questions?: Array<{
       id: string;
       text: string;

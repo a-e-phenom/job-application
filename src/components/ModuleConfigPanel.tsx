@@ -8,6 +8,7 @@ interface LocalOverrides {
   title: string;
   subtitle: string;
   centerTitle: boolean;
+  comments: string;
   questions: Array<{
     id: string;
     text: string;
@@ -826,6 +827,7 @@ export default function ModuleConfigPanel({
     title: '',
     subtitle: '',
     centerTitle: false,
+    comments: '',
     questions: []
   });
     const [hasChanges, setHasChanges] = useState(false);
@@ -846,6 +848,7 @@ export default function ModuleConfigPanel({
       title: module.templateOverrides?.title || globalTemplate?.content.title || '',
       subtitle: module.templateOverrides?.subtitle || globalTemplate?.content.subtitle || '',
       centerTitle: module.templateOverrides?.centerTitle || globalTemplate?.content.centerTitle || false,
+      comments: module.templateOverrides?.comments || '',
       questions
     };
     
@@ -878,6 +881,7 @@ export default function ModuleConfigPanel({
       title: globalTemplate?.content.title || '',
       subtitle: globalTemplate?.content.subtitle || '',
       centerTitle: globalTemplate?.content.centerTitle || false,
+      comments: '',
       questions: globalTemplate?.content.questions || []
     };
     setLocalOverrides(initialOverrides);
@@ -982,6 +986,20 @@ export default function ModuleConfigPanel({
 
       {/* Content */}
       <div className="p-6 pt-4 space-y-6">
+        {/* Comments */}
+        <div className="space-y-0">
+          <div className="bg-indigo-50 rounded-lg px-2 pb-1 pt-1">
+          <h3 className="text-xs font-medium text-gray-900 pl-1 py-1 mb-1">Comments</h3>
+            <textarea
+              value={localOverrides.comments}
+              onChange={(e) => updateField('comments', e.target.value)}
+              placeholder="Add comments/notes for this page..."
+              rows={3}
+              className="w-full px-3 py-2 text-sm  rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white resize-vertical"
+            />
+          </div>
+        </div>
+
         {/* Basic Fields - Hidden for Assessment and Video Interview modules */}
         {module.component !== 'AssessmentStep' && !localOverrides.questions.some(q => q.type === 'video-interview') && (
           <div className="space-y-3">
