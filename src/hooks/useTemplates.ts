@@ -22,6 +22,11 @@ export interface ModuleTemplate {
       content?: string;
       typeSelectorOpen?: boolean;
     }>;
+    customButtons?: Array<{
+      id: string;
+      label: string;
+      isPrimary: boolean;
+    }>;
     customFields?: Record<string, any>;
   };
   isDefault: boolean;

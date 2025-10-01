@@ -587,7 +587,8 @@ export default function ApplicationFlow() {
 
       {/* Footer Navigation */}
       {currentFlowStep?.modules[currentSubStep]?.component !== 'ThankYouStep' && 
-       currentFlowStep?.modules[currentSubStep]?.component !== 'AssessmentStep' && (
+       currentFlowStep?.modules[currentSubStep]?.component !== 'AssessmentStep' &&
+       currentFlowStep?.modules[currentSubStep]?.component !== 'MultibuttonModule' && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4">
         <div className="mx-auto flex justify-end items-center space-x-3">
           

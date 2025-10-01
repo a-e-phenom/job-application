@@ -786,6 +786,8 @@ export default function ModuleTemplatesPage() {
 
     setSaveFeedback('saving');
     try {
+      console.log('Saving template with content:', editedTemplate.content);
+      
       if (isCreatingNew) {
         // Generate unique component name based on module name
         const componentName = generateUniqueComponentName(editedTemplate.name, templates);
@@ -947,6 +949,8 @@ export default function ModuleTemplatesPage() {
 
   const updateQuestion = (questionId: string, field: string, value: any) => {
     if (!editedTemplate) return;
+    
+    console.log('updateQuestion called:', { questionId, field, value });
     
     setEditedTemplate(prev => ({
       ...prev!,
@@ -1247,6 +1251,140 @@ export default function ModuleTemplatesPage() {
                           </label>
                         </div>
 
+                        {/* Custom Buttons - Only for MultibuttonModule */}
+                        {editedTemplate?.component === 'MultibuttonModule' && (
+                          <div className="mb-6">
+                            <div className="flex items-center justify-between mb-3">
+                              <h5 className="text-sm font-medium text-gray-700">Custom Buttons</h5>
+                              <button
+                                onClick={() => {
+                                  const currentButtons = (editedTemplate?.content as any)?.customButtons || [];
+                                  const newButton = {
+                                    id: `button-${Date.now()}`,
+                                    label: `Button ${currentButtons.length + 1}`,
+                                    isPrimary: currentButtons.length === 0 // First button is primary by default
+                                  };
+                                  updateEditedTemplate('content.customButtons', [...currentButtons, newButton]);
+                                }}
+                                className="text-sm text-indigo-600 hover:text-indigo-700"
+                              >
+                                + Add Button
+                              </button>
+                            </div>
+                            
+                            <div className="space-y-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                              {((editedTemplate?.content as any)?.customButtons || [
+                                { id: 'button1', label: 'Button 1', isPrimary: true },
+                                { id: 'button2', label: 'Button 2', isPrimary: false }
+                              ]).map((button: { id: string; label: string; isPrimary: boolean }, index: number) => (
+                                <div key={button.id} className="bg-white rounded-lg p-3 border border-gray-200">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm font-medium text-gray-700">Button {index + 1}</span>
+                                    <div className="flex items-center space-x-2">
+                                      {/* Move Up Button */}
+                                      <button
+                                        onClick={() => {
+                                          const buttons = [...((editedTemplate?.content as any)?.customButtons || [])];
+                                          if (index > 0) {
+                                            [buttons[index], buttons[index - 1]] = [buttons[index - 1], buttons[index]];
+                                            updateEditedTemplate('content.customButtons', buttons);
+                                          }
+                                        }}
+                                        disabled={index === 0}
+                                        className={`p-1 rounded transition-colors duration-200 ${
+                                          index === 0 
+                                            ? 'text-gray-300 cursor-not-allowed' 
+                                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                                        }`}
+                                        title="Move up"
+                                      >
+                                        <MoveUp className="w-4 h-4" />
+                                      </button>
+                                      
+                                      {/* Move Down Button */}
+                                      <button
+                                        onClick={() => {
+                                          const buttons = [...((editedTemplate?.content as any)?.customButtons || [])];
+                                          if (index < buttons.length - 1) {
+                                            [buttons[index], buttons[index + 1]] = [buttons[index + 1], buttons[index]];
+                                            updateEditedTemplate('content.customButtons', buttons);
+                                          }
+                                        }}
+                                        disabled={index === ((editedTemplate?.content as any)?.customButtons || []).length - 1}
+                                        className={`p-1 rounded transition-colors duration-200 ${
+                                          index === ((editedTemplate?.content as any)?.customButtons || []).length - 1
+                                            ? 'text-gray-300 cursor-not-allowed' 
+                                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                                        }`}
+                                        title="Move down"
+                                      >
+                                        <MoveDown className="w-4 h-4" />
+                                      </button>
+                                      
+                                      {/* Delete Button */}
+                                      <button
+                                        onClick={() => {
+                                          const buttons = (editedTemplate?.content.customButtons || []).filter((b: { id: string; label: string; isPrimary: boolean }) => b.id !== button.id);
+                                          updateEditedTemplate('content.customButtons', buttons);
+                                        }}
+                                        className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                                        title="Delete button"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="space-y-3">
+                                    {/* Button Label */}
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">Button Label</label>
+                                      <input
+                                        type="text"
+                                        value={button.label}
+                                        onChange={(e) => {
+                                          const buttons = [...((editedTemplate?.content as any)?.customButtons || [])];
+                                          buttons[index] = { ...button, label: e.target.value };
+                                          updateEditedTemplate('content.customButtons', buttons);
+                                        }}
+                                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                      />
+                                    </div>
+                                    
+                                    {/* Primary Button Checkbox */}
+                                    <div>
+                                      <label className="flex items-center">
+                                        <input
+                                          type="checkbox"
+                                          checked={button.isPrimary}
+                                          onChange={(e) => {
+                                            const buttons = [...((editedTemplate?.content as any)?.customButtons || [])];
+                                            if (e.target.checked) {
+                                              // If this button is being set as primary, uncheck all others
+                                              buttons.forEach((b, i) => {
+                                                buttons[i] = { ...b, isPrimary: i === index };
+                                              });
+                                            } else {
+                                              // If this button is being unchecked, make the first button primary
+                                              buttons[index] = { ...button, isPrimary: false };
+                                              if (buttons.length > 0) {
+                                                buttons[0] = { ...buttons[0], isPrimary: true };
+                                              }
+                                            }
+                                            updateEditedTemplate('content.customButtons', buttons);
+                                          }}
+                                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                        />
+                                        <span className="ml-2 text-xs text-gray-600">This is the primary button</span>
+                                      </label>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Questions */}
                         {(editedTemplate?.content.questions !== undefined || editedTemplate?.component === 'InterviewSchedulingStep' || editedTemplate?.component === 'AssessmentStep' || editedTemplate?.component === 'VideoInterviewStep') && (
                           <div>
@@ -1536,9 +1674,18 @@ export default function ModuleTemplatesPage() {
                                                     const before = text.substring(0, start);
                                                     const selected = text.substring(start, end);
                                                     const after = text.substring(end);
-                                                    textarea.value = before + '**' + selected + '**' + after;
-                                                    textarea.focus();
-                                                    textarea.setSelectionRange(start + 2, end + 2);
+                                                    const newValue = before + '**' + selected + '**' + after;
+                                                    
+                                                    console.log('Bold button clicked:', { selected, newValue });
+                                                    
+                                                    // Update the React state
+                                                    updateQuestion(question.id, 'content', newValue);
+                                                    
+                                                    // Update the textarea and restore selection
+                                                    setTimeout(() => {
+                                                      textarea.focus();
+                                                      textarea.setSelectionRange(start + 2, end + 2);
+                                                    }, 0);
                                                   }
                                                 }}
                                                 className="px-3 py-2 text-sm font-semibold hover:bg-gray-100 transition-colors duration-200"
@@ -1557,9 +1704,16 @@ export default function ModuleTemplatesPage() {
                                                     const before = text.substring(0, start);
                                                     const selected = text.substring(start, end);
                                                     const after = text.substring(end);
-                                                    textarea.value = before + '*' + selected + '*' + after;
-                                                    textarea.focus();
-                                                    textarea.setSelectionRange(start + 1, end + 1);
+                                                    const newValue = before + '*' + selected + '*' + after;
+                                                    
+                                                    // Update the React state
+                                                    updateQuestion(question.id, 'content', newValue);
+                                                    
+                                                    // Update the textarea and restore selection
+                                                    setTimeout(() => {
+                                                      textarea.focus();
+                                                      textarea.setSelectionRange(start + 1, end + 1);
+                                                    }, 0);
                                                   }
                                                 }}
                                                 className="px-3 py-2 text-sm italic hover:bg-gray-100 transition-colors duration-200"
@@ -1567,85 +1721,21 @@ export default function ModuleTemplatesPage() {
                                               >
                                                 I
                                               </button>
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  const textarea = document.getElementById(`message-${question.id}`) as HTMLTextAreaElement;
-                                                  if (textarea) {
-                                                    const start = textarea.selectionStart;
-                                                    const end = textarea.selectionEnd;
-                                                    const text = textarea.value;
-                                                    const before = text.substring(0, start);
-                                                    const selected = text.substring(start, end);
-                                                    const after = text.substring(end);
-                                                    textarea.value = before + '\n' + selected + '\n' + after;
-                                                    textarea.focus();
-                                                    textarea.setSelectionRange(start + 1, end + 1);
-                                                  }
-                                                }}
-                                                className="px-3 py-2 text-sm hover:bg-gray-100 transition-colors duration-200"
-                                                title="New Line"
-                                              >
-                                                ↵
-                                              </button>
-                                              
-                                              {/* Text Alignment Buttons */}
-                                              <div className="flex border-l border-gray-300 ml-2">
-                                                <button
-                                                  type="button"
-                                                  onClick={() => {
-                                                    const textarea = document.getElementById(`message-${question.id}`) as HTMLTextAreaElement;
-                                                    if (textarea) {
-                                                      const start = textarea.selectionStart;
-                                                      const end = textarea.selectionEnd;
-                                                      const text = textarea.value;
-                                                      const before = text.substring(0, start);
-                                                      const selected = text.substring(start, end);
-                                                      const after = text.substring(end);
-                                                      textarea.value = before + '<left>' + selected + '</left>' + after;
-                                                      textarea.focus();
-                                                      textarea.setSelectionRange(start + 7, end + 7);
-                                                    }
-                                                  }}
-                                                  className="px-3 py-2 text-sm hover:bg-gray-100 transition-colors duration-200 border-r border-gray-300"
-                                                  title="Left Align"
-                                                >
-                                                  ←
-                                                </button>
-                                                <button
-                                                  type="button"
-                                                  onClick={() => {
-                                                    const textarea = document.getElementById(`message-${question.id}`) as HTMLTextAreaElement;
-                                                    if (textarea) {
-                                                      const start = textarea.selectionStart;
-                                                      const end = textarea.selectionEnd;
-                                                      const text = textarea.value;
-                                                      const before = text.substring(0, start);
-                                                      const selected = text.substring(start, end);
-                                                      const after = text.substring(end);
-                                                      textarea.value = before + '<center>' + selected + '</center>' + after;
-                                                      textarea.focus();
-                                                      textarea.setSelectionRange(start + 8, end + 8);
-                                                    }
-                                                  }}
-                                                  className="px-3 py-2 text-sm hover:bg-gray-100 transition-colors duration-200"
-                                                  title="Center Align"
-                                                >
-                                                  ↔
-                                                </button>
-                                              </div>
                                             </div>
                                             <textarea
                                               id={`message-${question.id}`}
                                               value={question.content || ''}
-                                              onChange={(e) => updateQuestion(question.id, 'content', e.target.value)}
-                                              placeholder="Enter your message content. Use **bold**, *italic*, and newlines for formatting."
-                                              rows={6}
+                                              onChange={(e) => {
+                                                console.log('Textarea onChange:', e.target.value);
+                                                updateQuestion(question.id, 'content', e.target.value);
+                                              }}
+                                              placeholder="Enter your message content. Use **bold** and *italic* for formatting."
+                                              rows={4}
                                               className="w-full px-3 py-2 border-0 focus:outline-none focus:ring-0 resize-vertical"
                                             />
                                           </div>
                                           <p className="text-xs text-gray-500 mt-1">
-                                            Use **text** for bold, *text* for italic, press Enter for new lines, and select text + click alignment buttons for positioning
+                                            Use **text** for bold and *text* for italic formatting
                                           </p>
                                         </div>
                                       )}

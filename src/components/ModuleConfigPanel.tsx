@@ -9,6 +9,11 @@ interface LocalOverrides {
   subtitle: string;
   centerTitle: boolean;
   comments: string;
+  customButtons?: Array<{
+    id: string;
+    label: string;
+    isPrimary: boolean;
+  }>;
   questions: Array<{
     id: string;
     text: string;
@@ -828,6 +833,7 @@ export default function ModuleConfigPanel({
     subtitle: '',
     centerTitle: false,
     comments: '',
+    customButtons: [],
     questions: []
   });
     const [hasChanges, setHasChanges] = useState(false);
@@ -849,6 +855,7 @@ export default function ModuleConfigPanel({
       subtitle: module.templateOverrides?.subtitle || globalTemplate?.content.subtitle || '',
       centerTitle: module.templateOverrides?.centerTitle || globalTemplate?.content.centerTitle || false,
       comments: module.templateOverrides?.comments || '',
+      customButtons: (module.templateOverrides as any)?.customButtons || (globalTemplate?.content as any)?.customButtons || [],
       questions
     };
     
@@ -882,6 +889,7 @@ export default function ModuleConfigPanel({
       subtitle: globalTemplate?.content.subtitle || '',
       centerTitle: globalTemplate?.content.centerTitle || false,
       comments: '',
+      customButtons: (globalTemplate?.content as any)?.customButtons || [],
       questions: globalTemplate?.content.questions || []
     };
     setLocalOverrides(initialOverrides);
@@ -1044,6 +1052,141 @@ export default function ModuleConfigPanel({
                 <span className="ml-2 text-sm text-gray-700">Center title and subtitle</span>
               </label>
               
+            </div>
+          </div>
+        )}
+
+        {/* Custom Buttons - Only for MultibuttonModule */}
+        {module.component === 'MultibuttonModule' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-900">Custom Buttons</h3>
+              <button
+                onClick={() => {
+                  const currentButtons = localOverrides.customButtons || [];
+                  const newButton = {
+                    id: `button-${Date.now()}`,
+                    label: `Button ${currentButtons.length + 1}`,
+                    isPrimary: currentButtons.length === 0 // First button is primary by default
+                  };
+                  updateField('customButtons', [...currentButtons, newButton]);
+                }}
+                className="flex items-center text-indigo-600 text-sm font-medium hover:text-indigo-800 transition-colors duration-200"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add Button
+              </button>
+            </div>
+            
+            <div className="space-y-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
+              {(localOverrides.customButtons || [
+                { id: 'button1', label: 'Button 1', isPrimary: true },
+                { id: 'button2', label: 'Button 2', isPrimary: false }
+              ]).map((button: { id: string; label: string; isPrimary: boolean }, index: number) => (
+                <div key={button.id} className="bg-white rounded-lg p-3 border border-gray-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">Button {index + 1}</span>
+                    <div className="flex items-center space-x-2">
+                      {/* Move Up Button */}
+                      <button
+                        onClick={() => {
+                          const buttons = [...(localOverrides.customButtons || [])];
+                          if (index > 0) {
+                            [buttons[index], buttons[index - 1]] = [buttons[index - 1], buttons[index]];
+                            updateField('customButtons', buttons);
+                          }
+                        }}
+                        disabled={index === 0}
+                        className={`p-1 rounded transition-colors duration-200 ${
+                          index === 0 
+                            ? 'text-gray-300 cursor-not-allowed' 
+                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                        }`}
+                        title="Move up"
+                      >
+                        <MoveUp className="w-4 h-4" />
+                      </button>
+                      
+                      {/* Move Down Button */}
+                      <button
+                        onClick={() => {
+                          const buttons = [...(localOverrides.customButtons || [])];
+                          if (index < buttons.length - 1) {
+                            [buttons[index], buttons[index + 1]] = [buttons[index + 1], buttons[index]];
+                            updateField('customButtons', buttons);
+                          }
+                        }}
+                        disabled={index === (localOverrides.customButtons || []).length - 1}
+                        className={`p-1 rounded transition-colors duration-200 ${
+                          index === (localOverrides.customButtons || []).length - 1
+                            ? 'text-gray-300 cursor-not-allowed' 
+                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                        }`}
+                        title="Move down"
+                      >
+                        <MoveDown className="w-4 h-4" />
+                      </button>
+                      
+                      {/* Delete Button */}
+                      <button
+                        onClick={() => {
+                          const buttons = (localOverrides.customButtons || []).filter((b: { id: string; label: string; isPrimary: boolean }) => b.id !== button.id);
+                          updateField('customButtons', buttons);
+                        }}
+                        className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                        title="Delete button"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {/* Button Label */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Button Label</label>
+                      <input
+                        type="text"
+                        value={button.label}
+                        onChange={(e) => {
+                          const buttons = [...(localOverrides.customButtons || [])];
+                          buttons[index] = { ...button, label: e.target.value };
+                          updateField('customButtons', buttons);
+                        }}
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+                    
+                    {/* Primary Button Checkbox */}
+                    <div>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={button.isPrimary}
+                          onChange={(e) => {
+                            const buttons = [...(localOverrides.customButtons || [])];
+                            if (e.target.checked) {
+                              // If this button is being set as primary, uncheck all others
+                              buttons.forEach((b, i) => {
+                                buttons[i] = { ...b, isPrimary: i === index };
+                              });
+                            } else {
+                              // If this button is being unchecked, make the first button primary
+                              buttons[index] = { ...button, isPrimary: false };
+                              if (buttons.length > 0) {
+                                buttons[0] = { ...buttons[0], isPrimary: true };
+                              }
+                            }
+                            updateField('customButtons', buttons);
+                          }}
+                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                        />
+                        <span className="ml-2 text-xs text-gray-600">This is the primary button</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}

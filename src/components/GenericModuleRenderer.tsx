@@ -947,6 +947,7 @@ const FileUploadComponent = React.memo(({ value, onChange }: FileUploadComponent
 });
 
 export default function GenericModuleRenderer({ template, primaryColor, onNext }: GenericModuleRendererProps) {
+  
   // Handle Thank You screen separately
   if (template.component === 'ThankYouStep') {
     return (
@@ -967,13 +968,12 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
                   return (
                     <div
                       key={question.id}
-                      className="w-full px-4 py-3 text-gray-700 text-center"
+                      className="w-full px-4 py-3 text-center"
+                      style={{ color: '#464F5E' }}
                       dangerouslySetInnerHTML={{
                         __html: question.content
                           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                           .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                          .replace(/<left>(.*?)<\/left>/g, '<div style="text-align: left;">$1</div>')
-                          .replace(/<center>(.*?)<\/center>/g, '<div style="text-align: center;">$1</div>')
                           .replace(/\n/g, '<br>')
                       }}
                     />
@@ -1300,14 +1300,13 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
 
       case 'message':
         return (
-          <div
-            className="w-full px-4 py-3 text-gray-700"
+          <div 
+            className="w-full py-3"
+            style={{ color: '#464F5E' }}
             dangerouslySetInnerHTML={{
               __html: (question.content || '')
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                 .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                .replace(/<left>(.*?)<\/left>/g, '<div style="text-align: left;">$1</div>')
-                .replace(/<center>(.*?)<\/center>/g, '<div style="text-align: center;">$1</div>')
                 .replace(/\n/g, '<br>')
             }}
           />
@@ -1374,6 +1373,81 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
       );
       i += 1;
     }
+  }
+
+  // MultibuttonModule component
+  if (template.component === 'MultibuttonModule') {
+    const buttons = (template.content as any)?.customButtons || [
+      { id: 'button1', label: 'Button 1', isPrimary: true },
+      { id: 'button2', label: 'Button 2', isPrimary: false }
+    ];
+    
+    return (
+      <div className="w-full">
+        <div className="mb-8">
+          {template.content.title && (
+            <h2 className={`text-[18px] font-semibold text-[#353B46] mb-1 ${template.content.centerTitle ? 'text-center' : ''}`}>
+              {template.content.title}
+            </h2>
+          )}
+          {template.content.subtitle && (
+            <p className={`text-[14px] text-[#464F5E] mb-6 ${template.content.centerTitle ? 'text-center' : ''}`}>
+              {template.content.subtitle}
+            </p>
+          )}
+          
+          {/* Render Questions/Elements */}
+          {template.content.questions && template.content.questions.length > 0 && (
+            <div className="space-y-6">
+              {template.content.questions.map((question: any) => (
+                <div key={question.id}>
+                  {renderQuestion(question, onNext)}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        {/* Custom Footer Buttons */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4">
+          <div className="mx-auto flex justify-end items-center space-x-3">
+            {buttons.map((button: { id: string; label: string; isPrimary: boolean }) => (
+              <button
+                key={button.id}
+                onClick={() => {
+                  console.log(`Button clicked: ${button.label}`);
+                  if (onNext) {
+                    onNext();
+                  }
+                }}
+                className={`
+                  flex items-center space-x-2 px-6 py-2.5 rounded-[10px] transition-all duration-200 text-sm md:text-base
+                  ${button.isPrimary 
+                    ? 'text-white' 
+                    : 'text-[#353B46] border border-gray-300 hover:bg-gray-50'
+                  }
+                `}
+                style={{
+                  backgroundColor: button.isPrimary ? primaryColor : 'white'
+                }}
+                onMouseEnter={(e) => {
+                  if (button.isPrimary) {
+                    e.currentTarget.style.backgroundColor = `${primaryColor}CC`;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (button.isPrimary) {
+                    e.currentTarget.style.backgroundColor = primaryColor;
+                  }
+                }}
+              >
+                <span>{button.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
