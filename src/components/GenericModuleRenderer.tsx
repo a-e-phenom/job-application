@@ -1261,7 +1261,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
               <img 
                 src={question.content} 
                 alt="Element image" 
-                className="w-full h-auto rounded-lg border border-gray-200"
+                className="w-[500px] h-auto rounded-lg border border-gray-200"
               />
             </div>
           );

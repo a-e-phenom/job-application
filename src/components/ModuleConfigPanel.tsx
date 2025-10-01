@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, RotateCcw, Plus, Type, FileText, ChevronDown, Circle, CheckSquare, FolderOpen, Image, Phone, Calendar, MessageSquare, ClipboardList, Video, ChevronUp, ChevronDown as ChevronDownIcon, MoveUp, MoveDown, Trash2 } from 'lucide-react';
 import { FlowModule } from '../types/flow';
 import { ModuleTemplate } from '../hooks/useTemplates';
+import ImageUploadComponent from './ImageUploadComponent';
 
 interface LocalOverrides {
   title: string;
@@ -400,12 +401,12 @@ const AssessmentConfiguration: React.FC<AssessmentConfigurationProps> = ({ quest
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Image URL</label>
-                    <input
-                      type="text"
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Image</label>
+                    <ImageUploadComponent
                       value={screen.content.welcomeImage || ''}
-                      onChange={(e) => updateScreenContent(screen.id, { welcomeImage: e.target.value })}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      onChange={(value) => updateScreenContent(screen.id, { welcomeImage: value })}
+                      placeholder="https://example.com/welcome-image.png"
+                      label="Welcome Image"
                     />
                   </div>
                 </div>
@@ -433,12 +434,12 @@ const AssessmentConfiguration: React.FC<AssessmentConfigurationProps> = ({ quest
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Scenario Image URL</label>
-                    <input
-                      type="text"
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Scenario Image</label>
+                    <ImageUploadComponent
                       value={screen.content.scenarioImage || ''}
-                      onChange={(e) => updateScreenContent(screen.id, { scenarioImage: e.target.value })}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      onChange={(value) => updateScreenContent(screen.id, { scenarioImage: value })}
+                      placeholder="https://example.com/scenario-image.png"
+                      label="Scenario Image"
                     />
                   </div>
                   <div>
@@ -1396,7 +1397,7 @@ export default function ModuleConfigPanel({
                           <img 
                             src={question.content} 
                             alt="Uploaded image" 
-                            className="max-w-full h-auto max-h-32 rounded border"
+                            className="w-[500px] h-auto rounded border"
                           />
                         </div>
                       )}

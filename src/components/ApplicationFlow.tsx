@@ -425,9 +425,9 @@ export default function ApplicationFlow() {
   const currentFlowStep = flow.steps[currentStep];
 
   return (
-    <div className={`min-h-screen overflow-x-hidden ${currentFlowStep?.modules[currentSubStep]?.component === 'AssessmentStep' ? 'bg-white' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen ${currentFlowStep?.modules[currentSubStep]?.component === 'AssessmentStep' ? 'bg-white' : 'bg-gray-50'}`}>
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white shadow-sm">
+      <div className="sticky top-0 z-30 bg-white shadow-sm border-b border-gray-200">
         <div className="mx-auto px-6 py-4 flex items-center justify-between relative">
           <div className="flex items-center space-x-4">
             
