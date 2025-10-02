@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Upload, X, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Check, Upload, X, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, ArrowLeft, Info } from 'lucide-react';
 import { ModuleTemplate } from '../hooks/useTemplates';
 import VideoInterviewStep from './VideoInterviewStep';
 
@@ -496,6 +496,29 @@ const AssessmentComponent = React.memo(({
           
           <div className="flex items-center space-x-3">
             {currentSubStep > 0 && (
+             <div className="flex items-center space-x-2 mr-2">
+             <div className="flex items-center space-x-2">
+               <div className="relative inline-block w-[44px] h-[24px]">
+                 <input
+                   type="checkbox"
+                   className="sr-only peer"
+                   id="autoAdvance"
+                 />
+                 <label
+                   htmlFor="autoAdvance"
+                   className="block w-[44px] h-[24px] bg-gray-300 rounded-full cursor-pointer transition-colors duration-200"
+                 >
+                   <div className="w-[20px] h-[20px] bg-white rounded-full shadow-md transform transition-transform duration-200 translate-x-[2px] translate-y-[2px] peer-checked:translate-x-[22px]" />
+                 </label>
+               </div>
+               <span className="text-[12px] md:text-[14px] text-[#353B46]">Auto Advance</span>
+               <Info className="w-4 h-4 text-gray-500" />
+             </div>
+           </div>
+           
+            )}
+            
+            {currentSubStep > 0 && (
             <button
   onClick={() => setCurrentSubStep(Math.max(0, currentSubStep - 1))}
   className="flex items-center space-x-2 px-6 py-2.5 text-[#353B46] border border-gray-300 rounded-[10px] hover:bg-gray-50 transition-colors duration-200 text-sm md:text-base"
@@ -505,6 +528,27 @@ const AssessmentComponent = React.memo(({
 </button>
 
             )}
+            
+            {currentSubStep === 0 && (
+  <div className="flex items-center space-x-2">
+    <span className="text-[12px] md:text-[14px] text-[#637085]">Language:</span>
+    <div className="relative">
+      <select 
+        className="h-[32px] pl-3 pr-8 text-[12px] md:text-[14px] text-[#353B46] border border-[#8C95A8] rounded-[10px] bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+        defaultValue="english"
+      >
+        <option value="english">English</option>
+      </select>
+      
+      <ChevronDown 
+        size={16} 
+        className="absolute right-2 top-1/2 -translate-y-1/2 text-[#353B46] pointer-events-none" 
+      />
+    </div>
+
+  </div>
+)}
+
             
            <button
   onClick={() => {
