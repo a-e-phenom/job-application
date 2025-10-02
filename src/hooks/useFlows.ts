@@ -135,6 +135,37 @@ export function useFlows() {
     }
   };
 
+  // Duplicate flow
+  const duplicateFlow = async (flow: ApplicationFlow) => {
+    try {
+      const duplicatedFlowData = {
+        name: `${flow.name} (copy)`,
+        description: flow.description,
+        slug: generateUniqueSlug(`${flow.name} (copy)`, flows.map(f => f.slug)),
+        steps: flow.steps,
+        isActive: false, // Duplicated flows start as inactive
+        primaryColor: flow.primaryColor,
+        logoUrl: flow.logoUrl
+      };
+
+      const dbFlow = convertToDatabaseFlow(duplicatedFlowData);
+      const { data, error } = await supabase
+        .from('application_flows')
+        .insert([dbFlow])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newFlow = convertToApplicationFlow(data);
+      setFlows(prev => [newFlow, ...prev]);
+      return newFlow;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to duplicate flow');
+      throw err;
+    }
+  };
+
   useEffect(() => {
     fetchFlows();
   }, []);
@@ -146,6 +177,7 @@ export function useFlows() {
     createFlow,
     updateFlow,
     deleteFlow,
+    duplicateFlow,
     refetch: fetchFlows
   };
 }

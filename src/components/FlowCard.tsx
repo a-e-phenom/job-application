@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Users, Settings, Edit, Trash2, MoreVertical, MoveRight, Copy, Check } from 'lucide-react';
+import { Edit, Trash2, MoreVertical, MoveRight, Copy, Check, Link } from 'lucide-react';
 import { ApplicationFlow } from '../types/flow';
 
 interface FlowCardProps {
@@ -7,27 +7,32 @@ interface FlowCardProps {
   onEdit: (flow: ApplicationFlow) => void;
   onDelete: (flowId: string) => void;
   onPreview: (flow: ApplicationFlow) => void;
+  onDuplicate: (flow: ApplicationFlow) => void;
 }
 
-export default function FlowCard({ flow, onEdit, onDelete, onPreview }: FlowCardProps) {
+export default function FlowCard({ flow, onEdit, onDelete, onPreview, onDuplicate }: FlowCardProps) {
   const [showMenu, setShowMenu] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
+  const menuRef = React.useRef<HTMLDivElement>(null);
 
-  const getModuleIcon = (moduleId: string) => {
-    switch (moduleId) {
-      case 'contact-info':
-        return <Users className="w-4 h-4" />;
-      case 'pre-screening':
-        return <Settings className="w-4 h-4" />;
-      case 'screening':
-        return <Settings className="w-4 h-4" />;
-      case 'interview-scheduling':
-        return <Calendar className="w-4 h-4" />;
-      default:
-        return <Settings className="w-4 h-4" />;
+  // Close menu when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+        setShowDeleteConfirm(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
     }
-  };
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
 
   const handleCardClick = () => {
     onPreview(flow);
@@ -156,7 +161,7 @@ export default function FlowCard({ flow, onEdit, onDelete, onPreview }: FlowCard
           </button>
 
           {showMenu && (
-            <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+            <div ref={menuRef} className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
               {!showDeleteConfirm ? (
                 // Action Menu
                 <>
@@ -167,11 +172,19 @@ export default function FlowCard({ flow, onEdit, onDelete, onPreview }: FlowCard
                     <Edit className="w-4 h-4" />
                     <span>Edit</span>
                   </button>
+                  
+                  <button
+                    onClick={(e) => handleActionClick(e, () => onDuplicate(flow))}
+                    className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    <Copy className="w-4 h-4" />
+                    <span>Duplicate</span>
+                  </button>
                   <button
                     onClick={handleCopyUrl}
                     className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   >
-                    {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                    {copied ? <Check className="w-4 h-4 text-green-600" /> : <Link className="w-4 h-4" />}
                     <span>{copied ? 'Copied!' : 'Copy URL'}</span>
                   </button>
                   <button

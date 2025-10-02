@@ -6,7 +6,7 @@ import { ApplicationFlow } from '../types/flow';
 import { useFlows } from '../hooks/useFlows';
 
 export default function FlowHomepage() {
-  const { flows, loading, error, createFlow, updateFlow, deleteFlow } = useFlows();
+  const { flows, loading, error, createFlow, updateFlow, deleteFlow, duplicateFlow } = useFlows();
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
@@ -28,6 +28,14 @@ export default function FlowHomepage() {
 
   const handleEditFlow = (flow: ApplicationFlow) => {
     navigate(`/edit/${flow.slug}`);
+  };
+
+  const handleDuplicateFlow = async (flow: ApplicationFlow) => {
+    try {
+      await duplicateFlow(flow);
+    } catch (error) {
+      console.error('Failed to duplicate flow:', error);
+    }
   };
 
   const handleViewModuleTemplates = () => {
@@ -130,6 +138,7 @@ export default function FlowHomepage() {
                 onEdit={handleEditFlow}
                 onDelete={handleDeleteFlow}
                 onPreview={handlePreviewFlow}
+                onDuplicate={handleDuplicateFlow}
               />
             ))}
           </div>
