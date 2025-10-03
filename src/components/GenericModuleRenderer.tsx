@@ -7,6 +7,25 @@ interface GenericModuleRendererProps {
   template: ModuleTemplate;
   primaryColor: string;
   onNext?: () => void;
+  onNavigate?: (target: NavigationTarget) => void;
+  moduleOverrides?: {
+    customButtons?: Array<{
+      id: string;
+      label: string;
+      isPrimary: boolean;
+      targetModule?: string;
+      targetStep?: number;
+      targetSubStep?: number;
+      targetFlow?: string;
+    }>;
+  };
+}
+
+interface NavigationTarget {
+  step?: number;
+  subStep?: number;
+  module?: string;
+  flow?: string;
 }
 
 interface FileUploadComponentProps {
@@ -990,7 +1009,7 @@ const FileUploadComponent = React.memo(({ value, onChange }: FileUploadComponent
   );
 });
 
-export default function GenericModuleRenderer({ template, primaryColor, onNext }: GenericModuleRendererProps) {
+export default function GenericModuleRenderer({ template, primaryColor, onNext, onNavigate, moduleOverrides }: GenericModuleRendererProps) {
   
   // Handle Thank You screen separately
   if (template.component === 'ThankYouStep') {
@@ -1004,29 +1023,6 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
             {template.content.subtitle || 'We received your submission and will get back to you as soon as possible.\nGood luck!'}
           </p>
           
-          {/* Render Message questions */}
-          {template.content.questions && template.content.questions.length > 0 && (
-            <div className="space-y-6 mt-8">
-              {template.content.questions.map((question) => {
-                if (question.type === 'message' && question.content) {
-                  return (
-                    <div
-                      key={question.id}
-                      className="w-full px-4 py-3 text-center"
-                      style={{ color: '#464F5E' }}
-                      dangerouslySetInnerHTML={{
-                        __html: question.content
-                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                          .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                          .replace(/\n/g, '<br>')
-                      }}
-                    />
-                  );
-                }
-                return null;
-              })}
-            </div>
-          )}
         </div>
       </div>
     );
@@ -1421,7 +1417,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
 
   // MultibuttonModule component
   if (template.component === 'MultibuttonModule') {
-    const buttons = (template.content as any)?.customButtons || [
+    const buttons = moduleOverrides?.customButtons || (template.content as any)?.customButtons || [
       { id: 'button1', label: 'Button 1', isPrimary: true },
       { id: 'button2', label: 'Button 2', isPrimary: false }
     ];
@@ -1455,12 +1451,20 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
         {/* Custom Footer Buttons */}
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4">
           <div className="mx-auto flex justify-end items-center space-x-3">
-            {buttons.map((button: { id: string; label: string; isPrimary: boolean }) => (
+            {buttons.map((button: { id: string; label: string; isPrimary: boolean; targetModule?: string; targetStep?: number; targetSubStep?: number; targetFlow?: string }) => (
               <button
                 key={button.id}
                 onClick={() => {
-                  console.log(`Button clicked: ${button.label}`);
-                  if (onNext) {
+                  // Handle custom navigation if configured
+                  if (onNavigate && (button.targetModule || button.targetStep !== undefined || button.targetFlow)) {
+                    onNavigate({
+                      module: button.targetModule,
+                      step: button.targetStep,
+                      subStep: button.targetSubStep,
+                      flow: button.targetFlow
+                    });
+                  } else if (onNext) {
+                    // Fallback to default next behavior
                     onNext();
                   }
                 }}
@@ -1477,11 +1481,15 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
                 onMouseEnter={(e) => {
                   if (button.isPrimary) {
                     e.currentTarget.style.backgroundColor = `${primaryColor}CC`;
+                  } else {
+                    e.currentTarget.style.backgroundColor = '#F9FAFB';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (button.isPrimary) {
                     e.currentTarget.style.backgroundColor = primaryColor;
+                  } else {
+                    e.currentTarget.style.backgroundColor = 'white';
                   }
                 }}
               >
@@ -1512,13 +1520,9 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext }
         </div>
       )}
    
-      {elements.length > 0 ? (
+      {elements.length > 0 && (
         <div className="space-y-6">
           {elements}
-        </div>
-      ) : (
-        <div className="text-center py-8">
-          <p className="text-gray-500">No content configured for this module</p>
         </div>
       )}
     </div>

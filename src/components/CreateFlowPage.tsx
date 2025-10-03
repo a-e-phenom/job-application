@@ -152,6 +152,14 @@ export default function CreateFlowPage() {
     return Object.values(selectedModules).reduce((total, modules) => total + modules.length, 0);
   };
 
+  const isModuleUsedAsButtonTarget = (moduleId: string, stepId: string) => {
+    const stepModules = getStepModules(stepId);
+    return stepModules.some(module => 
+      module.component === 'MultibuttonModule' && 
+      module.templateOverrides?.customButtons?.some(button => button.targetModule === moduleId)
+    );
+  };
+
   const addStep = () => {
     const newStepId = Date.now().toString();
     const newStep: FlowStep = {
@@ -869,58 +877,259 @@ export default function CreateFlowPage() {
                   {getStepModules(step.id).length > 0 && (
                     <div className="space-y-2">
                       {getStepModules(step.id).map((module, index) => (
-                        <div
-                          key={module.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <div className="flex flex-col space-y-1">
+                        <div key={module.id}>
+                          <div className={`p-3 border border-gray-200 rounded-lg ${module.component === 'MultibuttonModule' ? 'bg-gray-50' : 'bg-gray-50'}`}>
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center space-x-3">
+                                <div className="flex flex-col space-y-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => moveModuleUp(step.id, index)}
+                                    disabled={index === 0}
+                                    className={`
+                                      p-1 rounded transition-colors duration-200
+                                      ${index === 0
+                                        ? 'text-gray-300 cursor-not-allowed'
+                                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                                      }
+                                    `}
+                                    title="Move up"
+                                  >
+                                    <ChevronUp className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => moveModuleDown(step.id, index)}
+                                    disabled={index === getStepModules(step.id).length - 1}
+                                    className={`
+                                      p-1 rounded transition-colors duration-200
+                                      ${index === getStepModules(step.id).length - 1
+                                        ? 'text-gray-300 cursor-not-allowed'
+                                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                                      }
+                                    `}
+                                    title="Move down"
+                                  >
+                                    <ChevronDown className="w-3 h-3" />
+                                  </button>
+                                </div>
+                                <div>
+                                  <div className="flex items-center space-x-2">
+                                    <h5 className="font-medium text-gray-900 text-sm">{module.name}</h5>
+                                    {isModuleUsedAsButtonTarget(module.id, step.id) && (
+                                      <span className="px-2 py-0.5 text-xs bg-indigo-100 text-indigo-700 rounded-full">
+                                        Custom Button Target
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-600">{module.description}</p>
+                                </div>
+                              </div>
                               <button
                                 type="button"
-                                onClick={() => moveModuleUp(step.id, index)}
-                                disabled={index === 0}
-                                className={`
-                                  p-1 rounded transition-colors duration-200
-                                  ${index === 0
-                                    ? 'text-gray-300 cursor-not-allowed'
-                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                                  }
-                                `}
-                                title="Move up"
+                                onClick={() => {
+                                  const currentModules = getStepModules(step.id);
+                                  updateStepModules(step.id, currentModules.filter(m => m.id !== module.id));
+                                }}
+                                className="text-red-500 hover:text-red-700 transition-colors duration-200"
                               >
-                                <ChevronUp className="w-3 h-3" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => moveModuleDown(step.id, index)}
-                                disabled={index === getStepModules(step.id).length - 1}
-                                className={`
-                                  p-1 rounded transition-colors duration-200
-                                  ${index === getStepModules(step.id).length - 1
-                                    ? 'text-gray-300 cursor-not-allowed'
-                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                                  }
-                                `}
-                                title="Move down"
-                              >
-                                <ChevronDown className="w-3 h-3" />
+                                <X className="w-4 h-4" />
                               </button>
                             </div>
-                            <div>
-                              <h5 className="font-medium text-gray-900 text-sm">{module.name}</h5>
-                              <p className="text-xs text-gray-600">{module.description}</p>
-                            </div>
+                            
+                            {/* Multi-button Module Configuration */}
+                            {module.component === 'MultibuttonModule' && (
+                              <div className="p-4 bg-indigo-50  rounded-lg">
+                                <h6 className="text-sm font-medium text-indigo-700 mb-1">Button Configuration</h6>
+                                <h3 className="text-xs text-gray-700 mb-1">Select target modules for each button. These modules will be automatically added to your flow and can be accessed when users click the buttons.</h3>
+                                <h3 className="text-xs text-gray-700 mb-3">Target modules will be grouped together in the stepper since only one will be visited based on button selection.</h3>
+                             
+                                <div className="space-y-3">
+                                  {(module.templateOverrides?.customButtons || [
+                                    { id: 'button1', label: 'Button 1', isPrimary: true },
+                                    { id: 'button2', label: 'Button 2', isPrimary: false }
+                                  ]).map((button, buttonIndex) => (
+                                    <div key={button.id} className="flex items-center space-x-3">
+                                      <div className="flex-1">
+                                        <input
+                                          type="text"
+                                          value={button.label}
+                                          onChange={(e) => {
+                                            const currentModules = getStepModules(step.id);
+                                            const updatedModules = currentModules.map(m => 
+                                              m.id === module.id 
+                                                ? {
+                                                    ...m,
+                                                    templateOverrides: {
+                                                      ...m.templateOverrides,
+                                                      customButtons: (m.templateOverrides?.customButtons || []).map(b => 
+                                                        b.id === button.id ? { ...b, label: e.target.value } : b
+                                                      )
+                                                    }
+                                                  }
+                                                : m
+                                            );
+                                            updateStepModules(step.id, updatedModules);
+                                          }}
+                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                          placeholder={`Button ${buttonIndex + 1}`}
+                                        />
+                                      </div>
+                                      <div className="flex-1">
+                                      <select
+                                        value={button.targetModule || ''}
+                                        onChange={(e) => {
+                                          const currentModules = getStepModules(step.id);
+                                          const selectedTargetModuleId = e.target.value;
+                                          
+                                          // Update the button configuration
+                                          const updatedModules = currentModules.map(m => 
+                                            m.id === module.id 
+                                              ? {
+                                                  ...m,
+                                                  templateOverrides: {
+                                                    ...m.templateOverrides,
+                                                    customButtons: (m.templateOverrides?.customButtons || []).map(b => 
+                                                      b.id === button.id ? { ...b, targetModule: selectedTargetModuleId } : b
+                                                    )
+                                                  }
+                                                }
+                                              : m
+                                          );
+                                          
+                                          // If a target module is selected, add it to the flow
+                                          if (selectedTargetModuleId) {
+                                            const targetModule = availableModules.find(m => m.id === selectedTargetModuleId);
+                                            if (targetModule && !currentModules.some(m => m.id === selectedTargetModuleId)) {
+                                              // Add the target module to the current step
+                                              updatedModules.push(targetModule);
+                                            }
+                                          }
+                                          
+                                          // Clean up: Remove target modules that are no longer referenced by any button
+                                          const allButtonTargets = updatedModules
+                                            .filter(m => m.component === 'MultibuttonModule')
+                                            .flatMap(m => m.templateOverrides?.customButtons || [])
+                                            .map(b => b.targetModule)
+                                            .filter(Boolean);
+                                          
+                                          // Remove modules that are not referenced by any button and are not the Multi-button Module itself
+                                          const cleanedModules = updatedModules.filter(m => 
+                                            m.component === 'MultibuttonModule' || 
+                                            allButtonTargets.includes(m.id)
+                                          );
+                                          
+                                          updateStepModules(step.id, cleanedModules);
+                                        }}
+                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                      >
+                                        <option value="">Select target module</option>
+                                        {availableModules.map(targetModule => (
+                                          <option key={targetModule.id} value={targetModule.id}>
+                                            {targetModule.name}
+                                          </option>
+                                        ))}
+                                      </select>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <label className="flex items-center">
+                                          <input
+                                            type="checkbox"
+                                            checked={button.isPrimary}
+                                            onChange={(e) => {
+                                              const currentModules = getStepModules(step.id);
+                                              const updatedModules = currentModules.map(m => 
+                                                m.id === module.id 
+                                                  ? {
+                                                      ...m,
+                                                      templateOverrides: {
+                                                        ...m.templateOverrides,
+                                                        customButtons: (m.templateOverrides?.customButtons || []).map(b => 
+                                                          b.id === button.id ? { ...b, isPrimary: e.target.checked } : b
+                                                        )
+                                                      }
+                                                    }
+                                                  : m
+                                              );
+                                              updateStepModules(step.id, updatedModules);
+                                            }}
+                                            className="w-4 h-4 text-indigo-700 border-gray-300 rounded focus:ring-indigo-500"
+                                          />
+                                          <span className="ml-2 text-xs text-gray-600">Primary</span>
+                                        </label>
+                                        {(module.templateOverrides?.customButtons || []).length > 2 && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const currentModules = getStepModules(step.id);
+                                              const updatedModules = currentModules.map(m => 
+                                                m.id === module.id 
+                                                  ? {
+                                                      ...m,
+                                                      templateOverrides: {
+                                                        ...m.templateOverrides,
+                                                        customButtons: (m.templateOverrides?.customButtons || []).filter(b => b.id !== button.id)
+                                                      }
+                                                    }
+                                                  : m
+                                              );
+                                              
+                                              // Clean up: Remove target modules that are no longer referenced by any button
+                                              const allButtonTargets = updatedModules
+                                                .filter(m => m.component === 'MultibuttonModule')
+                                                .flatMap(m => m.templateOverrides?.customButtons || [])
+                                                .map(b => b.targetModule)
+                                                .filter(Boolean);
+                                              
+                                              // Remove modules that are not referenced by any button and are not the Multi-button Module itself
+                                              const cleanedModules = updatedModules.filter(m => 
+                                                m.component === 'MultibuttonModule' || 
+                                                allButtonTargets.includes(m.id)
+                                              );
+                                              
+                                              updateStepModules(step.id, cleanedModules);
+                                            }}
+                                            className="text-red-500 hover:text-red-700 transition-colors duration-200"
+                                          >
+                                            <X className="w-4 h-4" />
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const currentModules = getStepModules(step.id);
+                                      const updatedModules = currentModules.map(m => 
+                                        m.id === module.id 
+                                          ? {
+                                              ...m,
+                                              templateOverrides: {
+                                                ...m.templateOverrides,
+                                                customButtons: [
+                                                  ...(m.templateOverrides?.customButtons || []),
+                                                  { 
+                                                    id: `button${Date.now()}`, 
+                                                    label: `Button ${(m.templateOverrides?.customButtons || []).length + 1}`, 
+                                                    isPrimary: false 
+                                                  }
+                                                ]
+                                              }
+                                            }
+                                          : m
+                                      );
+                                      updateStepModules(step.id, updatedModules);
+                                    }}
+                                    className="flex items-center space-x-1 text-sm text-indigo-700 hover:text-indigo-800"
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                    <span>Add Button</span>
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const currentModules = getStepModules(step.id);
-                              updateStepModules(step.id, currentModules.filter(m => m.id !== module.id));
-                            }}
-                            className="text-red-500 hover:text-red-700 transition-colors duration-200"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
                         </div>
                       ))}
                     </div>
@@ -986,7 +1195,7 @@ export default function CreateFlowPage() {
             onClick={handleSave}
             disabled={!canSave() || templatesLoading || isSaving}
             className={`
-              px-6 py-3 rounded-lg transition-colors duration-200 flex items-center space-x-2
+              px-4 py-2 rounded-[10px] transition-colors duration-200 flex items-center space-x-2
               ${canSave() && !templatesLoading && !isSaving
                 ? 'bg-indigo-600 text-white hover:bg-indigo-700'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'

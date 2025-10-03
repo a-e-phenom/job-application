@@ -219,6 +219,67 @@ export default function ApplicationFlow() {
     }
   };
 
+  const handleCustomNavigation = (target: { step?: number; subStep?: number; module?: string; flow?: string }) => {
+    if (target.flow) {
+      // Navigate to different flow
+      navigate(`/flow/${target.flow}`);
+    } else if (target.step !== undefined) {
+      // Navigate to specific step
+      setCurrentStep(target.step);
+      setCurrentSubStep(target.subStep || 0);
+    } else if (target.module) {
+      // Find module and navigate to it
+      const moduleIndex = findModuleIndex(target.module);
+      if (moduleIndex) {
+        setCurrentStep(moduleIndex.step);
+        setCurrentSubStep(moduleIndex.subStep);
+      }
+    }
+  };
+
+  const findModuleIndex = (moduleId: string) => {
+    for (let stepIndex = 0; stepIndex < flow.steps.length; stepIndex++) {
+      const step = flow.steps[stepIndex];
+      for (let moduleIndex = 0; moduleIndex < step.modules.length; moduleIndex++) {
+        if (step.modules[moduleIndex].id === moduleId) {
+          return { step: stepIndex, subStep: moduleIndex };
+        }
+      }
+    }
+    return null;
+  };
+
+  // Group modules that are custom button targets
+  const getGroupedModules = (stepModules: FlowModule[]) => {
+    const grouped: Array<FlowModule | FlowModule[]> = [];
+    const customButtonTargets: FlowModule[] = [];
+    
+    for (const module of stepModules) {
+      const isCustomButtonTarget = stepModules.some(m => 
+        m.component === 'MultibuttonModule' && 
+        m.templateOverrides?.customButtons?.some(button => button.targetModule === module.id)
+      );
+      
+      if (isCustomButtonTarget && module.component !== 'MultibuttonModule') {
+        customButtonTargets.push(module);
+      } else {
+        // If we have accumulated custom button targets, add them as a group
+        if (customButtonTargets.length > 0) {
+          grouped.push([...customButtonTargets]);
+          customButtonTargets.length = 0;
+        }
+        grouped.push(module);
+      }
+    }
+    
+    // Add any remaining custom button targets
+    if (customButtonTargets.length > 0) {
+      grouped.push([...customButtonTargets]);
+    }
+    
+    return grouped;
+  };
+
   const handleBack = () => {
     // Handle sub-steps within current step
     if (hasSubSteps && currentSubStep > 0) {
@@ -414,6 +475,8 @@ export default function ApplicationFlow() {
               template={effectiveTemplate}
               primaryColor={primaryColor}
               onNext={handleNext}
+              onNavigate={handleCustomNavigation}
+              moduleOverrides={primaryModule.templateOverrides}
             />
           );
         }
@@ -496,17 +559,36 @@ export default function ApplicationFlow() {
                     {/* Sub-step dots for current step with multiple modules */}
                     {index === currentStep && flow.steps[currentStep]?.modules.length > 1 && (
                       <div className="flex items-center ml-2 space-x-1">
-                        {flow.steps[currentStep].modules.map((_, moduleIndex) => (
-                          <div
-                            key={moduleIndex}
-                            className={`
-                              w-2 h-2 rounded-full transition-colors duration-300
-                            `}
-                            style={{
-                              backgroundColor: moduleIndex === currentSubStep ? primaryColor : '#D1D5DB'
-                            }}
-                          />
-                        ))}
+                        {(() => {
+                          const groupedModules = getGroupedModules(flow.steps[currentStep].modules);
+                          return groupedModules.map((group, groupIndex) => {
+                            const isGroup = Array.isArray(group);
+                            const isActive = isGroup 
+                              ? group.some(module => {
+                                  const moduleIndex = flow.steps[currentStep].modules.findIndex(m => m.id === module.id);
+                                  return moduleIndex === currentSubStep;
+                                })
+                              : (() => {
+                                  const moduleIndex = flow.steps[currentStep].modules.findIndex(m => m.id === (group as FlowModule).id);
+                                  return moduleIndex === currentSubStep;
+                                })();
+                            
+                            return (
+                              <div
+                                key={groupIndex}
+                                className={`
+                                  w-2 h-2 rounded-full transition-colors duration-300
+                                  ${isGroup ? 'shadow-sm' : ''}
+                                `}
+                                style={{
+                                  backgroundColor: isActive ? primaryColor : '#D1D5DB',
+                                  
+                                }}
+                                title={isGroup ? `Custom Button Targets (${group.length})` : (group as FlowModule).name}
+                              />
+                            );
+                          });
+                        })()}
                       </div>
                     )}
                   </div>

@@ -22,6 +22,15 @@ export interface FlowModule {
       content?: string;
     }>;
     customFields?: Record<string, any>;
+    customButtons?: Array<{
+      id: string;
+      label: string;
+      isPrimary: boolean;
+      targetStep?: number;
+      targetSubStep?: number;
+      targetModule?: string;
+      targetFlow?: string;
+    }>;
   };
 }
 
