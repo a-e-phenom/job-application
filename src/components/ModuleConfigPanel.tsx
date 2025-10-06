@@ -8,6 +8,9 @@ interface LocalOverrides {
   title: string;
   subtitle: string;
   centerTitle: boolean;
+  splitScreenWithImage: boolean;
+  splitScreenImage?: string;
+  splitScreenImagePosition?: 'left' | 'right';
   comments: string;
   customButtons?: Array<{
     id: string;
@@ -832,6 +835,9 @@ export default function ModuleConfigPanel({
     title: '',
     subtitle: '',
     centerTitle: false,
+    splitScreenWithImage: false,
+    splitScreenImage: '',
+    splitScreenImagePosition: 'right',
     comments: '',
     customButtons: [],
     questions: []
@@ -854,6 +860,9 @@ export default function ModuleConfigPanel({
       title: module.templateOverrides?.title || globalTemplate?.content.title || '',
       subtitle: module.templateOverrides?.subtitle || globalTemplate?.content.subtitle || '',
       centerTitle: module.templateOverrides?.centerTitle || globalTemplate?.content.centerTitle || false,
+      splitScreenWithImage: module.templateOverrides?.splitScreenWithImage || globalTemplate?.content.splitScreenWithImage || false,
+      splitScreenImage: module.templateOverrides?.splitScreenImage || globalTemplate?.content.splitScreenImage || '',
+      splitScreenImagePosition: module.templateOverrides?.splitScreenImagePosition || globalTemplate?.content.splitScreenImagePosition || 'right',
       comments: module.templateOverrides?.comments || '',
       customButtons: (module.templateOverrides as any)?.customButtons || (globalTemplate?.content as any)?.customButtons || [],
       questions
@@ -888,6 +897,9 @@ export default function ModuleConfigPanel({
       title: globalTemplate?.content.title || '',
       subtitle: globalTemplate?.content.subtitle || '',
       centerTitle: globalTemplate?.content.centerTitle || false,
+      splitScreenWithImage: globalTemplate?.content.splitScreenWithImage || false,
+      splitScreenImage: globalTemplate?.content.splitScreenImage || '',
+      splitScreenImagePosition: globalTemplate?.content.splitScreenImagePosition || 'right',
       comments: '',
       customButtons: (globalTemplate?.content as any)?.customButtons || [],
       questions: globalTemplate?.content.questions || []
@@ -1051,8 +1063,66 @@ export default function ModuleConfigPanel({
                 />
                 <span className="ml-2 text-sm text-gray-700">Center title and subtitle</span>
               </label>
-              
             </div>
+
+            <div>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={localOverrides.splitScreenWithImage}
+                  onChange={(e) => updateField('splitScreenWithImage', e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="ml-2 text-sm text-gray-700">Split screen with image</span>
+              </label>
+            </div>
+
+            {/* Split Screen Image Configuration */}
+            {localOverrides.splitScreenWithImage && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Image</label>
+                  <ImageUploadComponent
+                    value={localOverrides.splitScreenImage || ''}
+                    onChange={(value) => updateField('splitScreenImage', value)}
+                    placeholder="https://example.com/split-screen-image.png"
+                    label="Split Screen Image"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Image Position</label>
+                  <div className="inline-flex space-x-1 bg-gray-100 rounded-lg p-1">
+                    <button
+                      type="button"
+                      onClick={() => updateField('splitScreenImagePosition', 'left')}
+                      className={`
+                        px-3 py-1 text-sm rounded-md transition-colors duration-200
+                        ${localOverrides.splitScreenImagePosition === 'left'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                        }
+                      `}
+                    >
+                      Left
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateField('splitScreenImagePosition', 'right')}
+                      className={`
+                        px-3 py-1 text-sm rounded-md transition-colors duration-200
+                        ${localOverrides.splitScreenImagePosition === 'right'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                        }
+                      `}
+                    >
+                      Right
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

@@ -851,6 +851,9 @@ export default function ModuleTemplatesPage() {
         title: 'New Module Title',
         subtitle: 'Module subtitle',
         centerTitle: false,
+        splitScreenWithImage: false,
+        splitScreenImage: '',
+        splitScreenImagePosition: 'right',
         questions: []
       },
       isDefault: false,
@@ -1250,6 +1253,66 @@ export default function ModuleTemplatesPage() {
                             <span className="ml-2 text-sm text-gray-700">Center title and subtitle</span>
                           </label>
                         </div>
+
+                        {/* Split Screen with Image Checkbox */}
+                        <div className="mb-4">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={editedTemplate?.content.splitScreenWithImage || false}
+                              onChange={(e) => updateEditedTemplate('content.splitScreenWithImage', e.target.checked)}
+                              className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                            />
+                            <span className="ml-2 text-sm text-gray-700">Split screen with image</span>
+                          </label>
+                        </div>
+
+                        {/* Split Screen Image Configuration */}
+                        {editedTemplate?.content.splitScreenWithImage && (
+                          <div className="mb-6 space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Image</label>
+                              <ImageUploadComponent
+                                value={editedTemplate?.content.splitScreenImage || ''}
+                                onChange={(value) => updateEditedTemplate('content.splitScreenImage', value)}
+                                placeholder="https://example.com/split-screen-image.png"
+                                label="Split Screen Image"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Image Position</label>
+                              <div className="inline-flex space-x-1 bg-gray-100 rounded-lg p-1">
+                                <button
+                                  type="button"
+                                  onClick={() => updateEditedTemplate('content.splitScreenImagePosition', 'left')}
+                                  className={`
+                                    px-3 py-1 text-sm rounded-md transition-colors duration-200
+                                    ${editedTemplate?.content.splitScreenImagePosition === 'left'
+                                      ? 'bg-white text-gray-900 shadow-sm'
+                                      : 'text-gray-600 hover:text-gray-900'
+                                    }
+                                  `}
+                                >
+                                  Left
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => updateEditedTemplate('content.splitScreenImagePosition', 'right')}
+                                  className={`
+                                    px-3 py-1 text-sm rounded-md transition-colors duration-200
+                                    ${editedTemplate?.content.splitScreenImagePosition === 'right'
+                                      ? 'bg-white text-gray-900 shadow-sm'
+                                      : 'text-gray-600 hover:text-gray-900'
+                                    }
+                                  `}
+                                >
+                                  Right
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Custom Buttons - Only for MultibuttonModule */}
                         {editedTemplate?.component === 'MultibuttonModule' && (

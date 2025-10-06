@@ -10,6 +10,9 @@ export interface FlowModule {
     subtitle?: string;
     instructions?: string;
     centerTitle?: boolean;
+    splitScreenWithImage?: boolean;
+    splitScreenImage?: string;
+    splitScreenImagePosition?: 'left' | 'right';
     comments?: string;
     questions?: Array<{
       id: string;

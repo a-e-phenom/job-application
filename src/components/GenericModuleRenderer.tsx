@@ -1502,6 +1502,73 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
     );
   }
 
+  // Check if split screen is enabled and we have an image (exclude MultibuttonModule)
+  const isSplitScreenEnabled = template.content.splitScreenWithImage && template.content.splitScreenImage && template.component !== 'MultibuttonModule';
+  const imagePosition = template.content.splitScreenImagePosition || 'right';
+
+  // Render split screen layout
+  if (isSplitScreenEnabled) {
+    const contentSection = (
+      <div 
+        className={`flex-1 flex flex-col px-8 md:px-12 lg:px-16 py-8 md:py-12 ${imagePosition === 'left' ? 'border-l' : 'border-r'}`}
+        style={{ backgroundColor: '#F8F9FB', borderColor: '#D1D5DC', paddingBottom: '200px', minHeight: 'calc(100vh + 200px)' }}
+      >
+        {/* Title and Subtitle for all modules except Assessment and Video Interview */}
+        {template.component !== 'AssessmentStep' && !questions.some(q => q.type === 'video-interview') && (
+          <div className={`mb-8 ${template.content.centerTitle ? 'text-center' : ''}`}>
+            {template.content.title && (
+              <h2 className="text-[18px] font-semibold text-[#353B46] mb-1">
+                {template.content.title}
+              </h2>
+            )}
+            {template.content.subtitle && (
+              <p className="text-[14px] text-[#464F5E] mb-6">
+                {template.content.subtitle}
+              </p>
+            )}
+          </div>
+        )}
+     
+        {elements.length > 0 && (
+          <div className="space-y-6">
+            {elements}
+          </div>
+        )}
+        
+        {/* Spacer for footer clearance */}
+        <div style={{ height: '60px' }}></div>
+      </div>
+    );
+
+    const imageSection = (
+      <div className="flex-1 p-8 flex items-start justify-center sticky top-0 min-h-screen">
+        <img 
+          src={template.content.splitScreenImage} 
+          alt="Split screen image"
+          className="max-w-full max-h-full object-contain rounded-lg"
+        />
+      </div>
+    );
+
+    return (
+      <div className="w-full m-0 p-0 overflow-x-hidden bg-white" style={{ marginBottom: '100px' }}>
+        <div className="w-full min-h-screen flex" style={{ paddingBottom: '100px' }}>
+          {imagePosition === 'left' ? (
+            <>
+              {imageSection}
+              {contentSection}
+            </>
+          ) : (
+            <>
+              {contentSection}
+              {imageSection}
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full">
       {/* Title and Subtitle for all modules except Assessment and Video Interview */}

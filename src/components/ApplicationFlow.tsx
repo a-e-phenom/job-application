@@ -639,8 +639,23 @@ export default function ApplicationFlow() {
         const currentComponent = currentFlowStep?.modules[currentSubStep]?.component;
         return null;
       })()}
-      {currentFlowStep?.modules[currentSubStep]?.component === 'AssessmentStep' ? (
-        // Assessment gets full screen treatment - no containers, no padding, no cards
+      {(() => {
+        // Check if current module has split screen enabled
+        const currentModule = currentFlowStep?.modules[currentSubStep];
+        const moduleTemplate = templates.find(template => template.id === currentModule?.id);
+        const effectiveTemplate = moduleTemplate ? {
+          ...moduleTemplate,
+          content: {
+            ...moduleTemplate.content,
+            ...currentModule?.templateOverrides
+          }
+        } : undefined;
+        
+        const isSplitScreenEnabled = effectiveTemplate?.content.splitScreenWithImage && effectiveTemplate?.content.splitScreenImage;
+        
+        return currentFlowStep?.modules[currentSubStep]?.component === 'AssessmentStep' || isSplitScreenEnabled;
+      })() ? (
+        // Assessment and split screen modules get full screen treatment - no containers, no padding, no cards
         renderCurrentStep()
       ) : (
         <div className={`mx-auto px-4 py-8 ${
