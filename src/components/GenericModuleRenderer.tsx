@@ -1511,7 +1511,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
     const contentSection = (
       <div 
         className={`flex-1 flex flex-col px-8 md:px-12 lg:px-16 py-8 md:py-12 ${imagePosition === 'left' ? 'border-l' : 'border-r'}`}
-        style={{ backgroundColor: '#F8F9FB', borderColor: '#D1D5DC', paddingBottom: '200px', minHeight: 'calc(100vh + 200px)' }}
+        style={{ backgroundColor: '#F8F9FB', borderColor: '#D1D5DC', paddingBottom: '40px', minHeight: 'calc(100vh + 40px)' }}
       >
         {/* Title and Subtitle for all modules except Assessment and Video Interview */}
         {template.component !== 'AssessmentStep' && !questions.some(q => q.type === 'video-interview') && (
@@ -1536,7 +1536,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
         )}
         
         {/* Spacer for footer clearance */}
-        <div style={{ height: '60px' }}></div>
+        <div style={{ height: '20px' }}></div>
       </div>
     );
 
@@ -1551,8 +1551,8 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
     );
 
     return (
-      <div className="w-full m-0 p-0 overflow-x-hidden bg-white" style={{ marginBottom: '100px' }}>
-        <div className="w-full min-h-screen flex" style={{ paddingBottom: '100px' }}>
+      <div className="w-full m-0 p-0 overflow-x-hidden bg-white" style={{ marginBottom: '40px' }}>
+        <div className="w-full min-h-screen flex" style={{ paddingBottom: '0px' }}>
           {imagePosition === 'left' ? (
             <>
               {imageSection}
