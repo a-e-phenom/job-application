@@ -36,8 +36,8 @@ export default function HowItWorksModal({ isOpen, onClose }: HowItWorksModalProp
         <div className="space-y-6">
           {/* The Modules Page */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
-              <span className="text-xl mr-2">🧩</span>
+            <h3 className="text-md font-medium text-gray-900 mb-3 flex items-center">
+              <span className="text-sm mr-2">🧩</span>
               The Modules Page
             </h3>
             <ul className="space-y-2 text-gray-700">
@@ -54,8 +54,8 @@ export default function HowItWorksModal({ isOpen, onClose }: HowItWorksModalProp
 
           {/* Using Existing Templates */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
-              <span className="text-xl mr-2">🧱</span>
+            <h3 className="text-md font-medium text-gray-900 mb-3 flex items-center">
+              <span className="text-sm mr-2">🧱</span>
               Using Existing Templates
             </h3>
             <ul className="space-y-2 text-gray-700">
@@ -72,8 +72,8 @@ export default function HowItWorksModal({ isOpen, onClose }: HowItWorksModalProp
 
           {/* Creating New Templates */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
-              <span className="text-xl mr-2">⚙️</span>
+            <h3 className="text-md font-medium text-gray-900 mb-3 flex items-center">
+              <span className="text-sm mr-2">⚙️</span>
               Creating New Templates
             </h3>
             <ul className="space-y-2 text-gray-700">
@@ -90,8 +90,8 @@ export default function HowItWorksModal({ isOpen, onClose }: HowItWorksModalProp
 
           {/* Adding Modules to Prototypes */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
-              <span className="text-xl mr-2">🚀</span>
+            <h3 className="text-md font-medium text-gray-900 mb-3 flex items-center">
+              <span className="text-sm mr-2">🚀</span>
               Adding Modules to Prototypes
             </h3>
             <ul className="space-y-2 text-gray-700">
@@ -108,8 +108,8 @@ export default function HowItWorksModal({ isOpen, onClose }: HowItWorksModalProp
 
           {/* Editing Modules in a Prototype */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
-              <span className="text-xl mr-2">✏️</span>
+            <h3 className="text-md font-medium text-gray-900 mb-3 flex items-center">
+              <span className="text-sm mr-2">✏️</span>
               Editing Modules in a Prototype
             </h3>
             <ul className="space-y-2 text-gray-700">

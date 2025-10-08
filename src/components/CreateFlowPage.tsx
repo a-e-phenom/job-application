@@ -1047,7 +1047,8 @@ export default function CreateFlowPage() {
                                       <div className="flex items-center space-x-2">
                                         <label className="flex items-center">
                                           <input
-                                            type="checkbox"
+                                            type="radio"
+                                            name={`primary-${module.id}`}
                                             checked={button.isPrimary}
                                             onChange={(e) => {
                                               const currentModules = getStepModules(step.id);
@@ -1058,7 +1059,9 @@ export default function CreateFlowPage() {
                                                       templateOverrides: {
                                                         ...m.templateOverrides,
                                                         customButtons: (m.templateOverrides?.customButtons || []).map(b => 
-                                                          b.id === button.id ? { ...b, isPrimary: e.target.checked } : b
+                                                          b.id === button.id 
+                                                            ? { ...b, isPrimary: true }
+                                                            : { ...b, isPrimary: false }
                                                         )
                                                       }
                                                     }
@@ -1066,7 +1069,7 @@ export default function CreateFlowPage() {
                                               );
                                               updateStepModules(step.id, updatedModules);
                                             }}
-                                            className="w-4 h-4 text-indigo-700 border-gray-300 rounded focus:ring-indigo-500"
+                                            className="w-4 h-4 text-indigo-700 border-gray-300 focus:ring-indigo-500"
                                           />
                                           <span className="ml-2 text-xs text-gray-600">Primary</span>
                                         </label>
