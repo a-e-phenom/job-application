@@ -475,16 +475,18 @@ const AssessmentConfiguration: React.FC<AssessmentConfigurationProps> = ({ quest
                     </div>
                     <div className="space-y-2">
                       {(screen.content.scenarioResponses || []).map((response, responseIndex) => (
-                        <div key={responseIndex} className="flex items-center space-x-2">
-                          <input
-                            type="text"
+                        <div key={responseIndex} className="flex items-start space-x-2">
+                          <textarea
                             value={response}
                             onChange={(e) => updateResponseOption(screen.id, responseIndex, e.target.value)}
-                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            rows={4}
+                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
+                            placeholder={`Response option ${responseIndex + 1}`}
                           />
                           <button
                             onClick={() => removeResponseOption(screen.id, responseIndex)}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50 mt-1"
+                            title="Remove response option"
                           >
                             <X className="w-4 h-4" />
                           </button>
