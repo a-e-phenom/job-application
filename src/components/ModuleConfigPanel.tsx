@@ -1373,7 +1373,7 @@ export default function ModuleConfigPanel({
                 
                 {/* Dropdown Menu */}
                 {question.typeSelectorOpen && (
-                  <div className="absolute w-60 top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                  <div className="absolute w-60 top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-[70] max-h-48 overflow-y-auto">
                     <div 
                       className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
                       onClick={(e) => {
