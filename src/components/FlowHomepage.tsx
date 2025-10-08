@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Plus, Search, Settings } from 'lucide-react';
+import { Plus, Search, Settings, HelpCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import FlowCard from './FlowCard';
+import HowItWorksModal from './HowItWorksModal';
 import { ApplicationFlow } from '../types/flow';
 import { useFlows } from '../hooks/useFlows';
 
 export default function FlowHomepage() {
   const { flows, loading, error, createFlow, updateFlow, deleteFlow, duplicateFlow } = useFlows();
   const [searchTerm, setSearchTerm] = useState('');
+  const [showHowItWorksModal, setShowHowItWorksModal] = useState(false);
   const navigate = useNavigate();
 
   const handleDeleteFlow = async (flowId: string) => {
@@ -67,22 +69,28 @@ export default function FlowHomepage() {
               </div>
             </div>
             <div className="flex items-center space-x-2">
-               <button
-            onClick={handleViewModuleTemplates}
-            className="flex items-center space-x-2 bg-white border border-gray-400 text-gray-600 px-4 py-2 rounded-[10px] hover:bg-gray-200 transition-colors duration-200"
-          >
-            <Settings className="w-4 h-4" />
-            <span>Modules</span>
-          </button>
-            <button
-              onClick={handleCreateFlow}
-              className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-[10px] hover:bg-indigo-700 transition-colors duration-200"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create flow</span>
-            </button>
-         
-          </div>
+              <button
+                onClick={() => setShowHowItWorksModal(true)}
+                className="flex items-center space-x-2 bg-white border border-gray-400 text-gray-600 px-4 py-2 rounded-[10px] hover:bg-gray-200 transition-colors duration-200"
+              >
+                <HelpCircle className="w-4 h-4" />
+                <span>How it works</span>
+              </button>
+              <button
+                onClick={handleViewModuleTemplates}
+                className="flex items-center space-x-2 bg-white border border-gray-400 text-gray-600 px-4 py-2 rounded-[10px] hover:bg-gray-200 transition-colors duration-200"
+              >
+                <Settings className="w-4 h-4" />
+                <span>Module Templates</span>
+              </button>
+              <button
+                onClick={handleCreateFlow}
+                className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-[10px] hover:bg-indigo-700 transition-colors duration-200"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create flow</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -146,6 +154,12 @@ export default function FlowHomepage() {
         )}
 
       </div>
+
+      {/* How it works Modal */}
+      <HowItWorksModal
+        isOpen={showHowItWorksModal}
+        onClose={() => setShowHowItWorksModal(false)}
+      />
     </div>
   );
 }

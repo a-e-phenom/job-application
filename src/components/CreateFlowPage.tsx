@@ -6,6 +6,7 @@ import { useTemplates } from '../hooks/useTemplates';
 import { useFlows } from '../hooks/useFlows';
 import { uploadLogoImage } from '../lib/supabase';
 import { generateUniqueSlug } from '../lib/utils';
+import FeedbackModal from './FeedbackModal';
 
 export default function CreateFlowPage() {
   const { templates, loading: templatesLoading } = useTemplates();
@@ -30,6 +31,7 @@ export default function CreateFlowPage() {
   );
   const [isActive, setIsActive] = useState(editingFlow?.isActive || false);
   const [primaryColor, setPrimaryColor] = useState(editingFlow?.primaryColor || '#6366F1');
+  const [collectFeedback, setCollectFeedback] = useState(editingFlow?.collectFeedback || false);
   const [isSaving, setIsSaving] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [colorFormat, setColorFormat] = useState<'hex' | 'rgb' | 'hsl'>('hex');
@@ -37,6 +39,7 @@ export default function CreateFlowPage() {
   const [showModuleSelector, setShowModuleSelector] = useState<string | null>(null);
   const [selectedModules, setSelectedModules] = useState<{[stepId: string]: FlowModule[]}>({});
   const [editingStepName, setEditingStepName] = useState<string | null>(null);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   // Remove drag and drop state - no longer needed
 
@@ -49,6 +52,7 @@ export default function CreateFlowPage() {
       setSteps(editingFlow.steps);
       setIsActive(editingFlow.isActive);
       setPrimaryColor(editingFlow.primaryColor || '#6366F1');
+      setCollectFeedback(editingFlow.collectFeedback || false);
       
       // Initialize selectedModules for each step
       const modulesByStep: {[stepId: string]: FlowModule[]} = {};
@@ -63,6 +67,7 @@ export default function CreateFlowPage() {
       setSteps([{ id: '1', name: 'Step 1', modules: [] }]);
       setIsActive(false);
       setPrimaryColor('#6366F1');
+      setCollectFeedback(false);
       setSelectedModules({ '1': [] });
     }
   }, [editingFlow]);
@@ -347,6 +352,13 @@ export default function CreateFlowPage() {
     setShowColorPicker(false);
   };
 
+  const handleFeedbackSubmit = (rating: number, comment: string) => {
+    // Here you would typically send the feedback to your backend
+    console.log('Feedback submitted:', { rating, comment });
+    // For now, just show an alert
+    
+  };
+
   // Helper functions for color wheel positioning
   const getCurrentHueColor = () => {
     const hsl = hexToHsl(tempColor);
@@ -402,7 +414,8 @@ export default function CreateFlowPage() {
         steps,
         isActive,
         primaryColor,
-        logoUrl: finalLogoUrl.trim()
+        logoUrl: finalLogoUrl.trim(),
+        collectFeedback
       };
 
       if (editingFlow) {
@@ -1139,6 +1152,26 @@ export default function CreateFlowPage() {
             ))}
           </div>
         </div>
+
+        {/* Feedback Collection */}
+        <div className="space-y-4">
+          <div>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={collectFeedback}
+                onChange={(e) => setCollectFeedback(e.target.checked)}
+                className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+              />
+              <span className="ml-2 text-sm text-gray-700">
+                Collect feedback from candidates at the end of the job application flow
+              </span>
+            </label>
+            <p className="text-xs text-gray-500 mt-1 ml-6">
+              When enabled, candidates will see a feedback modal after completing the application
+            </p>
+          </div>
+        </div>
       </div>
     );
   };
@@ -1208,6 +1241,14 @@ export default function CreateFlowPage() {
           </button>
         </div>
       </div>
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        onSubmit={handleFeedbackSubmit}
+        primaryColor={primaryColor}
+      />
     </div>
   );
 }

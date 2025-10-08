@@ -19,6 +19,7 @@ export interface DatabaseFlow {
   is_active: boolean;
   primary_color: string;
   logo_url: string;
+  collect_feedback: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -57,6 +57,7 @@ export interface ApplicationFlow {
   isActive: boolean;
   primaryColor?: string;
   logoUrl?: string;
+  collectFeedback?: boolean;
 }
 
 

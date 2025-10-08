@@ -9,6 +9,7 @@ import ResumeStep from './ResumeStep';
 import AssessmentStep from './AssessmentStep';
 import GenericModuleRenderer from './GenericModuleRenderer';
 import ModuleConfigPanel from './ModuleConfigPanel';
+import FeedbackModal from './FeedbackModal';
 import { ApplicationData, ContactInfo, ScreeningData, ResumeData, PreScreeningInfo, AssessmentData, JobFitInfo, TasksInfo } from '../types/application';
 import { ApplicationFlow as FlowType, FlowModule } from '../types/flow';
 import { InterviewSchedulingData } from '../types/application';
@@ -34,6 +35,9 @@ export default function ApplicationFlow() {
   // Configuration panel state
   const [configPanelOpen, setConfigPanelOpen] = useState(false);
   const [configModule, setConfigModule] = useState<FlowModule | null>(null);
+  
+  // Feedback modal state
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   
   // Initial state variables (these are NOT hooks, just constants)
   const initialContactInfo: ContactInfo = {
@@ -214,8 +218,12 @@ export default function ApplicationFlow() {
       setCurrentStep(currentStep + 1);
       setCurrentSubStep(0); // Reset sub-step when moving to next step
     } else {
-      // Flow is complete - go back to homepage
-      navigate('/');
+      // Flow is complete - show feedback modal if enabled, otherwise go back to homepage
+      if (flow?.collectFeedback) {
+        setShowFeedbackModal(true);
+      } else {
+        navigate('/');
+      }
     }
   };
 
@@ -342,6 +350,13 @@ export default function ApplicationFlow() {
       console.error('Failed to save module configuration:', error);
       // You might want to show an error message to the user here
     }
+  };
+
+  const handleFeedbackSubmit = (rating: number, comment: string) => {
+    // Here you would typically send the feedback to your backend
+    console.log('Feedback submitted:', { rating, comment, flowId: flow?.id });
+    setShowFeedbackModal(false);
+    navigate('/');
   };
 
   const handleConfigClose = () => {
@@ -740,6 +755,17 @@ export default function ApplicationFlow() {
           onSave={handleConfigSave}
         />
       )}
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => {
+          setShowFeedbackModal(false);
+          navigate('/');
+        }}
+        onSubmit={handleFeedbackSubmit}
+        primaryColor={flow?.primaryColor || '#6366F1'}
+      />
     </div>
   );
 }
