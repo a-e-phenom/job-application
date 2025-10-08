@@ -13,6 +13,9 @@ export interface FlowModule {
     splitScreenWithImage?: boolean;
     splitScreenImage?: string;
     splitScreenImagePosition?: 'left' | 'right';
+    imageSideHasTitleSubtitle?: boolean;
+    imageSideTitle?: string;
+    imageSideSubtitle?: string;
     comments?: string;
     questions?: Array<{
       id: string;

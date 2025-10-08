@@ -1541,12 +1541,31 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
     );
 
     const imageSection = (
-      <div className="flex-1 p-8 flex items-start justify-center sticky top-0 min-h-screen">
-        <img 
-          src={template.content.splitScreenImage} 
-          alt="Split screen image"
-          className="max-w-full max-h-full object-contain rounded-lg"
-        />
+      <div className="flex-1 p-8 flex flex-col items-start justify-start sticky top-0 min-h-screen">
+        {/* Image Side Title and Subtitle */}
+        {template.content.imageSideHasTitleSubtitle && (
+          <div className="mb-4 w-full">
+            {template.content.imageSideTitle && (
+              <h2 className="text-[18px] font-semibold text-[#353B46] mb-2">
+                {template.content.imageSideTitle}
+              </h2>
+            )}
+            {template.content.imageSideSubtitle && (
+              <p className="text-[14px] text-[#464F5E] mb-2">
+                {template.content.imageSideSubtitle}
+              </p>
+            )}
+          </div>
+        )}
+        
+        {/* Image */}
+        <div className="flex-1 flex items-start justify-center w-full">
+          <img 
+            src={template.content.splitScreenImage} 
+            alt="Split screen image"
+            className="max-w-full max-h-full object-contain rounded-lg"
+          />
+        </div>
       </div>
     );
 

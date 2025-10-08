@@ -11,6 +11,9 @@ interface LocalOverrides {
   splitScreenWithImage: boolean;
   splitScreenImage?: string;
   splitScreenImagePosition?: 'left' | 'right';
+  imageSideHasTitleSubtitle?: boolean;
+  imageSideTitle?: string;
+  imageSideSubtitle?: string;
   comments: string;
   customButtons?: Array<{
     id: string;
@@ -838,6 +841,9 @@ export default function ModuleConfigPanel({
     splitScreenWithImage: false,
     splitScreenImage: '',
     splitScreenImagePosition: 'right',
+    imageSideHasTitleSubtitle: false,
+    imageSideTitle: '',
+    imageSideSubtitle: '',
     comments: '',
     customButtons: [],
     questions: []
@@ -863,6 +869,9 @@ export default function ModuleConfigPanel({
       splitScreenWithImage: module.templateOverrides?.splitScreenWithImage || globalTemplate?.content.splitScreenWithImage || false,
       splitScreenImage: module.templateOverrides?.splitScreenImage || globalTemplate?.content.splitScreenImage || '',
       splitScreenImagePosition: module.templateOverrides?.splitScreenImagePosition || globalTemplate?.content.splitScreenImagePosition || 'right',
+      imageSideHasTitleSubtitle: module.templateOverrides?.imageSideHasTitleSubtitle || globalTemplate?.content.imageSideHasTitleSubtitle || false,
+      imageSideTitle: module.templateOverrides?.imageSideTitle || globalTemplate?.content.imageSideTitle || '',
+      imageSideSubtitle: module.templateOverrides?.imageSideSubtitle || globalTemplate?.content.imageSideSubtitle || '',
       comments: module.templateOverrides?.comments || '',
       customButtons: (module.templateOverrides as any)?.customButtons || (globalTemplate?.content as any)?.customButtons || [],
       questions
@@ -900,6 +909,9 @@ export default function ModuleConfigPanel({
       splitScreenWithImage: globalTemplate?.content.splitScreenWithImage || false,
       splitScreenImage: globalTemplate?.content.splitScreenImage || '',
       splitScreenImagePosition: globalTemplate?.content.splitScreenImagePosition || 'right',
+      imageSideHasTitleSubtitle: globalTemplate?.content.imageSideHasTitleSubtitle || false,
+      imageSideTitle: globalTemplate?.content.imageSideTitle || '',
+      imageSideSubtitle: globalTemplate?.content.imageSideSubtitle || '',
       comments: '',
       customButtons: (globalTemplate?.content as any)?.customButtons || [],
       questions: globalTemplate?.content.questions || []
@@ -1121,6 +1133,43 @@ export default function ModuleConfigPanel({
                     </button>
                   </div>
                 </div>
+                
+                <div>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={localOverrides.imageSideHasTitleSubtitle || false}
+                      onChange={(e) => updateField('imageSideHasTitleSubtitle', e.target.checked)}
+                      className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Image side has title and subtitle</span>
+                  </label>
+                </div>
+
+                {localOverrides.imageSideHasTitleSubtitle && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Image Side Title</label>
+                      <input
+                        type="text"
+                        value={localOverrides.imageSideTitle || ''}
+                        onChange={(e) => updateField('imageSideTitle', e.target.value)}
+                        placeholder="Enter image side title"
+                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Image Side Subtitle</label>
+                      <textarea
+                        value={localOverrides.imageSideSubtitle || ''}
+                        onChange={(e) => updateField('imageSideSubtitle', e.target.value)}
+                        placeholder="Enter image side subtitle"
+                        rows={3}
+                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

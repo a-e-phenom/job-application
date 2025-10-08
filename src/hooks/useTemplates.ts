@@ -14,6 +14,9 @@ export interface ModuleTemplate {
     splitScreenWithImage?: boolean;
     splitScreenImage?: string;
     splitScreenImagePosition?: 'left' | 'right';
+    imageSideHasTitleSubtitle?: boolean;
+    imageSideTitle?: string;
+    imageSideSubtitle?: string;
     questions?: Array<{
       id: string;
       text: string;
