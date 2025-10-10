@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, X, Check, Plus, Airplay, Type, FileText, ChevronDown, ChevronUp, Circle, CheckSquare, FolderOpen, Image, Phone, Calendar, MessageSquare, ClipboardList, Video, Trash2, MoveUp, MoveDown } from 'lucide-react';
+import { ArrowLeft, X, Check, Plus, Airplay, Type, FileText, ChevronDown, ChevronUp, Circle, CheckSquare, FolderOpen, Image, Phone, Calendar, AlignLeft, ClipboardList, Video, Trash2, MoveUp, MoveDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTemplates, ModuleTemplate } from '../hooks/useTemplates';
 import GenericModuleRenderer from './GenericModuleRenderer';
@@ -1527,7 +1527,7 @@ export default function ModuleTemplatesPage() {
                                               {question.type === 'image' && <Image className="w-4 h-4" />}
                                               {question.type === 'phone' && <Phone className="w-4 h-4" />}
                                               {question.type === 'interview-scheduler' && <Calendar className="w-4 h-4" />}
-                                              {question.type === 'message' && <MessageSquare className="w-4 h-4" />}
+                                              {question.type === 'message' && <AlignLeft className="w-4 h-4" />}
                                               {question.type === 'assessment' && <ClipboardList className="w-4 h-4" />}
                                               {question.type === 'video-interview' && <Video className="w-4 h-4" />}
                                               <span>
@@ -1540,7 +1540,7 @@ export default function ModuleTemplatesPage() {
                                                 {question.type === 'image' && 'Image'}
                                                 {question.type === 'phone' && 'Phone Number'}
                                                 {question.type === 'interview-scheduler' && 'Interview Scheduler'}
-                                                {question.type === 'message' && 'Message'}
+                                                {question.type === 'message' && 'Text Block'}
                                                 {question.type === 'assessment' && 'Assessments'}
                                                 {question.type === 'video-interview' && 'Video Interview'}
                                               </span>
@@ -1648,8 +1648,8 @@ export default function ModuleTemplatesPage() {
                                                   updateQuestion(question.id, 'typeSelectorOpen', false);
                                                 }}
                                               >
-                                                <MessageSquare className="w-4 h-4" />
-                                                <span>Message</span>
+                                                <AlignLeft className="w-4 h-4" />
+                                                <span>Text Block</span>
                                               </div>
                                               <div 
                                                 className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
@@ -1760,7 +1760,7 @@ export default function ModuleTemplatesPage() {
                                       {/* Rich Text Editor for Message type */}
                                       {question.type === 'message' && (
                                         <div className="mt-3">
-                                          <label className="block text-xs font-medium text-gray-600 mb-2">Message Content</label>
+                                          <label className="block text-xs font-medium text-gray-600 mb-2">Text Block Content</label>
                                           <div className="border border-gray-300 rounded-lg overflow-hidden">
                                             <div className="flex border-b border-gray-200 bg-gray-50">
                                               <button

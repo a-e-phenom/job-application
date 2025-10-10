@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, RotateCcw, Plus, Type, FileText, ChevronDown, Circle, CheckSquare, FolderOpen, Image, Phone, Calendar, MessageSquare, ClipboardList, Video, ChevronUp, ChevronDown as ChevronDownIcon, MoveUp, MoveDown, Trash2 } from 'lucide-react';
+import { X, RotateCcw, Plus, Type, FileText, ChevronDown, Circle, CheckSquare, FolderOpen, Image, Phone, Calendar, AlignLeft, ClipboardList, Video, ChevronUp, ChevronDown as ChevronDownIcon, MoveUp, MoveDown, Trash2 } from 'lucide-react';
 import { FlowModule } from '../types/flow';
 import { ModuleTemplate } from '../hooks/useTemplates';
 import ImageUploadComponent from './ImageUploadComponent';
@@ -1349,7 +1349,7 @@ export default function ModuleConfigPanel({
     {question.type === 'image' && <Image className="w-4 h-4" />}
     {question.type === 'phone' && <Phone className="w-4 h-4" />}
     {question.type === 'interview-scheduler' && <Calendar className="w-4 h-4" />}
-    {question.type === 'message' && <MessageSquare className="w-4 h-4" />}
+    {question.type === 'message' && <AlignLeft className="w-4 h-4" />}
     {question.type === 'assessment' && <ClipboardList className="w-4 h-4" />}
     {question.type === 'video-interview' && <Video className="w-4 h-4" />}
     <span>
@@ -1362,7 +1362,7 @@ export default function ModuleConfigPanel({
       {question.type === 'image' && 'Image Upload'}
       {question.type === 'phone' && 'Phone Number'}
       {question.type === 'interview-scheduler' && 'Interview Scheduler'}
-      {question.type === 'message' && 'Message'}
+      {question.type === 'message' && 'Text Block'}
       {question.type === 'assessment' && 'Assessments'}
       {question.type === 'video-interview' && 'Video Interview'}
     </span>
@@ -1482,8 +1482,8 @@ export default function ModuleConfigPanel({
                         updateQuestion(index, 'typeSelectorOpen', false);
                       }}
                     >
-                      <MessageSquare className="w-4 h-4" />
-                      <span>Message</span>
+                      <AlignLeft className="w-4 h-4" />
+                      <span>Text Block</span>
                     </div>
                     <div 
                       className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
@@ -1716,7 +1716,7 @@ export default function ModuleConfigPanel({
               {/* Rich Text Editor for Message type */}
               {question.type === 'message' && (
                 <div className="mt-3">
-                  <label className="block text-xs font-medium text-gray-600 mb-2">Message Content</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-2">Text Block Content</label>
                   <div className="border border-gray-300 rounded-lg overflow-hidden">
                     <div className="flex border-b border-gray-200 bg-gray-50">
                       <button
