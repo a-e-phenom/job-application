@@ -20,6 +20,16 @@ export interface DatabaseFlow {
   primary_color: string;
   logo_url: string;
   collect_feedback: boolean;
+  folder_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DatabaseFolder {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
   created_at: string;
   updated_at: string;
 }

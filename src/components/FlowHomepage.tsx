@@ -1,15 +1,22 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Plus, Search, Settings, HelpCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import FlowCard from './FlowCard';
+import FolderCard from './FolderCard';
+import FolderModal from './FolderModal';
 import HowItWorksModal from './HowItWorksModal';
 import { ApplicationFlow } from '../types/flow';
+import { Folder } from '../types/folder';
 import { useFlows } from '../hooks/useFlows';
+import { useFolders } from '../hooks/useFolders';
 
 export default function FlowHomepage() {
-  const { flows, loading, error, createFlow, updateFlow, deleteFlow, duplicateFlow } = useFlows();
+  const { flows, loading, error, deleteFlow, duplicateFlow, updateFlow } = useFlows();
+  const { folders, loading: foldersLoading, createFolder, updateFolder, deleteFolder } = useFolders();
   const [searchTerm, setSearchTerm] = useState('');
   const [showHowItWorksModal, setShowHowItWorksModal] = useState(false);
+  const [showFolderModal, setShowFolderModal] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
   const navigate = useNavigate();
 
   const handleDeleteFlow = async (flowId: string) => {
@@ -42,6 +49,61 @@ export default function FlowHomepage() {
 
   const handleViewModuleTemplates = () => {
     navigate('/modules');
+  };
+
+  const handleCreateFolder = () => {
+    setEditingFolder(null);
+    setShowFolderModal(true);
+  };
+
+  const handleEditFolder = (folder: Folder) => {
+    setEditingFolder(folder);
+    setShowFolderModal(true);
+  };
+
+  const handleDeleteFolder = async (folderId: string) => {
+    try {
+      await deleteFolder(folderId);
+    } catch (error) {
+      console.error('Failed to delete folder:', error);
+    }
+  };
+
+  const handleSaveFolder = async (folderData: Omit<Folder, 'id' | 'createdAt' | 'updatedAt' | 'flowCount'>, selectedFlowIds: string[]) => {
+    console.log('Saving folder:', folderData, 'with flows:', selectedFlowIds);
+    if (editingFolder) {
+      await updateFolder(editingFolder.id, folderData);
+      // Update flows to assign them to this folder
+      await updateFlowsFolder(editingFolder.id, selectedFlowIds);
+    } else {
+      const newFolder = await createFolder(folderData);
+      // Update flows to assign them to the new folder
+      await updateFlowsFolder(newFolder.id, selectedFlowIds);
+    }
+  };
+
+  const updateFlowsFolder = async (folderId: string, selectedFlowIds: string[]) => {
+    try {
+      // First, remove all flows from this folder
+      const flowsInFolder = flows.filter(flow => flow.folderId === folderId);
+      for (const flow of flowsInFolder) {
+        await updateFlow(flow.id, { ...flow, folderId: null });
+      }
+
+      // Then, assign selected flows to this folder
+      for (const flowId of selectedFlowIds) {
+        const flow = flows.find(f => f.id === flowId);
+        if (flow) {
+          await updateFlow(flow.id, { ...flow, folderId });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update flows folder assignment:', error);
+    }
+  };
+
+  const handleFolderClick = (folder: Folder) => {
+    navigate(`/folder/${folder.id}`);
   };
 
   const filteredFlows = flows.filter(flow => {
@@ -112,46 +174,94 @@ export default function FlowHomepage() {
 
 </div>
 
-        {/* Flow Cards */}
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="text-gray-500">Loading flows...</div>
+        {/* Folders Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-md font-medium text-gray-900">Folders</h2>
+            <button
+              onClick={handleCreateFolder}
+              className="flex items-center space-x-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create folder</span>
+            </button>
           </div>
-        ) : error ? (
-          <div className="text-center py-12">
-            <div className="text-red-500 mb-4">Error: {error}</div>
-            <p className="text-gray-500">Please make sure you're connected to Supabase</p>
-          </div>
-        ) : (
-        filteredFlows.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-gray-500 mb-4">
-              {searchTerm ? 'No flows match your criteria' : 'No flows created yet'}
+          
+          {foldersLoading ? (
+            <div className="text-center py-8">
+              <div className="text-gray-500">Loading folders...</div>
             </div>
-            {!searchTerm && (
+          ) : folders.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-gray-500 mb-4">No folders created yet</div>
               <button
-                onClick={handleCreateFlow}
+                onClick={handleCreateFolder}
                 className="text-indigo-600 hover:text-indigo-700 font-medium"
               >
-                Create your first flow
+                Create your first folder
               </button>
-            )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {folders.map((folder) => (
+                <FolderCard
+                  key={folder.id}
+                  folder={folder}
+                  onEdit={handleEditFolder}
+                  onDelete={handleDeleteFolder}
+                  onClick={handleFolderClick}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* All Job Application Flows Section */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-md font-medium text-gray-900">All Job Application Flows</h2>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredFlows.map((flow) => (
-              <FlowCard
-                key={flow.id}
-                flow={flow}
-                onEdit={handleEditFlow}
-                onDelete={handleDeleteFlow}
-                onPreview={handlePreviewFlow}
-                onDuplicate={handleDuplicateFlow}
-              />
-            ))}
-          </div>
-        )
-        )}
+          
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="text-gray-500">Loading flows...</div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <div className="text-red-500 mb-4">Error: {error}</div>
+              <p className="text-gray-500">Please make sure you're connected to Supabase</p>
+            </div>
+          ) : (
+          filteredFlows.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-500 mb-4">
+                {searchTerm ? 'No flows match your criteria' : 'No flows created yet'}
+              </div>
+              {!searchTerm && (
+                <button
+                  onClick={handleCreateFlow}
+                  className="text-indigo-600 hover:text-indigo-700 font-medium"
+                >
+                  Create your first flow
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredFlows.map((flow) => (
+                <FlowCard
+                  key={flow.id}
+                  flow={flow}
+                  onEdit={handleEditFlow}
+                  onDelete={handleDeleteFlow}
+                  onPreview={handlePreviewFlow}
+                  onDuplicate={handleDuplicateFlow}
+                />
+              ))}
+            </div>
+          )
+          )}
+        </div>
 
       </div>
 
@@ -159,6 +269,18 @@ export default function FlowHomepage() {
       <HowItWorksModal
         isOpen={showHowItWorksModal}
         onClose={() => setShowHowItWorksModal(false)}
+      />
+
+      {/* Folder Modal */}
+      <FolderModal
+        isOpen={showFolderModal}
+        onClose={() => {
+          setShowFolderModal(false);
+          setEditingFolder(null);
+        }}
+        onSave={handleSaveFolder}
+        folder={editingFolder}
+        flows={flows}
       />
     </div>
   );

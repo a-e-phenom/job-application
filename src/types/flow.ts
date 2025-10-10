@@ -58,6 +58,7 @@ export interface ApplicationFlow {
   primaryColor?: string;
   logoUrl?: string;
   collectFeedback?: boolean;
+  folderId?: string; // Reference to folder
 }
 
 

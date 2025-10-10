@@ -28,6 +28,7 @@ export function useFlows() {
       primaryColor: dbFlow.primary_color,
       logoUrl: dbFlow.logo_url,
       collectFeedback: dbFlow.collect_feedback || false,
+      folderId: dbFlow.folder_id,
       createdAt: new Date(dbFlow.created_at),
       updatedAt: new Date(dbFlow.updated_at)
     };
@@ -54,7 +55,8 @@ export function useFlows() {
     is_active: flow.isActive,
     primary_color: flow.primaryColor || '#6366F1',
     logo_url: flow.logoUrl || '',
-    collect_feedback: flow.collectFeedback || false
+    collect_feedback: flow.collectFeedback || false,
+    folder_id: flow.folderId || null
   });
 
   // Fetch all flows
@@ -148,7 +150,8 @@ export function useFlows() {
         isActive: false, // Duplicated flows start as inactive
         primaryColor: flow.primaryColor,
         logoUrl: flow.logoUrl,
-        collectFeedback: flow.collectFeedback
+        collectFeedback: flow.collectFeedback,
+        folderId: flow.folderId
       };
 
       const dbFlow = convertToDatabaseFlow(duplicatedFlowData);

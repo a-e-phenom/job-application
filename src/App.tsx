@@ -4,6 +4,7 @@ import FlowHomepage from './components/FlowHomepage';
 import ApplicationFlow from './components/ApplicationFlow';
 import ModuleTemplatesPage from './components/ModuleTemplatesPage';
 import CreateFlowPage from './components/CreateFlowPage';
+import FolderView from './components/FolderView';
 
 function App() {
   return (
@@ -11,6 +12,9 @@ function App() {
       <Routes>
         {/* Homepage */}
         <Route path="/" element={<FlowHomepage />} />
+        
+        {/* Folder view */}
+        <Route path="/folder/:folderId" element={<FolderView />} />
         
         {/* Module templates */}
         <Route path="/modules" element={<ModuleTemplatesPage />} />
