@@ -73,12 +73,12 @@ export default function FolderCard({ folder, onEdit, onDelete, onClick }: Folder
     >
       {/* Content container */}
       <div>
-        <div className="flex items-start justify-between mb-0">
+        <div className="flex items-center justify-between mb-0">
           <div className="flex-1">
-            <div className="flex items-start space-x-3 mb-0">
-              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Folder className="w-5 h-5 text-gray-600" />
-              </div>
+            <div className="flex items-center space-x-4 mb-0">
+             
+                <img src="/folder-icon.png" alt="Folder" className="w-12 h-auto" />
+             
               <div className="flex-1">
                 <h3 className="text-md font-medium text-[#464F5E] mb-0">{folder.name}</h3>
                 <div className="flex items-center space-x-0">
