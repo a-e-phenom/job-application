@@ -34,11 +34,11 @@ export function useFolders() {
 
       if (error) throw error;
 
-      // Get flow counts for each folder
+      // Get flow counts for each folder from junction table
       const foldersWithCounts = await Promise.all(
         data.map(async (folder) => {
           const { count } = await supabase
-            .from('application_flows')
+            .from('flow_folders')
             .select('*', { count: 'exact', head: true })
             .eq('folder_id', folder.id);
           

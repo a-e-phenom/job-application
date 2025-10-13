@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Plus, Search, Settings, HelpCircle, MoreVertical, Edit, Trash2, ArrowLeft } from 'lucide-react';
+import { Plus, Settings, HelpCircle, MoreVertical, Edit, Trash2, ArrowLeft } from 'lucide-react';
 import FlowCard from './FlowCard';
 import FolderModal from './FolderModal';
 import HowItWorksModal from './HowItWorksModal';
@@ -23,8 +23,10 @@ export default function FolderView() {
   // Find the current folder
   const currentFolder = folders.find(f => f.id === folderId);
 
-  // Filter flows for this folder
-  const folderFlows = flows.filter(flow => flow.folderId === folderId);
+  // Filter flows for this folder using the new folderIds array
+  const folderFlows = flows.filter(flow => 
+    flow.folderIds && flow.folderIds.includes(folderId || '')
+  );
 
   const handleDeleteFlow = async (flowId: string) => {
     try {
@@ -76,23 +78,33 @@ export default function FolderView() {
   const handleSaveFolder = async (folderData: Omit<FolderType, 'id' | 'createdAt' | 'updatedAt' | 'flowCount'>, selectedFlowIds: string[]) => {
     if (!currentFolder) return;
     await updateFolder(currentFolder.id, folderData);
-    // Update flows to assign them to this folder
-    await updateFlowsFolder(currentFolder.id, selectedFlowIds);
+    // Update flows to add/remove them from this folder
+    await updateFlowsFolderAssociations(currentFolder.id, selectedFlowIds);
   };
 
-  const updateFlowsFolder = async (folderId: string, selectedFlowIds: string[]) => {
+  const updateFlowsFolderAssociations = async (folderId: string, selectedFlowIds: string[]) => {
     try {
-      // First, remove all flows from this folder
-      const flowsInFolder = flows.filter(flow => flow.folderId === folderId);
-      for (const flow of flowsInFolder) {
-        await updateFlow(flow.id, { ...flow, folderId: null });
-      }
-
-      // Then, assign selected flows to this folder
+      // For each selected flow, add this folder to its folder list
       for (const flowId of selectedFlowIds) {
         const flow = flows.find(f => f.id === flowId);
         if (flow) {
-          await updateFlow(flow.id, { ...flow, folderId });
+          const currentFolderIds = flow.folderIds || [];
+          if (!currentFolderIds.includes(folderId)) {
+            const newFolderIds = [...currentFolderIds, folderId];
+            await updateFlow(flow.id, { ...flow, folderIds: newFolderIds });
+          }
+        }
+      }
+
+      // Remove flows that were unselected from this folder
+      const flowsCurrentlyInFolder = flows.filter(flow => 
+        flow.folderIds && flow.folderIds.includes(folderId)
+      );
+      
+      for (const flow of flowsCurrentlyInFolder) {
+        if (!selectedFlowIds.includes(flow.id)) {
+          const newFolderIds = (flow.folderIds || []).filter(id => id !== folderId);
+          await updateFlow(flow.id, { ...flow, folderIds: newFolderIds });
         }
       }
     } catch (error) {
@@ -293,6 +305,7 @@ export default function FolderView() {
                   onDelete={handleDeleteFlow}
                   onPreview={handlePreviewFlow}
                   onDuplicate={handleDuplicateFlow}
+                  folders={folders}
                 />
               ))}
             </div>

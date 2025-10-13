@@ -1,6 +1,7 @@
 import React from 'react';
-import { Edit, Trash2, MoreVertical, MoveRight, Copy, Check, Link } from 'lucide-react';
+import { Edit, Trash2, MoreVertical, MoveRight, Copy, Check, Link, Folder } from 'lucide-react';
 import { ApplicationFlow } from '../types/flow';
+import { Folder as FolderType } from '../types/folder';
 
 interface FlowCardProps {
   flow: ApplicationFlow;
@@ -8,13 +9,19 @@ interface FlowCardProps {
   onDelete: (flowId: string) => void;
   onPreview: (flow: ApplicationFlow) => void;
   onDuplicate: (flow: ApplicationFlow) => void;
+  folders?: FolderType[]; // Optional folders for displaying badges
 }
 
-export default function FlowCard({ flow, onEdit, onDelete, onPreview, onDuplicate }: FlowCardProps) {
+export default function FlowCard({ flow, onEdit, onDelete, onPreview, onDuplicate, folders = [] }: FlowCardProps) {
   const [showMenu, setShowMenu] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
+
+  // Get folder names for this flow
+  const flowFolders = folders.filter(folder => 
+    flow.folderIds && flow.folderIds.includes(folder.id)
+  );
 
   // Close menu when clicking outside
   React.useEffect(() => {
@@ -149,7 +156,8 @@ export default function FlowCard({ flow, onEdit, onDelete, onPreview, onDuplicat
 </div>
 
 
-          <p className="text-[#637085] text-sm mb-3">{flow.description}</p>
+          <p className="text-[#637085] text-sm mb-2">{flow.description}</p>
+          
         </div>
         <div className="relative">
           <button

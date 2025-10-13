@@ -9,7 +9,7 @@ export function useFlows() {
   const [error, setError] = useState<string | null>(null);
 
   // Convert database flow to application flow
-  const convertToApplicationFlow = (dbFlow: DatabaseFlow): ApplicationFlow => {
+  const convertToApplicationFlow = async (dbFlow: DatabaseFlow): Promise<ApplicationFlow> => {
     // Generate slug if it doesn't exist (for backward compatibility)
     let slug = dbFlow.slug;
     if (!slug) {
@@ -17,6 +17,14 @@ export function useFlows() {
       // Update the database with the generated slug
       updateFlowSlugInDatabase(dbFlow.id, slug);
     }
+    
+    // Fetch folder associations from junction table
+    const { data: folderAssociations } = await supabase
+      .from('flow_folders')
+      .select('folder_id')
+      .eq('flow_id', dbFlow.id);
+    
+    const folderIds = folderAssociations?.map(fa => fa.folder_id) || [];
     
     return {
       id: dbFlow.id,
@@ -28,7 +36,8 @@ export function useFlows() {
       primaryColor: dbFlow.primary_color,
       logoUrl: dbFlow.logo_url,
       collectFeedback: dbFlow.collect_feedback || false,
-      folderId: dbFlow.folder_id,
+      folderId: dbFlow.folder_id || undefined, // Keep for backward compatibility
+      folderIds, // New many-to-many relationship
       createdAt: new Date(dbFlow.created_at),
       updatedAt: new Date(dbFlow.updated_at)
     };
@@ -56,8 +65,34 @@ export function useFlows() {
     primary_color: flow.primaryColor || '#6366F1',
     logo_url: flow.logoUrl || '',
     collect_feedback: flow.collectFeedback || false,
-    folder_id: flow.folderId || null
+    folder_id: flow.folderId || null // Keep for backward compatibility
   });
+
+  // Add or remove flow-folder associations
+  const updateFlowFolders = async (flowId: string, folderIds: string[]) => {
+    try {
+      // First, remove all existing associations
+      await supabase
+        .from('flow_folders')
+        .delete()
+        .eq('flow_id', flowId);
+
+      // Then, add new associations
+      if (folderIds.length > 0) {
+        const associations = folderIds.map(folderId => ({
+          flow_id: flowId,
+          folder_id: folderId
+        }));
+        
+        await supabase
+          .from('flow_folders')
+          .insert(associations);
+      }
+    } catch (err) {
+      console.error('Failed to update flow folders:', err);
+      throw err;
+    }
+  };
 
   // Fetch all flows
   const fetchFlows = async () => {
@@ -70,7 +105,7 @@ export function useFlows() {
 
       if (error) throw error;
 
-      const convertedFlows = data.map(convertToApplicationFlow);
+      const convertedFlows = await Promise.all(data.map(convertToApplicationFlow));
       setFlows(convertedFlows);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch flows');
@@ -91,7 +126,12 @@ export function useFlows() {
 
       if (error) throw error;
 
-      const newFlow = convertToApplicationFlow(data);
+      // Update folder associations if folderIds are provided
+      if (flowData.folderIds && flowData.folderIds.length > 0) {
+        await updateFlowFolders(data.id, flowData.folderIds);
+      }
+
+      const newFlow = await convertToApplicationFlow(data);
       setFlows(prev => [newFlow, ...prev]);
       return newFlow;
     } catch (err) {
@@ -113,7 +153,12 @@ export function useFlows() {
 
       if (error) throw error;
 
-      const updatedFlow = convertToApplicationFlow(data);
+      // Update folder associations if folderIds are provided
+      if (flowData.folderIds !== undefined) {
+        await updateFlowFolders(id, flowData.folderIds);
+      }
+
+      const updatedFlow = await convertToApplicationFlow(data);
       setFlows(prev => prev.map(f => f.id === id ? updatedFlow : f));
       return updatedFlow;
     } catch (err) {
@@ -151,7 +196,8 @@ export function useFlows() {
         primaryColor: flow.primaryColor,
         logoUrl: flow.logoUrl,
         collectFeedback: flow.collectFeedback,
-        folderId: flow.folderId
+        folderId: flow.folderId,
+        folderIds: flow.folderIds // Keep the same folder associations
       };
 
       const dbFlow = convertToDatabaseFlow(duplicatedFlowData);
@@ -163,7 +209,12 @@ export function useFlows() {
 
       if (error) throw error;
 
-      const newFlow = convertToApplicationFlow(data);
+      // Duplicate folder associations
+      if (flow.folderIds && flow.folderIds.length > 0) {
+        await updateFlowFolders(data.id, flow.folderIds);
+      }
+
+      const newFlow = await convertToApplicationFlow(data);
       setFlows(prev => [newFlow, ...prev]);
       return newFlow;
     } catch (err) {
@@ -184,6 +235,7 @@ export function useFlows() {
     updateFlow,
     deleteFlow,
     duplicateFlow,
+    updateFlowFolders,
     refetch: fetchFlows
   };
 }

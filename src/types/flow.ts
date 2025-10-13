@@ -58,7 +58,8 @@ export interface ApplicationFlow {
   primaryColor?: string;
   logoUrl?: string;
   collectFeedback?: boolean;
-  folderId?: string; // Reference to folder
+  folderId?: string; // Deprecated: kept for backward compatibility
+  folderIds?: string[]; // Array of folder IDs this flow belongs to
 }
 
 

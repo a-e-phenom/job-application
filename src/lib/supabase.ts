@@ -45,6 +45,13 @@ export interface DatabaseTemplate {
   updated_at: string;
 }
 
+export interface DatabaseFlowFolder {
+  id: string;
+  flow_id: string;
+  folder_id: string;
+  created_at: string;
+}
+
 export interface DatabaseLogoImage {
   id: string;
   filename: string;

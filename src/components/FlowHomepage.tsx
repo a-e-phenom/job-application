@@ -73,28 +73,40 @@ export default function FlowHomepage() {
     console.log('Saving folder:', folderData, 'with flows:', selectedFlowIds);
     if (editingFolder) {
       await updateFolder(editingFolder.id, folderData);
-      // Update flows to assign them to this folder
-      await updateFlowsFolder(editingFolder.id, selectedFlowIds);
+      // Update flows to add/remove them from this folder
+      await updateFlowsFolderAssociations(editingFolder.id, selectedFlowIds);
     } else {
       const newFolder = await createFolder(folderData);
-      // Update flows to assign them to the new folder
-      await updateFlowsFolder(newFolder.id, selectedFlowIds);
+      // Update flows to add them to the new folder
+      await updateFlowsFolderAssociations(newFolder.id, selectedFlowIds);
     }
   };
 
-  const updateFlowsFolder = async (folderId: string, selectedFlowIds: string[]) => {
+  const updateFlowsFolderAssociations = async (folderId: string, selectedFlowIds: string[]) => {
     try {
-      // First, remove all flows from this folder
-      const flowsInFolder = flows.filter(flow => flow.folderId === folderId);
-      for (const flow of flowsInFolder) {
-        await updateFlow(flow.id, { ...flow, folderId: null });
-      }
-
-      // Then, assign selected flows to this folder
+      // For each flow, update its folder associations
       for (const flowId of selectedFlowIds) {
         const flow = flows.find(f => f.id === flowId);
         if (flow) {
-          await updateFlow(flow.id, { ...flow, folderId });
+          // Add this folder to the flow's folder list if not already present
+          const currentFolderIds = flow.folderIds || [];
+          if (!currentFolderIds.includes(folderId)) {
+            const newFolderIds = [...currentFolderIds, folderId];
+            await updateFlow(flow.id, { ...flow, folderIds: newFolderIds });
+          }
+        }
+      }
+
+      // Remove flows that were unselected from this folder
+      const flowsCurrentlyInFolder = flows.filter(flow => 
+        flow.folderIds && flow.folderIds.includes(folderId)
+      );
+      
+      for (const flow of flowsCurrentlyInFolder) {
+        if (!selectedFlowIds.includes(flow.id)) {
+          // Remove this folder from the flow's folder list
+          const newFolderIds = (flow.folderIds || []).filter(id => id !== folderId);
+          await updateFlow(flow.id, { ...flow, folderIds: newFolderIds });
         }
       }
     } catch (error) {
@@ -256,6 +268,7 @@ export default function FlowHomepage() {
                   onDelete={handleDeleteFlow}
                   onPreview={handlePreviewFlow}
                   onDuplicate={handleDuplicateFlow}
+                  folders={folders}
                 />
               ))}
             </div>

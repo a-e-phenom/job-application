@@ -23,8 +23,10 @@ export default function FolderModal({ isOpen, onClose, onSave, folder, flows = [
       if (folder) {
         setName(folder.name);
         setDescription(folder.description || '');
-        // For editing, pre-select flows that are already in this folder
-        const flowsInFolder = flows.filter(flow => flow.folderId === folder.id).map(flow => flow.id);
+        // For editing, pre-select flows that are already in this folder (using folderIds)
+        const flowsInFolder = flows.filter(flow => 
+          flow.folderIds && flow.folderIds.includes(folder.id)
+        ).map(flow => flow.id);
         setSelectedFlowIds(flowsInFolder);
       } else {
         setName('');
@@ -154,7 +156,11 @@ export default function FolderModal({ isOpen, onClose, onSave, folder, flows = [
                     <p className="text-gray-500 text-sm">No flows available</p>
                   ) : (
                     <div className="space-y-2">
-                      {flows.map((flow) => (
+                    {flows.map((flow) => {
+                      const otherFolders = flow.folderIds?.filter(id => folder && id !== folder.id) || [];
+                      const isInOtherFolders = otherFolders.length > 0;
+                      
+                      return (
                         <label key={flow.id} className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
                           <input
                             type="checkbox"
@@ -164,13 +170,17 @@ export default function FolderModal({ isOpen, onClose, onSave, folder, flows = [
                             className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                           />
                           <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-900">{flow.name}</div>
+                            <div className="flex items-center gap-2">
+                              <div className="text-sm font-medium text-gray-900">{flow.name}</div>
+                             
+                            </div>
                             {flow.description && (
                               <div className="text-xs text-gray-500">{flow.description}</div>
                             )}
                           </div>
                         </label>
-                      ))}
+                      );
+                    })}
                     </div>
                   )}
                 </div>
