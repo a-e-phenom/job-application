@@ -45,7 +45,7 @@ const AssessmentComponent = React.memo(({
   assessmentConfig?: {
     screens: Array<{
       id: string;
-      type: 'welcome' | 'best-worst' | 'agree-scale' | 'single-select';
+      type: 'welcome' | 'best-worst' | 'agree-scale' | 'single-select' | 'language-reading' | 'language-listening';
       title: string;
       content: {
         welcomeTitle?: string;
@@ -66,6 +66,14 @@ const AssessmentComponent = React.memo(({
         singleSelectQuestion?: string;
         singleSelectDescription?: string;
         singleSelectOptions?: string[];
+        languageReadingTitle?: string;
+        languageReadingQuestion?: string;
+        languageReadingDescription?: string;
+        languageReadingOptions?: string[];
+        languageListeningTitle?: string;
+        languageListeningQuestion?: string;
+        languageListeningDescription?: string;
+        languageListeningOptions?: string[];
       };
     }>;
   };
@@ -235,7 +243,7 @@ const AssessmentComponent = React.memo(({
             <img
               src={currentScreen.content.welcomeImage || "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=800"}
               alt="Assessment welcome"
-              className="w-full h-80 object-cover rounded-lg"
+              className="w-full h-auto max-h-[500px] object-contain rounded-lg"
             />
           </div>
           <div>
@@ -268,7 +276,7 @@ const AssessmentComponent = React.memo(({
             <img
               src={currentScreen.content.scenarioImage || "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=800"}
               alt="Scenario"
-              className="w-full h-64 object-cover rounded-lg mb-4"
+              className="w-full h-auto rounded-lg mb-4"
             />
             <p className="text-[16px] text-[#464F5E] leading-relaxed whitespace-pre-line">
               {currentScreen.content.scenarioDescription || 'A customer approaches you with a complaint about a product they purchased last week.'}
@@ -420,14 +428,134 @@ const AssessmentComponent = React.memo(({
                   key={index}
                   onClick={() => handleMathAnswer(currentScreen.id, option)}
                   className={`
-                    w-full p-4 rounded-lg border-2 text-left transition-all duration-200
+                    w-full p-4 rounded-lg border-2 text-left transition-all duration-200 bg-white
                     ${answer?.answer === option
-                      ? 'text-white border-transparent'
+                      ? ''
                       : 'border-gray-200 hover:border-gray-300'
                     }
                   `}
                   style={{
-                    backgroundColor: answer?.answer === option ? primaryColor : 'white'
+                    borderColor: answer?.answer === option ? primaryColor : undefined,
+                    color: answer?.answer === option ? primaryColor : '#464F5E'
+                  }}
+                >
+                  <span className="text-[16px] font-medium">{option}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderLanguageReadingStep = () => {
+    const currentScreen = screens[currentSubStep];
+    if (!currentScreen || currentScreen.type !== 'language-reading') return null;
+
+    const answer = getMathAnswer(currentScreen.id);
+    
+    return (
+      <div className="w-full bg-white m-0 p-0 overflow-x-hidden" style={{ minHeight: 'calc(100vh - 140px)' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 h-full w-full m-0 p-0" style={{ minHeight: 'calc(100vh - 140px)' }}>
+          <div className="flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full">
+            <h2 className="text-[20px] font-medium text-[#353B46] mb-4">
+              {currentScreen.content.languageReadingTitle || 'Reading Question'}
+            </h2>
+            <p className="text-[16px] text-[#464F5E] mb-6">
+              {currentScreen.content.languageReadingQuestion || 'Read the passage and answer the question.'}
+            </p>
+            
+            <div className="mb-6">
+              <p className="text-[16px] text-[#353B46] text-left leading-relaxed whitespace-pre-line">
+                {currentScreen.content.languageReadingDescription || 'Select the correct answer from the options below.'}
+              </p>
+            </div>
+          </div>
+          
+          <div 
+            className="flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full"
+            style={{ backgroundColor: '#F8F9FB' }}
+          >
+            <div className="space-y-3">
+              {(currentScreen.content.languageReadingOptions || []).map((option, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleMathAnswer(currentScreen.id, option)}
+                  className={`
+                    w-full p-4 rounded-lg border-2 text-left transition-all duration-200 bg-white
+                    ${answer?.answer === option
+                      ? ''
+                      : 'border-gray-200 hover:border-gray-300'
+                    }
+                  `}
+                  style={{
+                    borderColor: answer?.answer === option ? primaryColor : undefined,
+                    color: answer?.answer === option ? primaryColor : '#464F5E'
+                  }}
+                >
+                  <span className="text-[16px] font-medium">{option}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderLanguageListeningStep = () => {
+    const currentScreen = screens[currentSubStep];
+    if (!currentScreen || currentScreen.type !== 'language-listening') return null;
+
+    const answer = getMathAnswer(currentScreen.id);
+    
+    return (
+      <div className="w-full bg-white m-0 p-0 overflow-x-hidden" style={{ minHeight: 'calc(100vh - 140px)' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 h-full w-full m-0 p-0" style={{ minHeight: 'calc(100vh - 140px)' }}>
+          <div className="flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full">
+            <h2 className="text-[20px] font-medium text-[#353B46] mb-4">
+              {currentScreen.content.languageListeningTitle || 'Listening Question'}
+            </h2>
+            <p className="text-[16px] text-[#464F5E] mb-6">
+              {currentScreen.content.languageListeningQuestion || 'Listen to the audio and answer the question.'}
+            </p>
+            
+            {/* Audio Player Image - Not editable */}
+            <div className="mb-6">
+              <img 
+                src="/audio-player.png" 
+                alt="Audio player"
+                className="w-full h-auto"
+              />
+            </div>
+            
+            <div className="bg-gray-50 rounded-lg p-6">
+              <p className="text-[16px] text-[#353B46] text-center leading-relaxed whitespace-pre-line">
+                {currentScreen.content.languageListeningDescription || 'Choose the correct answer from the options below.'}
+              </p>
+            </div>
+          </div>
+          
+          <div 
+            className="flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full"
+            style={{ backgroundColor: '#F8F9FB' }}
+          >
+            <div className="space-y-3">
+              {(currentScreen.content.languageListeningOptions || []).map((option, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleMathAnswer(currentScreen.id, option)}
+                  className={`
+                    w-full p-4 rounded-lg border-2 text-left transition-all duration-200 bg-white
+                    ${answer?.answer === option
+                      ? ''
+                      : 'border-gray-200 hover:border-gray-300'
+                    }
+                  `}
+                  style={{
+                    borderColor: answer?.answer === option ? primaryColor : undefined,
+                    color: answer?.answer === option ? primaryColor : '#464F5E'
                   }}
                 >
                   <span className="text-[16px] font-medium">{option}</span>
@@ -453,6 +581,10 @@ const AssessmentComponent = React.memo(({
         return renderAgreementStep();
       case 'single-select':
         return renderMathStep();
+      case 'language-reading':
+        return renderLanguageReadingStep();
+      case 'language-listening':
+        return renderLanguageListeningStep();
       default:
         return renderIntroStep();
     }
@@ -467,7 +599,7 @@ const AssessmentComponent = React.memo(({
     }
 
     const questionScreens = screens.filter(screen => 
-      screen.type === 'best-worst' || screen.type === 'agree-scale' || screen.type === 'single-select'
+      screen.type === 'best-worst' || screen.type === 'agree-scale' || screen.type === 'single-select' || screen.type === 'language-reading' || screen.type === 'language-listening'
     );
     const questionIndex = questionScreens.findIndex(screen => screen.id === currentScreen.id);
     
@@ -489,7 +621,7 @@ const AssessmentComponent = React.memo(({
           <div className="w-full px-0 pb-4">
             <div className="flex w-full gap-2">
               {screens.filter(screen => 
-                screen.type === 'best-worst' || screen.type === 'agree-scale' || screen.type === 'single-select'
+                screen.type === 'best-worst' || screen.type === 'agree-scale' || screen.type === 'single-select' || screen.type === 'language-reading' || screen.type === 'language-listening'
               ).map((screen) => {
                 const screenIndex = screens.findIndex(s => s.id === screen.id);
                 return (

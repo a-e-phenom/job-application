@@ -209,7 +209,7 @@ const AssessmentStep = React.memo(function AssessmentStep({ data, onUpdate, onVa
             <img
               src={question.image}
               alt="Scenario"
-              className="w-full h-64 object-cover rounded-lg mb-4"
+              className="w-full h-auto rounded-lg mb-4"
             />
             <p className="text-[16px] text-[#464F5E] leading-relaxed">{question.description}</p>
           </div>

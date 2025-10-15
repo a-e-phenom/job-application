@@ -13,7 +13,7 @@ export default function FolderView() {
   const { folderId } = useParams<{ folderId: string }>();
   const navigate = useNavigate();
   const { flows, loading, error, deleteFlow, duplicateFlow, updateFlow } = useFlows();
-  const { folders, updateFolder, deleteFolder } = useFolders();
+  const { folders, loading: foldersLoading, updateFolder, deleteFolder } = useFolders();
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [showHowItWorksModal, setShowHowItWorksModal] = useState(false);
   const [showFolderMenu, setShowFolderMenu] = useState(false);
@@ -130,13 +130,25 @@ export default function FolderView() {
     };
   }, [showFolderMenu]);
 
-  // Redirect if folder not found
+  // Redirect if folder not found (after loading is complete)
   useEffect(() => {
-    if (folders.length > 0 && !currentFolder) {
+    if (!foldersLoading && folders.length > 0 && !currentFolder) {
       navigate('/');
     }
-  }, [folders, currentFolder, navigate]);
+  }, [foldersLoading, folders, currentFolder, navigate]);
 
+  // Show loading state while folders are being fetched
+  if (foldersLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-gray-500">Loading folder...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show not found only after loading is complete
   if (!currentFolder) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">

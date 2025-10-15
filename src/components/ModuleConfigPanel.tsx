@@ -33,7 +33,7 @@ interface LocalOverrides {
     assessmentConfig?: {
       screens: Array<{
         id: string;
-        type: 'welcome' | 'best-worst' | 'agree-scale' | 'single-select';
+        type: 'welcome' | 'best-worst' | 'agree-scale' | 'single-select' | 'language-reading' | 'language-listening';
         title: string;
         content: {
           welcomeTitle?: string;
@@ -54,6 +54,14 @@ interface LocalOverrides {
           singleSelectQuestion?: string;
           singleSelectDescription?: string;
           singleSelectOptions?: string[];
+          languageReadingTitle?: string;
+          languageReadingQuestion?: string;
+          languageReadingDescription?: string;
+          languageReadingOptions?: string[];
+          languageListeningTitle?: string;
+          languageListeningQuestion?: string;
+          languageListeningDescription?: string;
+          languageListeningOptions?: string[];
         };
       }>;
     };
@@ -61,7 +69,7 @@ interface LocalOverrides {
 }
 
 // Assessment Screen Types
-type AssessmentScreenType = 'welcome' | 'best-worst' | 'agree-scale' | 'single-select';
+type AssessmentScreenType = 'welcome' | 'best-worst' | 'agree-scale' | 'single-select' | 'language-reading' | 'language-listening';
 
 interface AssessmentScreen {
   id: string;
@@ -93,6 +101,18 @@ interface AssessmentScreen {
     singleSelectQuestion?: string;
     singleSelectDescription?: string;
     singleSelectOptions?: string[];
+    
+    // Language reading screen
+    languageReadingTitle?: string;
+    languageReadingQuestion?: string;
+    languageReadingDescription?: string;
+    languageReadingOptions?: string[];
+    
+    // Language listening screen
+    languageListeningTitle?: string;
+    languageListeningQuestion?: string;
+    languageListeningDescription?: string;
+    languageListeningOptions?: string[];
   };
 }
 
@@ -213,6 +233,8 @@ const AssessmentConfiguration: React.FC<AssessmentConfigurationProps> = ({ quest
       case 'best-worst': return 'Best/Worst Response';
       case 'agree-scale': return 'Agreement Scale';
       case 'single-select': return 'Single Select Question';
+      case 'language-reading': return 'Language-Reading';
+      case 'language-listening': return 'Language - Listening';
       default: return 'New Screen';
     }
   };
@@ -253,6 +275,31 @@ const AssessmentConfiguration: React.FC<AssessmentConfigurationProps> = ({ quest
           singleSelectQuestion: 'What is 15% of $2,000?',
           singleSelectDescription: 'Choose the correct answer from the options below.',
           singleSelectOptions: ['$300', '$350', '$400', '$450']
+        };
+      case 'language-reading':
+        return {
+          languageReadingTitle: 'Reading Question',
+          languageReadingQuestion: 'Read the passage and answer the question.',
+          languageReadingDescription: `Ana Martinez from "Customers First" explains three of the skills and qualities necessary for a successful career in customer service: "If you want to work in customer service, you have to have good communication skills. 
+
+In my opinion, this is essential. You need to be able to listen to your customers and understand what they are saying. You need to be able to answer questions efficiently without mumbling or losing focus.
+
+I think the second most important quality is patience. When you're dealing with an unhappy customer, you need to keep cool. Try to see difficult situations as an opportunity to turn a problem into something positive.
+
+Last but not least, it's important for customer service representatives to be knowledgeable abput the product or services they are providing. If you don't have in-depth knowledge, how can you expect to be  able to provide quality customer service?"`,
+          languageReadingOptions: [
+            "It's important to look cool when you are with customers.",
+            "It's important to speak clearly when you answer customers' questions.",
+            "You don't need to be well-informed about the company's products and services.",
+            "Being knowledgeable is the least important of the three skills and qualities."
+          ]
+        };
+      case 'language-listening':
+        return {
+          languageListeningTitle: 'Listen to the customer voicemail',
+          languageListeningQuestion: 'After listening, read the question below and choose the correct answer.',
+          languageListeningDescription: 'What amount was the customer charged for their service?',
+          languageListeningOptions: ['$47.15', '$14.75', '$46.15', '$14.47']
         };
       default:
         return {};
@@ -309,6 +356,56 @@ const AssessmentConfiguration: React.FC<AssessmentConfigurationProps> = ({ quest
     }
   };
 
+  const addLanguageReadingOption = (screenId: string) => {
+    const screen = screens.find(s => s.id === screenId);
+    if (screen && screen.type === 'language-reading') {
+      const newOptions = [...(screen.content.languageReadingOptions || []), 'New option'];
+      updateScreenContent(screenId, { languageReadingOptions: newOptions });
+    }
+  };
+
+  const updateLanguageReadingOption = (screenId: string, index: number, value: string) => {
+    const screen = screens.find(s => s.id === screenId);
+    if (screen && screen.type === 'language-reading') {
+      const newOptions = [...(screen.content.languageReadingOptions || [])];
+      newOptions[index] = value;
+      updateScreenContent(screenId, { languageReadingOptions: newOptions });
+    }
+  };
+
+  const removeLanguageReadingOption = (screenId: string, index: number) => {
+    const screen = screens.find(s => s.id === screenId);
+    if (screen && screen.type === 'language-reading') {
+      const newOptions = (screen.content.languageReadingOptions || []).filter((_, i) => i !== index);
+      updateScreenContent(screenId, { languageReadingOptions: newOptions });
+    }
+  };
+
+  const addLanguageListeningOption = (screenId: string) => {
+    const screen = screens.find(s => s.id === screenId);
+    if (screen && screen.type === 'language-listening') {
+      const newOptions = [...(screen.content.languageListeningOptions || []), 'New option'];
+      updateScreenContent(screenId, { languageListeningOptions: newOptions });
+    }
+  };
+
+  const updateLanguageListeningOption = (screenId: string, index: number, value: string) => {
+    const screen = screens.find(s => s.id === screenId);
+    if (screen && screen.type === 'language-listening') {
+      const newOptions = [...(screen.content.languageListeningOptions || [])];
+      newOptions[index] = value;
+      updateScreenContent(screenId, { languageListeningOptions: newOptions });
+    }
+  };
+
+  const removeLanguageListeningOption = (screenId: string, index: number) => {
+    const screen = screens.find(s => s.id === screenId);
+    if (screen && screen.type === 'language-listening') {
+      const newOptions = (screen.content.languageListeningOptions || []).filter((_, i) => i !== index);
+      updateScreenContent(screenId, { languageListeningOptions: newOptions });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -328,6 +425,8 @@ const AssessmentConfiguration: React.FC<AssessmentConfigurationProps> = ({ quest
             <option value="best-worst">Best/Worst Response</option>
             <option value="agree-scale">Agreement Scale</option>
             <option value="single-select">Single Select Question</option>
+            <option value="language-reading">Language-Reading</option>
+            <option value="language-listening">Language - Listening</option>
           </select>
         </div>
       </div>
@@ -602,6 +701,131 @@ const AssessmentConfiguration: React.FC<AssessmentConfigurationProps> = ({ quest
                           />
                           <button
                             onClick={() => removeSelectOption(screen.id, optionIndex)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Language-Reading Screen Configuration */}
+              {screen.type === 'language-reading' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Question Title</label>
+                    <input
+                      type="text"
+                      value={screen.content.languageReadingTitle || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { languageReadingTitle: e.target.value })}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Question Text</label>
+                    <input
+                      type="text"
+                      value={screen.content.languageReadingQuestion || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { languageReadingQuestion: e.target.value })}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Description (left-aligned, no background)</label>
+                    <textarea
+                      value={screen.content.languageReadingDescription || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { languageReadingDescription: e.target.value })}
+                      rows={3}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-xs font-medium text-gray-600">Answer Options</label>
+                      <button
+                        onClick={() => addLanguageReadingOption(screen.id)}
+                        className="text-xs text-indigo-600 hover:text-indigo-700"
+                      >
+                        + Add Option
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {(screen.content.languageReadingOptions || []).map((option, optionIndex) => (
+                        <div key={optionIndex} className="flex items-center space-x-2">
+                          <input
+                            type="text"
+                            value={option}
+                            onChange={(e) => updateLanguageReadingOption(screen.id, optionIndex, e.target.value)}
+                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          />
+                          <button
+                            onClick={() => removeLanguageReadingOption(screen.id, optionIndex)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Language-Listening Screen Configuration */}
+              {screen.type === 'language-listening' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Question Title</label>
+                    <input
+                      type="text"
+                      value={screen.content.languageListeningTitle || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { languageListeningTitle: e.target.value })}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Question Text</label>
+                    <input
+                      type="text"
+                      value={screen.content.languageListeningQuestion || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { languageListeningQuestion: e.target.value })}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Description (centered in gray box)</label>
+                    <textarea
+                      value={screen.content.languageListeningDescription || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { languageListeningDescription: e.target.value })}
+                      rows={2}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
+                    />
+                  </div>
+                  
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-xs font-medium text-gray-600">Answer Options</label>
+                      <button
+                        onClick={() => addLanguageListeningOption(screen.id)}
+                        className="text-xs text-indigo-600 hover:text-indigo-700"
+                      >
+                        + Add Option
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {(screen.content.languageListeningOptions || []).map((option, optionIndex) => (
+                        <div key={optionIndex} className="flex items-center space-x-2">
+                          <input
+                            type="text"
+                            value={option}
+                            onChange={(e) => updateLanguageListeningOption(screen.id, optionIndex, e.target.value)}
+                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          />
+                          <button
+                            onClick={() => removeLanguageListeningOption(screen.id, optionIndex)}
                             className="text-red-600 hover:text-red-700"
                           >
                             <X className="w-4 h-4" />

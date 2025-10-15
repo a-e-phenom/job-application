@@ -10,6 +10,7 @@ import AssessmentStep from './AssessmentStep';
 import GenericModuleRenderer from './GenericModuleRenderer';
 import ModuleConfigPanel from './ModuleConfigPanel';
 import FeedbackModal from './FeedbackModal';
+import InterviewConfirmationModal from './InterviewConfirmationModal';
 import { ApplicationData, ContactInfo, ScreeningData, ResumeData, PreScreeningInfo, AssessmentData, JobFitInfo, TasksInfo } from '../types/application';
 import { ApplicationFlow as FlowType, FlowModule } from '../types/flow';
 import { InterviewSchedulingData } from '../types/application';
@@ -38,6 +39,9 @@ export default function ApplicationFlow() {
   
   // Feedback modal state
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  
+  // Interview confirmation modal state
+  const [showInterviewConfirmation, setShowInterviewConfirmation] = useState(false);
   
   // Initial state variables (these are NOT hooks, just constants)
   const initialContactInfo: ContactInfo = {
@@ -196,21 +200,46 @@ export default function ApplicationFlow() {
   };
 
   const handleNext = () => {
+    console.log('=== handleNext called ===');
+    console.log('Current step:', currentStep, 'Current substep:', currentSubStep);
+    
     // Validate current step before proceeding
     const currentStepValidator = stepValidationRefs[currentStep];
+    console.log('Validator exists:', !!currentStepValidator);
+    
     if (currentStepValidator && !currentStepValidator()) {
+      console.log('Validation FAILED - returning early');
       return; // Don't proceed if validation fails
     }
+    
+    console.log('Validation PASSED - continuing');
 
     // Special handling for assessment step
     const currentFlowStep = flow.steps[currentStep];
     const currentModule = currentFlowStep?.modules[currentSubStep];
+    
+    console.log('handleNext - Current Module:', currentModule);
+    console.log('handleNext - Module ID:', currentModule?.id);
+    console.log('handleNext - Module Component:', currentModule?.component);
     
     if (currentModule?.component === 'AssessmentStep' && (window as any).assessmentState) {
       (window as any).assessmentState.handleNext();
       return;
     }
 
+    // Check if we're on the interview scheduling step
+    if (currentModule?.id === 'interview-scheduling' || currentModule?.component === 'InterviewSchedulingStep') {
+      console.log('Interview scheduling detected! Showing confirmation modal...');
+      // Show confirmation modal instead of proceeding
+      setShowInterviewConfirmation(true);
+      return;
+    }
+
+    // Proceed to next step
+    proceedToNextStep();
+  };
+
+  const proceedToNextStep = () => {
     // Handle sub-steps within current step
     if (hasSubSteps && currentSubStep < currentStepModules.length - 1) {
       setCurrentSubStep(currentSubStep + 1);
@@ -225,6 +254,11 @@ export default function ApplicationFlow() {
         navigate('/');
       }
     }
+  };
+
+  const handleInterviewConfirm = () => {
+    setShowInterviewConfirmation(false);
+    proceedToNextStep();
   };
 
   const handleCustomNavigation = (target: { step?: number; subStep?: number; module?: string; flow?: string }) => {
@@ -764,6 +798,18 @@ export default function ApplicationFlow() {
           navigate('/');
         }}
         onSubmit={handleFeedbackSubmit}
+        primaryColor={flow?.primaryColor || '#6366F1'}
+      />
+
+      {/* Interview Confirmation Modal */}
+      <InterviewConfirmationModal
+        isOpen={showInterviewConfirmation}
+        onClose={() => setShowInterviewConfirmation(false)}
+        onConfirm={handleInterviewConfirm}
+        jobTitle={flow?.name}
+        selectedDate={applicationData.interviewScheduling.selectedDate}
+        selectedTime={applicationData.interviewScheduling.selectedTime}
+        timezone={applicationData.interviewScheduling.timezone}
         primaryColor={flow?.primaryColor || '#6366F1'}
       />
     </div>
