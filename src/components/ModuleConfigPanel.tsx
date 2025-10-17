@@ -708,16 +708,18 @@ Last but not least, it's important for customer service representatives to be kn
                     </div>
                     <div className="space-y-2">
                       {(screen.content.singleSelectOptions || []).map((option, optionIndex) => (
-                        <div key={optionIndex} className="flex items-center space-x-2">
-                          <input
-                            type="text"
+                        <div key={optionIndex} className="flex items-start space-x-2">
+                          <textarea
                             value={option}
                             onChange={(e) => updateSelectOption(screen.id, optionIndex, e.target.value)}
-                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            rows={2}
+                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
+                            placeholder={`Option ${optionIndex + 1}`}
                           />
                           <button
                             onClick={() => removeSelectOption(screen.id, optionIndex)}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50 mt-1"
+                            title="Remove answer option"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -770,16 +772,18 @@ Last but not least, it's important for customer service representatives to be kn
                     </div>
                     <div className="space-y-2">
                       {(screen.content.languageReadingOptions || []).map((option, optionIndex) => (
-                        <div key={optionIndex} className="flex items-center space-x-2">
-                          <input
-                            type="text"
+                        <div key={optionIndex} className="flex items-start space-x-2">
+                          <textarea
                             value={option}
                             onChange={(e) => updateLanguageReadingOption(screen.id, optionIndex, e.target.value)}
-                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            rows={2}
+                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
+                            placeholder={`Option ${optionIndex + 1}`}
                           />
                           <button
                             onClick={() => removeLanguageReadingOption(screen.id, optionIndex)}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50 mt-1"
+                            title="Remove answer option"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -833,16 +837,18 @@ Last but not least, it's important for customer service representatives to be kn
                     </div>
                     <div className="space-y-2">
                       {(screen.content.languageListeningOptions || []).map((option, optionIndex) => (
-                        <div key={optionIndex} className="flex items-center space-x-2">
-                          <input
-                            type="text"
+                        <div key={optionIndex} className="flex items-start space-x-2">
+                          <textarea
                             value={option}
                             onChange={(e) => updateLanguageListeningOption(screen.id, optionIndex, e.target.value)}
-                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            rows={2}
+                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
+                            placeholder={`Option ${optionIndex + 1}`}
                           />
                           <button
                             onClick={() => removeLanguageListeningOption(screen.id, optionIndex)}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50 mt-1"
+                            title="Remove answer option"
                           >
                             <X className="w-4 h-4" />
                           </button>

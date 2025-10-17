@@ -459,8 +459,8 @@ const AssessmentComponent = React.memo(({
     const answer = getMathAnswer(currentScreen.id);
     
     return (
-      <div className="w-full bg-white m-0 p-0 overflow-x-hidden" style={{ minHeight: 'calc(100vh - 140px)' }}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 h-full w-full m-0 p-0" style={{ minHeight: 'calc(100vh - 140px)' }}>
+      <div className="w-full bg-white m-0 p-0 overflow-y-auto overflow-x-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-2 h-full w-full m-0 p-0 mb-20">
           <div className="flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full">
             <h2 className="text-[20px] font-medium text-[#353B46] mb-4">
               {currentScreen.content.languageReadingTitle || 'Reading Question'}
