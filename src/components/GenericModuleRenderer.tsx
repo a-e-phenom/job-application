@@ -45,7 +45,7 @@ const AssessmentComponent = React.memo(({
   assessmentConfig?: {
     screens: Array<{
       id: string;
-      type: 'welcome' | 'best-worst' | 'agree-scale' | 'single-select' | 'language-reading' | 'language-listening';
+      type: 'welcome' | 'best-worst' | 'agree-scale' | 'single-select' | 'language-reading' | 'language-listening' | 'language-typing';
       title: string;
       content: {
         welcomeTitle?: string;
@@ -74,6 +74,9 @@ const AssessmentComponent = React.memo(({
         languageListeningQuestion?: string;
         languageListeningDescription?: string;
         languageListeningOptions?: string[];
+        languageTypingTitle?: string;
+        languageTypingQuestion?: string;
+        languageTypingText?: string;
       };
     }>;
   };
@@ -568,6 +571,53 @@ const AssessmentComponent = React.memo(({
     );
   };
 
+  const renderLanguageTypingStep = () => {
+    const currentScreen = screens[currentSubStep];
+    if (!currentScreen || currentScreen.type !== 'language-typing') return null;
+
+    const answer = getMathAnswer(currentScreen.id);
+    
+    return (
+      <div className="w-full bg-white m-0 p-0 overflow-y-auto overflow-x-hidden">
+        <div className="flex flex-col px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full max-w-5xl mx-auto mb-20">
+          <h2 className="text-[18px] font-medium text-[#353B46] mb-1">
+            {currentScreen.content.languageTypingTitle || 'Typing Test'}
+          </h2>
+          <p className="text-[14px] text-[#464F5E] mb-6">
+            {currentScreen.content.languageTypingQuestion || 'Type the following text in the box below as accurately and quickly as possible.'}
+          </p>
+          
+          {/* Text to type - displayed at the top */}
+          <div className="bg-gray-50 rounded-lg p-6 mb-6">
+            <p className="text-[16px] text-[#353B46] leading-relaxed whitespace-pre-line">
+              {currentScreen.content.languageTypingText || 'Sample text to type...'}
+            </p>
+          </div>
+
+          {/* Typing textarea */}
+          <textarea
+            value={answer?.answer || ''}
+            onChange={(e) => handleMathAnswer(currentScreen.id, e.target.value)}
+            placeholder="Start typing here..."
+            rows={12}
+            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 resize-vertical text-[16px]"
+            style={{
+              borderColor: answer?.answer ? primaryColor : undefined,
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = primaryColor;
+              e.target.style.boxShadow = `0 0 0 3px ${primaryColor}33`;
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = answer?.answer ? primaryColor : '#D1D5DB';
+              e.target.style.boxShadow = 'none';
+            }}
+          />
+        </div>
+      </div>
+    );
+  };
+
   const renderCurrentSubStep = () => {
     const currentScreen = screens[currentSubStep];
     if (!currentScreen) return renderIntroStep();
@@ -585,6 +635,8 @@ const AssessmentComponent = React.memo(({
         return renderLanguageReadingStep();
       case 'language-listening':
         return renderLanguageListeningStep();
+      case 'language-typing':
+        return renderLanguageTypingStep();
       default:
         return renderIntroStep();
     }
@@ -599,7 +651,7 @@ const AssessmentComponent = React.memo(({
     }
 
     const questionScreens = screens.filter(screen => 
-      screen.type === 'best-worst' || screen.type === 'agree-scale' || screen.type === 'single-select' || screen.type === 'language-reading' || screen.type === 'language-listening'
+      screen.type === 'best-worst' || screen.type === 'agree-scale' || screen.type === 'single-select' || screen.type === 'language-reading' || screen.type === 'language-listening' || screen.type === 'language-typing'
     );
     const questionIndex = questionScreens.findIndex(screen => screen.id === currentScreen.id);
     
@@ -621,7 +673,7 @@ const AssessmentComponent = React.memo(({
           <div className="w-full px-0 pb-4">
             <div className="flex w-full gap-2">
               {screens.filter(screen => 
-                screen.type === 'best-worst' || screen.type === 'agree-scale' || screen.type === 'single-select' || screen.type === 'language-reading' || screen.type === 'language-listening'
+                screen.type === 'best-worst' || screen.type === 'agree-scale' || screen.type === 'single-select' || screen.type === 'language-reading' || screen.type === 'language-listening' || screen.type === 'language-typing'
               ).map((screen) => {
                 const screenIndex = screens.findIndex(s => s.id === screen.id);
                 return (

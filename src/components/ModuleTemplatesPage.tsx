@@ -6,7 +6,7 @@ import GenericModuleRenderer from './GenericModuleRenderer';
 import ImageUploadComponent from './ImageUploadComponent';
 
 // Assessment Screen Types
-type AssessmentScreenType = 'welcome' | 'best-worst' | 'agree-scale' | 'single-select' | 'language-reading' | 'language-listening';
+type AssessmentScreenType = 'welcome' | 'best-worst' | 'agree-scale' | 'single-select' | 'language-reading' | 'language-listening' | 'language-typing';
 
 // Video Interview Step Types
 type VideoInterviewStepType = 'question';
@@ -64,6 +64,11 @@ interface AssessmentScreen {
     languageListeningQuestion?: string;
     languageListeningDescription?: string;
     languageListeningOptions?: string[];
+    
+    // Language typing screen
+    languageTypingTitle?: string;
+    languageTypingQuestion?: string;
+    languageTypingText?: string;
   };
 }
 
@@ -186,6 +191,7 @@ const AssessmentConfiguration: React.FC<AssessmentConfigurationProps> = ({ quest
       case 'single-select': return 'Single Select Question';
       case 'language-reading': return 'Language-Reading';
       case 'language-listening': return 'Language - Listening';
+      case 'language-typing': return 'Language - Typing';
       default: return 'New Screen';
     }
   };
@@ -251,6 +257,12 @@ Last but not least, it's important for customer service representatives to be kn
           languageListeningQuestion: 'After listening, read the question below and choose the correct answer.',
           languageListeningDescription: 'What amount was the customer charged for their service?',
           languageListeningOptions: ['$47.15', '$14.75', '$46.15', '$14.47']
+        };
+      case 'language-typing':
+        return {
+          languageTypingTitle: 'Typing Test',
+          languageTypingQuestion: 'Type the following text in the box below as accurately and quickly as possible.',
+          languageTypingText: 'The solar system is made up of the sun, eight planets, and countless other objects such as asteroids, comets, and dwarf planets. The sun is the center of the solar system, and everything else revolves around it in their own orbits. The eight planets are Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune. Each planet has its own unique characteristics, such as size, composition, and atmosphere.\nMercury, the closest planet to the sun, is a small, rocky world with extreme temperature variations between its scorching day side and freezing night side. Venus, often called Earth\'s "sister planet," has a thick atmosphere that traps heat, making it one of the hottest planets.'
         };
       default:
         return {};
@@ -378,6 +390,7 @@ Last but not least, it's important for customer service representatives to be kn
             <option value="single-select">Single Select Question</option>
             <option value="language-reading">Language-Reading</option>
             <option value="language-listening">Language - Listening</option>
+            <option value="language-typing">Language - Typing</option>
           </select>
         </div>
       </div>
@@ -782,6 +795,40 @@ Last but not least, it's important for customer service representatives to be kn
                         </div>
                       ))}
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Language-Typing Screen Configuration */}
+              {screen.type === 'language-typing' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Screen Title</label>
+                    <input
+                      type="text"
+                      value={screen.content.languageTypingTitle || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { languageTypingTitle: e.target.value })}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Instructions</label>
+                    <input
+                      type="text"
+                      value={screen.content.languageTypingQuestion || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { languageTypingQuestion: e.target.value })}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Text to Type</label>
+                    <textarea
+                      value={screen.content.languageTypingText || ''}
+                      onChange={(e) => updateScreenContent(screen.id, { languageTypingText: e.target.value })}
+                      rows={8}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-vertical"
+                      placeholder="Enter the text that users will need to type..."
+                    />
                   </div>
                 </div>
               )}
