@@ -27,6 +27,9 @@ export default function ApplicationFlow() {
   // Find the flow by slug
   const flow = flows.find(f => f.slug === slug);
   
+  // Check if user is authenticated
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
   // ALL STATE HOOKS
   const [currentStep, setCurrentStep] = useState(0);
   const [currentSubStep, setCurrentSubStep] = useState(0);
@@ -162,6 +165,12 @@ export default function ApplicationFlow() {
     }));
   }, []);
   
+  // Check authentication on mount
+  React.useEffect(() => {
+    const authenticated = localStorage.getItem('authenticated') === 'true';
+    setIsAuthenticated(authenticated);
+  }, []);
+  
   // NOW WE CAN HAVE CONDITIONAL LOGIC AND EARLY RETURNS
   // Show loading state while flows are being fetched
   if (flowsLoading) {
@@ -247,11 +256,11 @@ export default function ApplicationFlow() {
       setCurrentStep(currentStep + 1);
       setCurrentSubStep(0); // Reset sub-step when moving to next step
     } else {
-      // Flow is complete - show feedback modal if enabled, otherwise go back to homepage
+      // Flow is complete - show feedback modal if enabled, otherwise go to completion page
       if (flow?.collectFeedback) {
         setShowFeedbackModal(true);
       } else {
-        navigate('/');
+        navigate('/complete', { state: { flowSlug: slug } });
       }
     }
   };
@@ -390,7 +399,7 @@ export default function ApplicationFlow() {
     // Here you would typically send the feedback to your backend
     console.log('Feedback submitted:', { rating, comment, flowId: flow?.id });
     setShowFeedbackModal(false);
-    navigate('/');
+    navigate('/complete', { state: { flowSlug: slug } });
   };
 
   const handleConfigClose = () => {
@@ -659,26 +668,28 @@ export default function ApplicationFlow() {
             </div>
           )}
           
-          {/* Header Actions */}
-          <div className="flex items-center space-x-1">
-            {/* Settings Button - only show if there are modules in current step */}
-            {currentFlowStep?.modules && currentFlowStep.modules.length > 0 && (
-              <button
-                onClick={() => handleModuleConfig(currentFlowStep.modules[currentSubStep] || currentFlowStep.modules[0])}
+          {/* Header Actions - Only visible when authenticated */}
+          {isAuthenticated && (
+            <div className="flex items-center space-x-1">
+              {/* Settings Button - only show if there are modules in current step */}
+              {currentFlowStep?.modules && currentFlowStep.modules.length > 0 && (
+                <button
+                  onClick={() => handleModuleConfig(currentFlowStep.modules[currentSubStep] || currentFlowStep.modules[0])}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                  title="Configure Module"
+                >
+                  <MoreVertical className="w-4 h-4 text-gray-600" />
+                </button>
+              )}
+              
+              <button 
+                onClick={() => navigate('/')}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-                title="Configure Module"
               >
-                <MoreVertical className="w-4 h-4 text-gray-600" />
+                <X className="w-4 h-4 text-gray-600" />
               </button>
-            )}
-            
-            <button 
-              onClick={() => navigate('/')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-            >
-              <X className="w-4 h-4 text-gray-600" />
-            </button>
-          </div>
+            </div>
+          )}
         </div>
       </div>
       
