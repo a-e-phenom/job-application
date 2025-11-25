@@ -7,11 +7,12 @@ import InterviewSchedulingStep from './InterviewSchedulingStep';
 import ScreeningStep from './ScreeningStep';
 import ResumeStep from './ResumeStep';
 import AssessmentStep from './AssessmentStep';
+import VoiceScreeningStep from './VoiceScreeningStep';
 import GenericModuleRenderer from './GenericModuleRenderer';
 import ModuleConfigPanel from './ModuleConfigPanel';
 import FeedbackModal from './FeedbackModal';
 import InterviewConfirmationModal from './InterviewConfirmationModal';
-import { ApplicationData, ContactInfo, ScreeningData, ResumeData, PreScreeningInfo, AssessmentData, JobFitInfo, TasksInfo } from '../types/application';
+import { ApplicationData, ContactInfo, ScreeningData, ResumeData, PreScreeningInfo, AssessmentData, VoiceScreeningData, JobFitInfo, TasksInfo } from '../types/application';
 import { ApplicationFlow as FlowType, FlowModule } from '../types/flow';
 import { InterviewSchedulingData } from '../types/application';
 import { useTemplates } from '../hooks/useTemplates';
@@ -110,6 +111,11 @@ export default function ApplicationFlow() {
     agreementAnswers: [],
     mathAnswers: []
   };
+
+  const initialVoiceScreening: VoiceScreeningData = {
+    introCompleted: false,
+    callStarted: false,
+  };
   
   const [applicationData, setApplicationData] = useState<ApplicationData>({
     contactInfo: initialContactInfo,
@@ -120,6 +126,7 @@ export default function ApplicationFlow() {
     interviewScheduling: initialInterviewScheduling,
     resume: initialResume,
     assessment: initialAssessment,
+    voiceScreening: initialVoiceScreening,
   });
 
   // ALL useCallback HOOKS
@@ -162,6 +169,13 @@ export default function ApplicationFlow() {
     setApplicationData(prev => ({
       ...prev,
       assessment: { ...prev.assessment, ...updates }
+    }));
+  }, []);
+
+  const updateVoiceScreening = useCallback((updates: Partial<VoiceScreeningData>) => {
+    setApplicationData(prev => ({
+      ...prev,
+      voiceScreening: { ...prev.voiceScreening, ...updates }
     }));
   }, []);
   
@@ -357,6 +371,7 @@ export default function ApplicationFlow() {
       interviewScheduling: initialInterviewScheduling,
       resume: initialResume,
       assessment: initialAssessment,
+      voiceScreening: initialVoiceScreening,
     });
   };
 
@@ -428,6 +443,20 @@ export default function ApplicationFlow() {
       }
     } : undefined;
 
+    // Check component name first (for modules that might have different IDs)
+    if (primaryModule.component === 'VoiceScreeningStep') {
+      return (
+        <VoiceScreeningStep
+          data={applicationData.voiceScreening}
+          onUpdate={updateVoiceScreening}
+          onValidate={(validateFn) => setStepValidationRef(currentStep, validateFn)}
+          primaryColor={primaryColor}
+          onNext={handleNext}
+          template={effectiveTemplate}
+        />
+      );
+    }
+
     switch (primaryModule.id) {
       case 'contact-info':
         return (
@@ -483,6 +512,17 @@ export default function ApplicationFlow() {
           <AssessmentStep
             data={applicationData.assessment}
             onUpdate={updateAssessment}
+            onValidate={(validateFn) => setStepValidationRef(currentStep, validateFn)}
+            primaryColor={primaryColor}
+            onNext={handleNext}
+            template={effectiveTemplate}
+          />
+        );
+      case 'voice-screening':
+        return (
+          <VoiceScreeningStep
+            data={applicationData.voiceScreening}
+            onUpdate={updateVoiceScreening}
             onValidate={(validateFn) => setStepValidationRef(currentStep, validateFn)}
             primaryColor={primaryColor}
             onNext={handleNext}
@@ -546,7 +586,7 @@ export default function ApplicationFlow() {
   const currentFlowStep = flow.steps[currentStep];
 
   return (
-    <div className={`min-h-screen ${currentFlowStep?.modules[currentSubStep]?.component === 'AssessmentStep' ? 'bg-white' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen ${currentFlowStep?.modules[currentSubStep]?.component === 'AssessmentStep' || currentFlowStep?.modules[currentSubStep]?.component === 'VoiceScreeningStep' ? 'bg-white' : 'bg-gray-50'}`}>
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white shadow-sm border-b border-gray-200">
         <div className="mx-auto px-6 py-4 flex items-center justify-between relative">
@@ -713,7 +753,9 @@ export default function ApplicationFlow() {
         
         const isSplitScreenEnabled = effectiveTemplate?.content.splitScreenWithImage && effectiveTemplate?.content.splitScreenImage;
         
-        return currentFlowStep?.modules[currentSubStep]?.component === 'AssessmentStep' || isSplitScreenEnabled;
+        return currentFlowStep?.modules[currentSubStep]?.component === 'AssessmentStep' || 
+               currentFlowStep?.modules[currentSubStep]?.component === 'VoiceScreeningStep' || 
+               isSplitScreenEnabled;
       })() ? (
         // Assessment and split screen modules get full screen treatment - no containers, no padding, no cards
         renderCurrentStep()
@@ -745,6 +787,7 @@ export default function ApplicationFlow() {
       {/* Footer Navigation */}
       {currentFlowStep?.modules[currentSubStep]?.component !== 'ThankYouStep' && 
        currentFlowStep?.modules[currentSubStep]?.component !== 'AssessmentStep' &&
+       currentFlowStep?.modules[currentSubStep]?.component !== 'VoiceScreeningStep' &&
        currentFlowStep?.modules[currentSubStep]?.component !== 'MultibuttonModule' && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4">
         <div className="mx-auto flex justify-end items-center space-x-3">

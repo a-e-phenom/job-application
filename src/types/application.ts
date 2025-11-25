@@ -73,6 +73,14 @@ export interface AssessmentData {
   }>;
 }
 
+export interface VoiceScreeningData {
+  introCompleted: boolean;
+  completed?: boolean;
+  callStarted: boolean;
+  callDuration?: number;
+  transcript?: string;
+}
+
 export interface ApplicationData {
   contactInfo: ContactInfo;
   jobFit: JobFitInfo;
@@ -82,6 +90,7 @@ export interface ApplicationData {
   interviewScheduling: InterviewSchedulingData;
   resume: ResumeData;
   assessment: AssessmentData;
+  voiceScreening: VoiceScreeningData;
 }
 
 export interface StepConfig {

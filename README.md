@@ -32,7 +32,32 @@ The image upload component will automatically detect connection issues and show 
 ## Features
 
 - Create and manage job application flows
+- Multiple module types:
+  - Contact Information
+  - Pre-screening Questions
+  - Screening Questions
+  - Interview Scheduling
+  - Resume Upload
+  - Assessment (with customizable screens)
+  - **Voice Screening Agent** (AI-powered voice interviews)
+  - Video Interviews
+  - Custom Forms
 - Assessment modules with image upload support
 - URL and file upload options for images
 - Real-time connection status monitoring
 - Graceful error handling with fallback options
+- Folder organization for flows
+- Flow templates and module templates
+- Customizable branding (colors, logos)
+
+## Voice Screening Agent
+
+The Voice Screening Agent module enables AI-powered voice screening interviews. Key features:
+
+- Welcome screen with clear instructions for candidates
+- Interactive voice call interface with virtual agent "Rachel"
+- Real-time call duration tracking
+- Animated audio waveform visualization
+- Clean, professional UI that adapts to your brand colors
+
+For detailed information about the Voice Screening Agent module, see [VOICE_SCREENING_MODULE.md](VOICE_SCREENING_MODULE.md)

@@ -1144,13 +1144,22 @@ export default function ModuleConfigPanel({
       typeSelectorOpen: false // Ensure all questions have this property initialized
     }));
     
+    // Default splitScreenWithImage to true for VoiceScreeningStep if not set
+    const defaultSplitScreen = module.component === 'VoiceScreeningStep' 
+      ? (module.templateOverrides?.splitScreenWithImage !== undefined 
+          ? module.templateOverrides.splitScreenWithImage 
+          : (globalTemplate?.content.splitScreenWithImage !== undefined 
+              ? globalTemplate.content.splitScreenWithImage 
+              : true))
+      : (module.templateOverrides?.splitScreenWithImage || globalTemplate?.content.splitScreenWithImage || false);
+    
     const initialOverrides: LocalOverrides = {
       title: module.templateOverrides?.title || globalTemplate?.content.title || '',
       subtitle: module.templateOverrides?.subtitle || globalTemplate?.content.subtitle || '',
       centerTitle: module.templateOverrides?.centerTitle || globalTemplate?.content.centerTitle || false,
-      splitScreenWithImage: module.templateOverrides?.splitScreenWithImage || globalTemplate?.content.splitScreenWithImage || false,
-      splitScreenImage: module.templateOverrides?.splitScreenImage || globalTemplate?.content.splitScreenImage || '',
-      splitScreenImagePosition: module.templateOverrides?.splitScreenImagePosition || globalTemplate?.content.splitScreenImagePosition || 'right',
+      splitScreenWithImage: defaultSplitScreen,
+      splitScreenImage: module.templateOverrides?.splitScreenImage || globalTemplate?.content.splitScreenImage || (module.component === 'VoiceScreeningStep' ? '/screeningintro.png' : ''),
+      splitScreenImagePosition: module.templateOverrides?.splitScreenImagePosition || globalTemplate?.content.splitScreenImagePosition || (module.component === 'VoiceScreeningStep' ? 'left' : 'right'),
       imageSideHasTitleSubtitle: module.templateOverrides?.imageSideHasTitleSubtitle || globalTemplate?.content.imageSideHasTitleSubtitle || false,
       imageSideTitle: module.templateOverrides?.imageSideTitle || globalTemplate?.content.imageSideTitle || '',
       imageSideSubtitle: module.templateOverrides?.imageSideSubtitle || globalTemplate?.content.imageSideSubtitle || '',
@@ -1333,31 +1342,35 @@ export default function ModuleConfigPanel({
               
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Subtitle
-              </label>
-              <textarea
-                value={localOverrides.subtitle}
-                onChange={(e) => updateField('subtitle', e.target.value)}
-                placeholder="Enter subtitle"
-                rows={3}
-                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              
-            </div>
-
-            <div>
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={localOverrides.centerTitle}
-                  onChange={(e) => updateField('centerTitle', e.target.checked)}
-                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+            {module.component !== 'VoiceScreeningStep' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Subtitle
+                </label>
+                <textarea
+                  value={localOverrides.subtitle}
+                  onChange={(e) => updateField('subtitle', e.target.value)}
+                  placeholder="Enter subtitle"
+                  rows={3}
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-                <span className="ml-2 text-sm text-gray-700">Center title and subtitle</span>
-              </label>
-            </div>
+                
+              </div>
+            )}
+
+            {module.component !== 'VoiceScreeningStep' && (
+              <div>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={localOverrides.centerTitle}
+                    onChange={(e) => updateField('centerTitle', e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Center title and subtitle</span>
+                </label>
+              </div>
+            )}
 
             <div>
               <label className="flex items-center">
@@ -1415,43 +1428,6 @@ export default function ModuleConfigPanel({
                     </button>
                   </div>
                 </div>
-                
-                <div>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={localOverrides.imageSideHasTitleSubtitle || false}
-                      onChange={(e) => updateField('imageSideHasTitleSubtitle', e.target.checked)}
-                      className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">Image side has title and subtitle</span>
-                  </label>
-                </div>
-
-                {localOverrides.imageSideHasTitleSubtitle && (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Image Side Title</label>
-                      <input
-                        type="text"
-                        value={localOverrides.imageSideTitle || ''}
-                        onChange={(e) => updateField('imageSideTitle', e.target.value)}
-                        placeholder="Enter image side title"
-                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Image Side Subtitle</label>
-                      <textarea
-                        value={localOverrides.imageSideSubtitle || ''}
-                        onChange={(e) => updateField('imageSideSubtitle', e.target.value)}
-                        placeholder="Enter image side subtitle"
-                        rows={3}
-                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -1593,6 +1569,7 @@ export default function ModuleConfigPanel({
         )}
 
         {/* Questions */}
+        {module.component !== 'VoiceScreeningStep' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium text-gray-900">Elements</h3>
@@ -2150,6 +2127,7 @@ export default function ModuleConfigPanel({
             </div>
           )}
         </div>
+        )}
 
         {/* Global Template Info */}
        

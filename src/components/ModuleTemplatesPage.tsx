@@ -1493,29 +1493,33 @@ export default function ModuleTemplatesPage() {
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             />
                           </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Subtitle</label>
-                            <input
-                              type="text"
-                              value={editedTemplate?.content.subtitle || ''}
-                              onChange={(e) => updateEditedTemplate('content.subtitle', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            />
-                          </div>
+                          {editedTemplate?.component !== 'VoiceScreeningStep' && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Subtitle</label>
+                              <input
+                                type="text"
+                                value={editedTemplate?.content.subtitle || ''}
+                                onChange={(e) => updateEditedTemplate('content.subtitle', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              />
+                            </div>
+                          )}
                         </div>
 
                         {/* Center Title and Subtitle Checkbox */}
-                        <div className="mb-4">
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={editedTemplate?.content.centerTitle || false}
-                              onChange={(e) => updateEditedTemplate('content.centerTitle', e.target.checked)}
-                              className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                            />
-                            <span className="ml-2 text-sm text-gray-700">Center title and subtitle</span>
-                          </label>
-                        </div>
+                        {editedTemplate?.component !== 'VoiceScreeningStep' && (
+                          <div className="mb-4">
+                            <label className="flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={editedTemplate?.content.centerTitle || false}
+                                onChange={(e) => updateEditedTemplate('content.centerTitle', e.target.checked)}
+                                className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                              />
+                              <span className="ml-2 text-sm text-gray-700">Center title and subtitle</span>
+                            </label>
+                          </div>
+                        )}
 
                         {/* Split Screen with Image Checkbox */}
                         <div className="mb-4">
@@ -1574,43 +1578,6 @@ export default function ModuleTemplatesPage() {
                                 </button>
                               </div>
                             </div>
-                            
-                            <div>
-                              <label className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  checked={editedTemplate?.content.imageSideHasTitleSubtitle || false}
-                                  onChange={(e) => updateEditedTemplate('content.imageSideHasTitleSubtitle', e.target.checked)}
-                                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                                />
-                                <span className="ml-2 text-sm text-gray-700">Image side has title and subtitle</span>
-                              </label>
-                            </div>
-
-                            {editedTemplate?.content.imageSideHasTitleSubtitle && (
-                              <div className="space-y-3">
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">Image Side Title</label>
-                                  <input
-                                    type="text"
-                                    value={editedTemplate?.content.imageSideTitle || ''}
-                                    onChange={(e) => updateEditedTemplate('content.imageSideTitle', e.target.value)}
-                                    placeholder="Enter image side title"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">Image Side Subtitle</label>
-                                  <textarea
-                                    value={editedTemplate?.content.imageSideSubtitle || ''}
-                                    onChange={(e) => updateEditedTemplate('content.imageSideSubtitle', e.target.value)}
-                                    placeholder="Enter image side subtitle"
-                                    rows={3}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                  />
-                                </div>
-                              </div>
-                            )}
                           </div>
                         )}
 
@@ -1749,7 +1716,7 @@ export default function ModuleTemplatesPage() {
                         )}
 
                         {/* Questions */}
-                        {(editedTemplate?.content.questions !== undefined || editedTemplate?.component === 'InterviewSchedulingStep' || editedTemplate?.component === 'AssessmentStep' || editedTemplate?.component === 'VideoInterviewStep') && (
+                        {(editedTemplate?.content.questions !== undefined || editedTemplate?.component === 'InterviewSchedulingStep' || editedTemplate?.component === 'AssessmentStep' || editedTemplate?.component === 'VideoInterviewStep') && editedTemplate?.component !== 'VoiceScreeningStep' && (
                           <div>
                             <div className="flex items-center justify-between mb-3">
                               <h5 className="text-sm font-medium text-gray-700">Elements</h5>
