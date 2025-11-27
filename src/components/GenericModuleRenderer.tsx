@@ -81,6 +81,34 @@ const AssessmentComponent = React.memo(({
     }>;
   };
 }) => {
+  const renderMediaElement = (source?: string, altText?: string, className?: string) => {
+    if (!source) return null;
+    const isVideo = source.match(/\.(mp4|webm|ogg|mov)$/i) ||
+      source.includes('video') ||
+      source.startsWith('data:video/');
+
+    if (isVideo) {
+      return (
+        <video
+          src={source}
+          controls
+          autoPlay
+          muted
+          playsInline
+          loop
+          className={className}
+        />
+      );
+    }
+    
+    return (
+      <img
+        src={source}
+        alt={altText}
+        className={className}
+      />
+    );
+  };
   const [currentSubStep, setCurrentSubStep] = useState(0);
   const [scenarioAnswers, setScenarioAnswers] = useState<Array<{
     questionId: string;
@@ -243,11 +271,11 @@ const AssessmentComponent = React.memo(({
       <div className="w-full bg-white flex items-center justify-center m-0 p-0" style={{ minHeight: 'calc(100vh - 140px)' }}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center w-full max-w-6xl mx-auto px-6 md:px-8 lg:px-12">
           <div>
-            <img
-              src={currentScreen.content.welcomeImage || "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=800"}
-              alt="Assessment welcome"
-              className="w-full h-auto max-h-[500px] object-contain rounded-lg"
-            />
+            {renderMediaElement(
+              currentScreen.content.welcomeImage || "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=800",
+              "Assessment welcome",
+              "w-full h-auto max-h-[500px] object-contain rounded-lg"
+            )}
           </div>
           <div>
             <h2 className="text-[28px] font-semibold text-[#353B46] mb-6">
@@ -276,11 +304,11 @@ const AssessmentComponent = React.memo(({
             <h2 className="text-[20px] font-medium text-[#353B46] mb-4">
               {currentScreen.content.scenarioTitle || 'Scenario Question'}
             </h2>
-            <img
-              src={currentScreen.content.scenarioImage || "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=800"}
-              alt="Scenario"
-              className="w-full h-auto rounded-lg mb-4"
-            />
+            {renderMediaElement(
+              currentScreen.content.scenarioImage || "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=800",
+              "Scenario",
+              "w-full h-auto rounded-lg mb-4"
+            )}
             <p className="text-[16px] text-[#464F5E] leading-relaxed whitespace-pre-line">
               {currentScreen.content.scenarioDescription || 'A customer approaches you with a complaint about a product they purchased last week.'}
             </p>
@@ -1194,24 +1222,7 @@ const FileUploadComponent = React.memo(({ value, onChange }: FileUploadComponent
 });
 
 export default function GenericModuleRenderer({ template, primaryColor, onNext, onNavigate, moduleOverrides }: GenericModuleRendererProps) {
-  
-  // Handle Thank You screen separately
-  if (template.component === 'ThankYouStep') {
-    return (
-      <div className="max-w-2xl mx-auto text-center">
-        <div className="mb-8">
-          <h2 className="text-4xl font-semibold text-[#353B46] mb-6 text-center">
-            {template.content.title || 'Thank you! 🎉'}
-          </h2>
-          <p className="text-[18px] text-[#464F5E] mb-8 whitespace-pre-line text-center">
-            {template.content.subtitle || 'We received your submission and will get back to you as soon as possible.\nGood luck!'}
-          </p>
-          
-        </div>
-      </div>
-    );
-  }
-
+  const isThankYouStep = template.component === 'ThankYouStep';
   // Single state object to manage all form data
   const [formData, setFormData] = useState<Record<string, any>>({});
 
@@ -1480,13 +1491,30 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
 
       case 'image':
         if (question.content) {
+          // Use exact same detection logic and structure as ModuleConfigPanel
+          const isVideo = question.content.match(/\.(mp4|webm|ogg|mov)$/i) || 
+                         question.content.includes('video') || 
+                         question.content.startsWith('data:video/');
+          
           return (
-            <div key={question.id} className="w-full">
-              <img 
-                src={question.content} 
-                alt="Element image" 
-                className="w-[500px] h-auto rounded-lg border border-gray-200"
-              />
+            <div key={question.id} className="mb-3">
+              {isVideo ? (
+                <video 
+                  src={question.content} 
+                  controls
+                  autoPlay
+                  muted
+                  playsInline
+                  loop
+                  className="w-full h-auto rounded border"
+                />
+              ) : (
+                <img 
+                  src={question.content} 
+                  alt="Uploaded image" 
+                  className="w-full h-auto rounded border"
+                />
+              )}
             </div>
           );
         }
@@ -1686,6 +1714,31 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
     );
   }
 
+  if (isThankYouStep) {
+    return (
+      <div className="max-w-2xl mx-auto text-center">
+        <div className="mb-8">
+          <h2 className="text-4xl font-semibold text-[#353B46] mb-6 text-center">
+            {template.content.title || 'Thank you! 🎉'}
+          </h2>
+          <p className="text-[18px] text-[#464F5E] mb-8 whitespace-pre-line text-center">
+            {template.content.subtitle || 'We received your submission and will get back to you as soon as possible.\nGood luck!'}
+          </p>
+        </div>
+
+        {template.content.questions && template.content.questions.length > 0 && (
+          <div className="space-y-6">
+            {template.content.questions.map((question: any) => (
+              <div key={question.id}>
+                {renderQuestion(question, onNext)}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // Check if split screen is enabled and we have an image (exclude MultibuttonModule)
   const isSplitScreenEnabled = template.content.splitScreenWithImage && template.content.splitScreenImage && template.component !== 'MultibuttonModule';
   const imagePosition = template.content.splitScreenImagePosition || 'right';
@@ -1724,6 +1777,13 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
       </div>
     );
 
+    const splitScreenMedia = template.content.splitScreenImage;
+    const isSplitScreenVideo = !!splitScreenMedia && (
+      splitScreenMedia.match(/\.(mp4|webm|ogg|mov)$/i) ||
+      splitScreenMedia.includes('video') ||
+      splitScreenMedia.startsWith('data:video/')
+    );
+
     const imageSection = (
       <div className="flex-1 p-8 flex flex-col items-start justify-start sticky top-0 min-h-screen">
         {/* Image Side Title and Subtitle */}
@@ -1744,11 +1804,25 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
         
         {/* Image */}
         <div className="flex-1 flex items-start justify-center w-full">
-          <img 
-            src={template.content.splitScreenImage} 
-            alt="Split screen image"
-            className="max-w-full max-h-full object-contain rounded-lg"
-          />
+          {splitScreenMedia && (
+            isSplitScreenVideo ? (
+              <video
+                src={splitScreenMedia}
+                controls
+                autoPlay
+                muted
+                playsInline
+                loop
+                className="max-w-full max-h-full object-contain rounded-lg"
+              />
+            ) : (
+              <img 
+                src={splitScreenMedia} 
+                alt="Split screen image"
+                className="max-w-full max-h-full object-contain rounded-lg"
+              />
+            )
+          )}
         </div>
       </div>
     );

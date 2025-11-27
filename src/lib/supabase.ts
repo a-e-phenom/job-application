@@ -96,9 +96,15 @@ export const uploadLogoImage = async (file: File): Promise<string> => {
 
 // Fallback method for database storage (for smaller files)
 const uploadToDatabase = async (file: File): Promise<string> => {
-  // Only use database for files smaller than 1MB to avoid timeouts
-  if (file.size > 1024 * 1024) {
-    throw new Error('File too large for database storage. Please use a smaller image or check Supabase Storage configuration.');
+  // Only use database for small files to avoid timeouts
+  // Videos should always use storage, not database
+  const isVideo = file.type.startsWith('video/');
+  const maxSize = isVideo ? 5 * 1024 * 1024 : 1024 * 1024; // 5MB for videos, 1MB for images
+  
+  if (file.size > maxSize) {
+    const fileType = isVideo ? 'video' : 'image';
+    const maxSizeMB = isVideo ? '5MB' : '1MB';
+    throw new Error(`File too large for database storage. Please use a smaller ${fileType} (under ${maxSizeMB}) or check Supabase Storage configuration.`);
   }
 
   const arrayBuffer = await file.arrayBuffer();

@@ -123,17 +123,22 @@ export default function CreateFlowPage() {
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/svg+xml'];
+      // Validate file type (accept both images and videos)
+      const allowedTypes = [
+        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/svg+xml',
+        'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo'
+      ];
       if (!allowedTypes.includes(file.type)) {
-        alert('Please upload a valid image file (JPEG, PNG, GIF, or SVG)');
+        alert('Please upload a valid image or video file (JPEG, PNG, GIF, SVG, MP4, WebM, etc.)');
         return;
       }
 
-      // Validate file size (max 5MB)
-      const maxSize = 5 * 1024 * 1024;
+      // Validate file size (max 50MB for videos, 5MB for images)
+      const isVideo = file.type.startsWith('video/');
+      const maxSize = isVideo ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
       if (file.size > maxSize) {
-        alert('File size must be less than 5MB');
+        const maxSizeMB = isVideo ? '50MB' : '5MB';
+        alert(`File size must be less than ${maxSizeMB}`);
         return;
       }
 
@@ -725,7 +730,7 @@ export default function CreateFlowPage() {
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors duration-200">
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/*,video/*"
                       onChange={handleLogoFileChange}
                       className="hidden"
                       id="logo-upload"
@@ -735,10 +740,10 @@ export default function CreateFlowPage() {
                         <Upload className="w-6 h-6 text-gray-400" />
                       </div>
                       <p className="text-gray-600 mb-2">
-                        Drop logo here or <span className="text-indigo-600 font-medium">click to upload</span>
+                        Drop logo/image/video here or <span className="text-indigo-600 font-medium">click to upload</span>
                       </p>
                       <p className="text-sm text-gray-500">
-                        Supports JPEG, PNG, GIF, SVG (max 5MB)
+                        Supports images (JPEG, PNG, GIF, SVG, max 5MB) and videos (MP4, WebM, etc., max 50MB)
                       </p>
                     </label>
                   </div>
@@ -747,11 +752,19 @@ export default function CreateFlowPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         {logoPreview && (
-                          <img
-                            src={logoPreview}
-                            alt="Logo preview"
-                            className="w-12 h-12 object-contain rounded border"
-                          />
+                          uploadedLogoFile.type.startsWith('video/') ? (
+                            <video
+                              src={logoPreview}
+                              className="w-12 h-12 object-contain rounded border"
+                              muted
+                            />
+                          ) : (
+                            <img
+                              src={logoPreview}
+                              alt="Logo preview"
+                              className="w-12 h-12 object-contain rounded border"
+                            />
+                          )
                         )}
                         <div>
                           <p className="text-sm font-medium text-gray-900">{uploadedLogoFile.name}</p>

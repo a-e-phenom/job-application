@@ -39,15 +39,19 @@ export default function ImageUploadComponent({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+    // Validate file type (accept both images and videos)
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      alert('Please select an image or video file');
       return;
     }
 
-    // Validate file size (2MB limit to prevent timeouts)
-    if (file.size > 2 * 1024 * 1024) {
-      alert('File size must be less than 2MB to prevent upload timeouts. Please use a smaller image or URL mode.');
+    // Validate file size (50MB limit for videos, 2MB for images to prevent timeouts)
+    const isVideo = file.type.startsWith('video/');
+    const maxSize = isVideo ? 50 * 1024 * 1024 : 2 * 1024 * 1024;
+    if (file.size > maxSize) {
+      const fileType = isVideo ? 'video' : 'image';
+      const maxSizeMB = isVideo ? '50MB' : '2MB';
+      alert(`File size must be less than ${maxSizeMB} to prevent upload timeouts. Please use a smaller ${fileType} or URL mode.`);
       return;
     }
 
@@ -70,7 +74,9 @@ export default function ImageUploadComponent({
       console.error('Failed to upload image:', error);
       
       // More detailed error message
-      let errorMessage = 'Failed to upload image. Please try again.';
+      const isVideo = uploadedFile?.type.startsWith('video/');
+      const fileType = isVideo ? 'video' : 'image';
+      let errorMessage = `Failed to upload ${fileType}. Please try again.`;
       if (error instanceof Error) {
         if (error.message.includes('Missing Supabase environment variables')) {
           errorMessage = 'Supabase configuration is missing. Please check your environment variables.';
@@ -79,16 +85,17 @@ export default function ImageUploadComponent({
         } else if (error.message.includes('permission')) {
           errorMessage = 'Permission denied. Please check your Supabase configuration.';
         } else if (error.message.includes('statement timeout') || error.message.includes('57014')) {
-          errorMessage = 'Upload timed out. The image may be too large. Try a smaller image or use URL mode.';
+          errorMessage = `Upload timed out. The ${fileType} may be too large. Try a smaller ${fileType} or use URL mode.`;
         } else if (error.message.includes('File too large')) {
-          errorMessage = 'Image is too large. Please use a smaller image (under 1MB) or use URL mode.';
+          const maxSizeMB = isVideo ? '5MB' : '1MB';
+          errorMessage = `${fileType.charAt(0).toUpperCase() + fileType.slice(1)} is too large for database fallback storage (under ${maxSizeMB}). Please ensure Supabase Storage is configured correctly, use a smaller ${fileType}, or use URL mode.`;
         } else {
           errorMessage = `Upload failed: ${error.message}`;
         }
       }
       
-      // Ask user if they want to use the preview image as a fallback
-      const usePreview = confirm(`${errorMessage}\n\nWould you like to use the image preview instead? (Note: This will only work locally)`);
+      // Ask user if they want to use the preview as a fallback
+      const usePreview = confirm(`${errorMessage}\n\nWould you like to use the ${fileType} preview instead? (Note: This will only work locally)`);
       
       if (usePreview && preview) {
         onChange(preview);
@@ -184,7 +191,7 @@ export default function ImageUploadComponent({
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors duration-200">
               <input
                 type="file"
-                accept="image/*"
+                accept="image/*,video/*"
                 onChange={handleFileChange}
                 className="hidden"
                 id={`image-upload-${label.toLowerCase().replace(/\s+/g, '-')}`}
@@ -198,10 +205,10 @@ export default function ImageUploadComponent({
                   <Upload className="w-4 h-4 text-gray-400" />
                 </div>
                 <p className="text-gray-600 text-sm mb-1">
-                  {isUploading ? 'Uploading...' : 'Drop image here or click to upload'}
+                  {isUploading ? 'Uploading...' : 'Drop image or video here or click to upload'}
                 </p>
                 <p className="text-xs text-gray-500">
-                  Supports JPEG, PNG, GIF, SVG (max 2MB)
+                  Supports images (JPEG, PNG, GIF, SVG, max 2MB) and videos (MP4, WebM, etc., max 50MB)
                 </p>
               </label>
             </div>
@@ -213,18 +220,26 @@ export default function ImageUploadComponent({
                   type="button"
                   onClick={removeUploadedFile}
                   className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50"
-                  title="Remove image"
+                  title="Remove file"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
               {preview && (
                 <div className="mt-2">
-                  <img 
-                    src={preview} 
-                    alt="Preview" 
-                    className="w-[500px] h-auto rounded border border-gray-200"
-                  />
+                  {uploadedFile.type.startsWith('video/') ? (
+                    <video 
+                      src={preview} 
+                      controls
+                      className="w-[500px] h-auto rounded border border-gray-200"
+                    />
+                  ) : (
+                    <img 
+                      src={preview} 
+                      alt="Preview" 
+                      className="w-[500px] h-auto rounded border border-gray-200"
+                    />
+                  )}
                 </div>
               )}
             </div>
@@ -234,14 +249,25 @@ export default function ImageUploadComponent({
 
       {value && uploadMode === 'url' && (
         <div className="mt-2">
-          <img 
-            src={value} 
-            alt="Preview" 
-            className="w-[500px] h-auto rounded border border-gray-200"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
-          />
+          {value.match(/\.(mp4|webm|ogg|mov)$/i) || value.includes('video') ? (
+            <video 
+              src={value} 
+              controls
+              className="w-[500px] h-auto rounded border border-gray-200"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          ) : (
+            <img 
+              src={value} 
+              alt="Preview" 
+              className="w-[500px] h-auto rounded border border-gray-200"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          )}
         </div>
       )}
     </div>

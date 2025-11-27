@@ -2073,35 +2073,14 @@ export default function ModuleTemplatesPage() {
                                       {/* Image Configuration for Image type */}
                                       {question.type === 'image' && (
                                         <div className="mt-3">
-                                          <label className="block text-xs font-medium text-gray-600 mb-2">Image Upload</label>
+                                          <label className="block text-xs font-medium text-gray-600 mb-2">Image/Video Upload</label>
                                           <div className="border border-gray-300 rounded-lg p-3 bg-gray-50">
-                                            <div className="text-center">
-                                              
-                                              {question.content && (
-                                                <div className="mb-3">
-                                                  <img 
-                                                    src={question.content} 
-                                                    alt="Uploaded image" 
-                                                    className="w-[500px] h-auto rounded border"
-                                                  />
-                                                </div>
-                                              )}
-                                              <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={(e) => {
-                                                  const file = e.target.files?.[0];
-                                                  if (file) {
-                                                    const reader = new FileReader();
-                                                    reader.onload = (e) => {
-                                                      updateQuestion(question.id, 'content', e.target?.result as string);
-                                                    };
-                                                    reader.readAsDataURL(file);
-                                                  }
-                                                }}
-                                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                                              />
-                                            </div>
+                                            <ImageUploadComponent
+                                              value={question.content || ''}
+                                              onChange={(value) => updateQuestion(question.id, 'content', value)}
+                                              placeholder="https://example.com/media.png"
+                                              label={`Element Media`}
+                                            />
                                           </div>
                                         </div>
                                       )}

@@ -83,7 +83,7 @@ const VoiceScreeningStep = React.memo(function VoiceScreeningStep({
       const defaultTitle = template?.content?.title || "You're invited to a screening with our virtual agent!";
       
       return (
-        <div className="w-full bg-white flex items-center justify-center m-0 p-0" style={{ minHeight: 'calc(100vh - 140px)' }}>
+        <div className="w-full flex items-center justify-center m-0 p-0" style={{ minHeight: 'calc(100vh - 140px)', backgroundColor: '#F8F9FB' }}>
           <div className="w-full max-w-4xl mx-auto px-8 md:px-12 lg:px-16 xl:px-20">
             <h2 className="text-[28px] font-semibold text-[#353B46] mb-6">
               {defaultTitle}
@@ -257,15 +257,16 @@ const VoiceScreeningStep = React.memo(function VoiceScreeningStep({
 
   const renderCallStep = () => {
     return (
-      <div className="w-full bg-white m-0 p-0 overflow-x-hidden flex flex-col" style={{ minHeight: 'calc(100vh - 140px)' }}>
+      <div className="w-full m-0 p-0 overflow-x-hidden flex flex-col" style={{ minHeight: 'calc(100vh - 140px)', backgroundColor: '#F8F9FB' }}>
         <div className="flex-1 flex items-center justify-center">
           <div className="max-w-4xl w-full px-8">
             <div className="grid grid-cols-1 md:grid-cols-2 mb-8" style={{ gap: '48px' }}>
               {/* Virtual Agent Card */}
-              <div 
+              <div
                 className="border-2 rounded-2xl flex flex-col items-center justify-center"
-                style={{ 
+                style={{
                   borderColor: primaryColor,
+                  backgroundColor: 'white',
                   minHeight: '200px',
                   paddingTop: '16px',
                   paddingBottom: '16px',
@@ -358,7 +359,7 @@ const VoiceScreeningStep = React.memo(function VoiceScreeningStep({
   };
 
   return (
-    <div className="w-full m-0 p-0 overflow-x-hidden bg-white">
+    <div className="w-full m-0 p-0 overflow-x-hidden" style={{ backgroundColor: '#F8F9FB' }}>
       {renderCurrentSubStep()}
       
       {/* Navigation */}
