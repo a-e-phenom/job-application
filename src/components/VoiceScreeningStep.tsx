@@ -24,6 +24,10 @@ const VoiceScreeningStep = React.memo(function VoiceScreeningStep({
   const [localData, setLocalData] = useState<VoiceScreeningData>(data);
   const [isCallActive, setIsCallActive] = useState(data.introCompleted || false);
   const [callDuration, setCallDuration] = useState(0);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [isDavidActive, setIsDavidActive] = useState(false);
+  const [isRachelInactive, setIsRachelInactive] = useState(false);
+  const davidActivatedRef = React.useRef(false);
 
   useEffect(() => {
     setLocalData(data);
@@ -52,6 +56,25 @@ const VoiceScreeningStep = React.memo(function VoiceScreeningStep({
     }
   }, [currentSubStep, isCallActive, handleChange]);
 
+  // Automatically play Rachel demo audio once when call step starts (won't replay)
+  useEffect(() => {
+    if (currentSubStep === 1 && !audioElement) {
+      const audio = new Audio('/Rachel-Demo.mp3');
+      audio.autoplay = true;
+      audio.loop = false; // Don't loop the demo audio - plays only once
+      setAudioElement(audio);
+    }
+
+    // Cleanup audio when step changes or component unmounts
+    return () => {
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.currentTime = 0;
+        setAudioElement(null);
+      }
+    };
+  }, [currentSubStep, audioElement]);
+
   // Timer for call duration
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -64,6 +87,29 @@ const VoiceScreeningStep = React.memo(function VoiceScreeningStep({
       if (interval) clearInterval(interval);
     };
   }, [isCallActive, currentSubStep]);
+
+  // Activate/Deactivate David's card and make Rachel inactive based on call duration
+  useEffect(() => {
+    if ((callDuration === 12 || callDuration === 15 || callDuration === 20) && !davidActivatedRef.current) {
+      davidActivatedRef.current = true;
+      setIsDavidActive(true);
+    } else if ((callDuration === 13 || callDuration === 16 || callDuration === 21) && isDavidActive) {
+      setIsDavidActive(false);
+      davidActivatedRef.current = false; // Reset for potential next activation
+    }
+
+    // Make Rachel inactive at 25 seconds
+    if (callDuration === 25 && !isRachelInactive) {
+      setIsRachelInactive(true);
+    }
+  }, [callDuration, isDavidActive, isRachelInactive]);
+
+  // Reset activation flag when call starts
+  useEffect(() => {
+    if (currentSubStep === 1 && !isCallActive) {
+      davidActivatedRef.current = false;
+    }
+  }, [currentSubStep, isCallActive]);
 
   const formatDuration = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -263,9 +309,11 @@ const VoiceScreeningStep = React.memo(function VoiceScreeningStep({
             <div className="grid grid-cols-1 md:grid-cols-2 mb-8" style={{ gap: '48px' }}>
               {/* Virtual Agent Card */}
               <div
-                className="border-2 rounded-2xl flex flex-col items-center justify-center"
+                className={`rounded-2xl flex flex-col items-center justify-center transition-all duration-300 ${
+                  isRachelInactive ? 'shadow-md' : 'border-2'
+                }`}
                 style={{
-                  borderColor: primaryColor,
+                  borderColor: isRachelInactive ? 'transparent' : primaryColor,
                   backgroundColor: 'white',
                   minHeight: '200px',
                   paddingTop: '16px',
@@ -281,40 +329,40 @@ const VoiceScreeningStep = React.memo(function VoiceScreeningStep({
                 Virtual agent
               </p>
                 
-                {/* Audio Waveform Visualization - Always show when on call step */}
-                <div className="flex items-center justify-center">
-                  <svg width="288" height="32" viewBox="0 0 288 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="77" y="10" width="2" height="12" rx="1" fill="#353B46"/>
-                    <rect x="83" y="15" width="2" height="2" rx="1" fill="#353B46"/>
-                    <rect x="89" y="15" width="2" height="2" rx="1" fill="#353B46"/>
-                    <rect x="95" y="11" width="2" height="10" rx="1" fill="#353B46"/>
-                    <rect x="101" y="13" width="2" height="6" rx="1" fill="#353B46"/>
-                    <rect x="107" y="13" width="2" height="6" rx="1" fill="#353B46"/>
-                    <rect x="113" y="14" width="2" height="4" rx="1" fill="#353B46"/>
-                    <rect x="119" y="12" width="2" height="8" rx="1" fill="#353B46"/>
-                    <rect x="125" y="11" width="2" height="10" rx="1" fill="#353B46"/>
-                    <rect x="131" y="6" width="2" height="20" rx="1" fill="#353B46"/>
-                    <rect x="137" y="12" width="2" height="8" rx="1" fill="#353B46"/>
-                    <rect x="143" y="11" width="2" height="10" rx="1" fill="#353B46"/>
-                    <rect x="149" y="10" width="2" height="12" rx="1" fill="#353B46"/>
-                    <rect x="155" y="14" width="2" height="4" rx="1" fill="#353B46"/>
-                    <rect x="161" y="13" width="2" height="6" rx="1" fill="#353B46"/>
-                    <rect x="167" y="12" width="2" height="8" rx="1" fill="#353B46"/>
-                    <rect x="173" y="6" width="2" height="20" rx="1" fill="#353B46"/>
-                    <rect x="179" y="10" width="2" height="12" rx="1" fill="#353B46"/>
-                    <rect x="185" y="12" width="2" height="8" rx="1" fill="#353B46"/>
-                    <rect x="191" y="12" width="2" height="8" rx="1" fill="#353B46"/>
-                    <rect x="197" y="14" width="2" height="4" rx="1" fill="#353B46"/>
-                    <rect x="203" y="14" width="2" height="4" rx="1" fill="#353B46"/>
-                    <rect x="209" y="10" width="2" height="12" rx="1" fill="#353B46"/>
-                  </svg>
-                </div>
+                {/* Audio Waveform Visualization - Animated */}
+                {!isRachelInactive && (
+                  <div className="flex items-center justify-center">
+                    <div className="flex items-end justify-center space-x-0.5" style={{ height: '32px' }}>
+                      {Array.from({ length: 28 }, (_, i) => {
+                        const waveClasses = ['animate-audio-wave-1', 'animate-audio-wave-2', 'animate-audio-wave-3', 'animate-audio-wave-4', 'animate-audio-wave-5'];
+                        const waveClass = waveClasses[i % waveClasses.length];
+                        const baseOpacity = 0.4 + (i % 3) * 0.2; // Vary opacity slightly
+                        return (
+                          <div
+                            key={i}
+                            className={`bg-gradient-to-t from-[#353B46] to-[#637085] rounded-full ${waveClass} transition-opacity duration-300`}
+                            style={{
+                              width: '3px',
+                              minHeight: '4px',
+                              animationDelay: `${(i % 7) * 0.08}s`,
+                              opacity: baseOpacity
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
             {/* User Card */}
-            <div 
-              className="rounded-2xl flex flex-col items-center justify-center bg-white shadow-md"
-              style={{ 
+            <div
+              className={`rounded-2xl flex flex-col items-center justify-center shadow-md transition-all duration-300 ${
+                isDavidActive ? 'border-2' : 'bg-white'
+              }`}
+              style={{
+                borderColor: isDavidActive ? primaryColor : 'transparent',
+                backgroundColor: 'white',
                 minHeight: '200px',
                 paddingTop: '16px',
                 paddingBottom: '16px',
@@ -322,15 +370,40 @@ const VoiceScreeningStep = React.memo(function VoiceScreeningStep({
                 paddingRight: '16px'
               }}
             >
-              <h3 className="text-[16px] font-semibold text-[#353B46] mb-2">
+              <h3 className={`text-[16px] font-semibold mb-2 transition-colors duration-300 ${
+                isDavidActive ? '' : 'text-[#353B46]'
+              }`}
+              style={{ color: isDavidActive ? primaryColor : '#353B46' }}>
                 David
               </h3>
               <p className="text-[14px] font-normal text-[#637085] mb-4">
                 You
               </p>
-              
-              {/* Empty space - no icon */}
-              <div className="w-12 h-12"></div>
+
+              {/* Audio Waveform Visualization - Shows when David is active */}
+              {isDavidActive && (
+                <div className="flex items-center justify-center">
+                  <div className="flex items-end justify-center space-x-0.5" style={{ height: '32px' }}>
+                    {Array.from({ length: 20 }, (_, i) => {
+                      const waveClasses = ['animate-audio-wave-1', 'animate-audio-wave-2', 'animate-audio-wave-3', 'animate-audio-wave-4', 'animate-audio-wave-5'];
+                      const waveClass = waveClasses[i % waveClasses.length];
+                      const baseOpacity = 0.4 + (i % 3) * 0.2;
+                      return (
+                        <div
+                          key={i}
+                          className={`bg-gradient-to-t from-[#353B46] to-[#637085] rounded-full ${waveClass} transition-opacity duration-300`}
+                          style={{
+                            width: '3px',
+                            minHeight: '4px',
+                            animationDelay: `${(i % 7) * 0.08}s`,
+                            opacity: baseOpacity
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
             </div>
           </div>
