@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Check, Upload, X, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, ArrowLeft, Info } from 'lucide-react';
 import { ModuleTemplate } from '../hooks/useTemplates';
 import VideoInterviewStep from './VideoInterviewStep';
@@ -20,6 +20,7 @@ interface GenericModuleRendererProps {
     }>;
   };
   isMobileView?: boolean;
+  onAssessmentFooterRender?: (footer: JSX.Element) => void;
 }
 
 interface NavigationTarget {
@@ -36,10 +37,12 @@ interface FileUploadComponentProps {
 
 
 
-const AssessmentComponent = React.memo(({ 
+const AssessmentComponent = React.memo(({
   primaryColor,
   onNext,
-  assessmentConfig
+  assessmentConfig,
+  isMobileView = false,
+  onFooterRender
 }: {
   primaryColor: string;
   onNext?: () => void;
@@ -81,6 +84,8 @@ const AssessmentComponent = React.memo(({
       };
     }>;
   };
+  isMobileView?: boolean;
+  onFooterRender?: (footer: JSX.Element) => void;
 }) => {
   const renderMediaElement = (source?: string, altText?: string, className?: string) => {
     if (!source) return null;
@@ -270,7 +275,7 @@ const AssessmentComponent = React.memo(({
 
     return (
       <div className="w-full bg-white flex items-center justify-center m-0 p-0" style={{ minHeight: 'calc(100vh - 140px)' }}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center w-full max-w-6xl mx-auto px-6 md:px-8 lg:px-12">
+        <div className={isMobileView ? "flex flex-col gap-4 items-center w-full max-w-6xl mx-auto px-4" : "grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center w-full max-w-6xl mx-auto px-6 md:px-8 lg:px-12"}>
           <div>
             {renderMediaElement(
               currentScreen.content.welcomeImage || "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=800",
@@ -279,7 +284,7 @@ const AssessmentComponent = React.memo(({
             )}
           </div>
           <div>
-            <h2 className="text-[28px] font-semibold text-[#353B46] mb-6">
+            <h2 className={`${isMobileView ? 'text-[20px]' : 'text-[28px]'} font-semibold text-[#353B46] mb-6`}>
               {currentScreen.content.welcomeTitle || 'Welcome to the assessment!'}
             </h2>
             
@@ -299,10 +304,10 @@ const AssessmentComponent = React.memo(({
     const answer = getScenarioAnswer(currentScreen.id);
     
     return (
-      <div className="w-full bg-white m-0 p-0 overflow-x-hidden" style={{ minHeight: 'calc(100vh - 140px)' }}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 h-full w-full m-0 p-0" style={{ minHeight: 'calc(100vh - 140px)' }}>
-          <div className="px-8 md:px-12 lg:px-16 py-8 md:py-12 flex flex-col justify-center w-full">
-            <h2 className="text-[20px] font-medium text-[#353B46] mb-4">
+      <div className="w-full bg-white m-0 p-0 overflow-x-hidden" style={{ minHeight: isMobileView ? 'auto' : 'calc(100vh - 140px)' }}>
+        <div className={isMobileView ? "flex flex-col h-full w-full m-0 p-0" : "grid grid-cols-1 lg:grid-cols-2 h-full w-full m-0 p-0"} style={{ minHeight: isMobileView ? 'auto' : 'calc(100vh - 140px)' }}>
+          <div className={isMobileView ? "px-4 py-4 flex flex-col justify-start w-full" : "px-8 md:px-12 lg:px-16 py-8 md:py-12 flex flex-col justify-center w-full"}>
+            <h2 className={`${isMobileView ? 'text-[16px]' : 'text-[20px]'} font-medium text-[#353B46] mb-4`}>
               {currentScreen.content.scenarioTitle || 'Scenario Question'}
             </h2>
             {renderMediaElement(
@@ -310,14 +315,14 @@ const AssessmentComponent = React.memo(({
               "Scenario",
               "w-full h-auto rounded-lg mb-4"
             )}
-            <p className="text-[16px] text-[#464F5E] leading-relaxed whitespace-pre-line">
+            <p className={`${isMobileView ? 'text-[14px]' : 'text-[16px]'} text-[#464F5E] leading-relaxed whitespace-pre-line`}>
               {currentScreen.content.scenarioDescription || 'A customer approaches you with a complaint about a product they purchased last week.'}
             </p>
           </div>
           
-          <div className="px-8 md:px-12 lg:px-16 py-8 md:py-12 flex flex-col justify-center w-full bg-[#F8F9FB]">
+          <div className={isMobileView ? "px-4 py-4 flex flex-col justify-start w-full bg-white" : "px-8 md:px-12 lg:px-16 py-8 md:py-12 flex flex-col justify-center w-full bg-[#F8F9FB]"}>
             <div>
-              <p className="text-[14px] text-[#637085] leading-relaxed whitespace-pre-line">
+              <p className={`${isMobileView ? 'text-[12px]' : 'text-[14px]'} text-[#637085] leading-relaxed whitespace-pre-line`}>
                 {currentScreen.content.instructionText || 'Select the ✔ next to the response you feel is the best response. Then, select the ✘ next to the response you feel is the worst response. You must select one ✔and one ✘ to advance to the next question.'}
               </p>
             </div>
@@ -368,23 +373,23 @@ const AssessmentComponent = React.memo(({
     if (!currentScreen || currentScreen.type !== 'agree-scale') return null;
 
     const answer = getAgreementAnswer(currentScreen.id);
-    
+
     return (
-      <div className="w-full bg-white m-0 p-0 overflow-x-hidden" style={{ minHeight: 'calc(100vh - 140px)' }}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 h-full w-full m-0 p-0" style={{ minHeight: 'calc(100vh - 140px)' }}>
-          <div className="flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full">
-            <h2 className="text-[20px] font-medium text-[#353B46] mb-8">
+      <div className="w-full bg-white m-0 p-0 overflow-x-hidden" style={{ minHeight: isMobileView ? 'auto' : 'calc(100vh - 140px)' }}>
+        <div className={isMobileView ? "flex flex-col h-full w-full m-0 p-0" : "grid grid-cols-1 lg:grid-cols-2 h-full w-full m-0 p-0"} style={{ minHeight: isMobileView ? 'auto' : 'calc(100vh - 140px)' }}>
+          <div className={isMobileView ? "flex flex-col justify-start px-4 py-4 w-full" : "flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full"}>
+            <h2 className={`${isMobileView ? 'text-[16px]' : 'text-[20px]'} font-medium text-[#353B46] mb-8`}>
               {currentScreen.content.agreementTitle || 'Do you agree with the statement below?'}
             </h2>
             
-            <div className="bg-gray-50 rounded-lg p-8 text-center">
-              <p className="text-[18px] text-[#353B46] font-medium leading-relaxed whitespace-pre-line">
+            <div className={`bg-gray-50 rounded-lg ${isMobileView ? 'p-4' : 'p-8'} text-center`}>
+              <p className={`${isMobileView ? 'text-[14px]' : 'text-[18px]'} text-[#353B46] font-medium leading-relaxed whitespace-pre-line`}>
                 {currentScreen.content.agreementStatement || 'I believe that customer satisfaction is the most important aspect of our business.'}
               </p>
             </div>
           </div>
           
-          <div className="flex flex-col justify-center px-6 md:px-8 lg:px-12 py-8 md:py-12 w-full" style={{ backgroundColor: '#F8F9FB' }}>
+          <div className={isMobileView ? "flex flex-col justify-start px-4 py-4 w-full bg-white" : "flex flex-col justify-center px-6 md:px-8 lg:px-12 py-8 md:py-12 w-full"} style={{ backgroundColor: isMobileView ? '#FFFFFF' : '#F8F9FB' }}>
             <div className="flex items-center justify-between mb-4">
               {[1, 2, 3, 4, 5].map((rating) => (
                 <button
@@ -433,26 +438,26 @@ const AssessmentComponent = React.memo(({
     const answer = getMathAnswer(currentScreen.id);
     
     return (
-      <div className="w-full bg-white m-0 p-0 overflow-x-hidden" style={{ minHeight: 'calc(100vh - 140px)' }}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 h-full w-full m-0 p-0" style={{ minHeight: 'calc(100vh - 140px)' }}>
-          <div className="flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full">
-            <h2 className="text-[20px] font-medium text-[#353B46] mb-4">
+      <div className="w-full bg-white m-0 p-0 overflow-x-hidden" style={{ minHeight: isMobileView ? 'auto' : 'calc(100vh - 140px)' }}>
+        <div className={isMobileView ? "flex flex-col h-full w-full m-0 p-0" : "grid grid-cols-1 lg:grid-cols-2 h-full w-full m-0 p-0"} style={{ minHeight: isMobileView ? 'auto' : 'calc(100vh - 140px)' }}>
+          <div className={isMobileView ? "flex flex-col justify-start px-4 py-4 w-full" : "flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full"}>
+            <h2 className={`${isMobileView ? 'text-[16px]' : 'text-[20px]'} font-medium text-[#353B46] mb-4`}>
               {currentScreen.content.singleSelectTitle || 'Math Question'}
             </h2>
-            <p className="text-[16px] text-[#464F5E] mb-6">
+            <p className={`${isMobileView ? 'text-[14px]' : 'text-[16px]'} text-[#464F5E] mb-6`}>
               {currentScreen.content.singleSelectQuestion || 'What is 15% of $2,000?'}
             </p>
             
-            <div className="bg-gray-50 rounded-lg p-6">
-              <p className="text-[16px] text-[#353B46] text-center leading-relaxed whitespace-pre-line">
+            <div className={`bg-gray-50 rounded-lg ${isMobileView ? 'p-4' : 'p-6'}`}>
+              <p className={`${isMobileView ? 'text-[14px]' : 'text-[16px]'} text-[#353B46] text-center leading-relaxed whitespace-pre-line`}>
                 {currentScreen.content.singleSelectDescription || 'Choose the correct answer from the options below.'}
               </p>
             </div>
           </div>
-          
-          <div 
-            className="flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full"
-            style={{ backgroundColor: '#F8F9FB' }}
+
+          <div
+            className={isMobileView ? "flex flex-col justify-start px-4 py-4 w-full bg-white" : "flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full"}
+            style={{ backgroundColor: isMobileView ? '#FFFFFF' : '#F8F9FB' }}
           >
             <div className="space-y-3">
               {(currentScreen.content.singleSelectOptions || []).map((option, index) => (
@@ -489,25 +494,25 @@ const AssessmentComponent = React.memo(({
     
     return (
       <div className="w-full bg-white m-0 p-0 overflow-y-auto overflow-x-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-2 h-full w-full m-0 p-0 mb-20">
-          <div className="flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full">
-            <h2 className="text-[20px] font-medium text-[#353B46] mb-4">
+        <div className={isMobileView ? "flex flex-col h-full w-full m-0 p-0 mb-4" : "grid grid-cols-1 lg:grid-cols-2 h-full w-full m-0 p-0 mb-20"}>
+          <div className={isMobileView ? "flex flex-col justify-start px-4 py-4 w-full" : "flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full"}>
+            <h2 className={`${isMobileView ? 'text-[16px]' : 'text-[20px]'} font-medium text-[#353B46] mb-4`}>
               {currentScreen.content.languageReadingTitle || 'Reading Question'}
             </h2>
-            <p className="text-[16px] text-[#464F5E] mb-6">
+            <p className={`${isMobileView ? 'text-[14px]' : 'text-[16px]'} text-[#464F5E] mb-6`}>
               {currentScreen.content.languageReadingQuestion || 'Read the passage and answer the question.'}
             </p>
             
             <div className="mb-6">
-              <p className="text-[16px] text-[#353B46] text-left leading-relaxed whitespace-pre-line">
+              <p className={`${isMobileView ? 'text-[14px]' : 'text-[16px]'} text-[#353B46] text-left leading-relaxed whitespace-pre-line`}>
                 {currentScreen.content.languageReadingDescription || 'Select the correct answer from the options below.'}
               </p>
             </div>
           </div>
-          
-          <div 
-            className="flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full"
-            style={{ backgroundColor: '#F8F9FB' }}
+
+          <div
+            className={isMobileView ? "flex flex-col justify-start px-4 py-4 w-full bg-white" : "flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full"}
+            style={{ backgroundColor: isMobileView ? '#FFFFFF' : '#F8F9FB' }}
           >
             <div className="space-y-3">
               {(currentScreen.content.languageReadingOptions || []).map((option, index) => (
@@ -543,13 +548,13 @@ const AssessmentComponent = React.memo(({
     const answer = getMathAnswer(currentScreen.id);
     
     return (
-      <div className="w-full bg-white m-0 p-0 overflow-x-hidden" style={{ minHeight: 'calc(100vh - 140px)' }}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 h-full w-full m-0 p-0" style={{ minHeight: 'calc(100vh - 140px)' }}>
-          <div className="flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full">
-            <h2 className="text-[20px] font-medium text-[#353B46] mb-4">
+      <div className="w-full bg-white m-0 p-0 overflow-x-hidden" style={{ minHeight: isMobileView ? 'auto' : 'calc(100vh - 140px)' }}>
+        <div className={isMobileView ? "flex flex-col h-full w-full m-0 p-0" : "grid grid-cols-1 lg:grid-cols-2 h-full w-full m-0 p-0"} style={{ minHeight: isMobileView ? 'auto' : 'calc(100vh - 140px)' }}>
+          <div className={isMobileView ? "flex flex-col justify-start px-4 py-4 w-full" : "flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full"}>
+            <h2 className={`${isMobileView ? 'text-[16px]' : 'text-[20px]'} font-medium text-[#353B46] mb-4`}>
               {currentScreen.content.languageListeningTitle || 'Listening Question'}
             </h2>
-            <p className="text-[16px] text-[#464F5E] mb-6">
+            <p className={`${isMobileView ? 'text-[14px]' : 'text-[16px]'} text-[#464F5E] mb-6`}>
               {currentScreen.content.languageListeningQuestion || 'Listen to the audio and answer the question.'}
             </p>
             
@@ -562,16 +567,16 @@ const AssessmentComponent = React.memo(({
               />
             </div>
             
-            <div className="bg-gray-50 rounded-lg p-6">
-              <p className="text-[16px] text-[#353B46] text-center leading-relaxed whitespace-pre-line">
+            <div className={`bg-gray-50 rounded-lg ${isMobileView ? 'p-4' : 'p-6'}`}>
+              <p className={`${isMobileView ? 'text-[14px]' : 'text-[16px]'} text-[#353B46] text-center leading-relaxed whitespace-pre-line`}>
                 {currentScreen.content.languageListeningDescription || 'Choose the correct answer from the options below.'}
               </p>
             </div>
           </div>
-          
-          <div 
-            className="flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full"
-            style={{ backgroundColor: '#F8F9FB' }}
+
+          <div
+            className={isMobileView ? "flex flex-col justify-start px-4 py-4 w-full bg-white" : "flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full"}
+            style={{ backgroundColor: isMobileView ? '#FFFFFF' : '#F8F9FB' }}
           >
             <div className="space-y-3">
               {(currentScreen.content.languageListeningOptions || []).map((option, index) => (
@@ -691,15 +696,13 @@ const AssessmentComponent = React.memo(({
     return currentScreen.title;
   };
 
-  return (
-    <div className="w-full m-0 p-0 overflow-x-hidden bg-white">
-      {renderCurrentSubStep()}
-      
-      {/* Assessment Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 w-full pb-4  bg-white z-50">
+  const renderAssessmentFooter = () => (
+    <div className={isMobileView 
+      ? `w-full bg-white pb-4 ${currentSubStep === 0 ? 'border-t border-gray-200' : ''}` 
+      : "fixed bottom-0 left-0 right-0 w-full pb-4 bg-white z-50"}>
         {/* Progress Bar */}
         {currentSubStep > 0 && (
-          <div className="w-full px-0 pb-4">
+          <div className={`w-full ${isMobileView ? 'px-4 pb-3' : 'px-0 pb-4'}`}>
             <div className="flex w-full gap-2">
               {screens.filter(screen => 
                 screen.type === 'best-worst' || screen.type === 'agree-scale' || screen.type === 'single-select' || screen.type === 'language-reading' || screen.type === 'language-listening' || screen.type === 'language-typing'
@@ -719,70 +722,195 @@ const AssessmentComponent = React.memo(({
           </div>
         )}
         
-        <div className="flex items-center px-6 justify-between">
-          <div className="flex items-center space-x-4">
-            <span className="text-[12px] md:text-[14px] text-[#637085]">
-              Assessment | {getSubStepTitle(currentSubStep)}
-            </span>
-          </div>
-          
-          <div className="flex items-center space-x-3">
-            {currentSubStep > 0 && (
-             <div className="flex items-center space-x-2 mr-2">
-             <div className="flex items-center space-x-2">
-               <div className="relative inline-block w-[44px] h-[24px]">
-                 <input
-                   type="checkbox"
-                   className="sr-only peer"
-                   id="autoAdvance"
-                 />
-                 <label
-                   htmlFor="autoAdvance"
-                   className="block w-[44px] h-[24px] bg-gray-300 rounded-full cursor-pointer transition-colors duration-200"
-                 >
-                   <div className="w-[20px] h-[20px] bg-white rounded-full shadow-md transform transition-transform duration-200 translate-x-[2px] translate-y-[2px] peer-checked:translate-x-[22px]" />
-                 </label>
-               </div>
-               <span className="text-[12px] md:text-[14px] text-[#353B46]">Auto Advance</span>
-               <Info className="w-4 h-4 text-gray-500" />
-             </div>
-           </div>
-           
-            )}
+        {isMobileView && currentSubStep === 0 ? (
+          // Mobile welcome screen layout: language dropdown on top, then start button
+          <div className={`flex flex-col ${isMobileView ? 'px-4' : 'px-6'} space-y-3`}>
+            <div className="flex items-center justify-start space-x-2 mt-2">
+              <span className="text-[14px] text-[#637085]">Your default language is:</span>
+              <div className="relative">
+                <select 
+                  className="h-[32px] pl-3 pr-8 text-[12px] text-[#353B46] border border-[#8C95A8] rounded-[10px] bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                  defaultValue="english"
+                >
+                  <option value="english">English</option>
+                </select>
+                
+                <ChevronDown 
+                  size={16} 
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[#353B46] pointer-events-none" 
+                />
+              </div>
+            </div>
             
-            {currentSubStep > 0 && (
             <button
-  onClick={() => setCurrentSubStep(Math.max(0, currentSubStep - 1))}
-  className="flex items-center space-x-2 px-6 py-2.5 text-[#353B46] border border-gray-300 rounded-[10px] hover:bg-gray-50 transition-colors duration-200 text-sm md:text-base"
->
-  <ArrowLeft className="w-4 h-4" />
-  <span>Previous</span>
-</button>
-
-            )}
+              onClick={() => {
+                console.log('Complete button clicked in GenericModuleRenderer!');
+                if (currentSubStep < screens.length - 1) {
+                  setCurrentSubStep(currentSubStep + 1);
+                } else {
+                  console.log('Assessment complete - final step reached');
+                  if (onNext) {
+                    console.log('Calling parent onNext function');
+                    onNext();
+                  } else {
+                    console.log('ERROR: onNext function not provided to GenericModuleRenderer');
+                  }
+                }
+              }}
+              data-complete-button
+              className="flex items-center justify-center space-x-2 px-4 py-3 rounded-[8px] transition-all duration-200 text-white text-sm font-medium w-full"
+              style={{ backgroundColor: primaryColor }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = `${primaryColor}CC`;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = primaryColor;
+              }}
+            >
+              <span>Start</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        ) : isMobileView && currentSubStep > 0 ? (
+          // Mobile layout for non-welcome screens: question text, auto advance, then buttons
+          <div className={`flex flex-col ${isMobileView ? 'px-4' : 'px-6'} space-y-3`}>
+            {/* Question text at top */}
+            <div className="flex items-center justify-start">
+              <span className="text-[14px] text-[#637085]">
+                {getSubStepTitle(currentSubStep)}
+              </span>
+            </div>
             
-            {currentSubStep === 0 && (
-  <div className="flex items-center space-x-2">
-    <span className="text-[12px] md:text-[14px] text-[#637085]">Language:</span>
-    <div className="relative">
-      <select 
-        className="h-[32px] pl-3 pr-8 text-[12px] md:text-[14px] text-[#353B46] border border-[#8C95A8] rounded-[10px] bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
-        defaultValue="english"
-      >
-        <option value="english">English</option>
-      </select>
-      
-      <ChevronDown 
-        size={16} 
-        className="absolute right-2 top-1/2 -translate-y-1/2 text-[#353B46] pointer-events-none" 
-      />
-    </div>
+            {/* Auto advance toggle */}
+            <div className="flex items-center justify-center py-3 px-4 rounded-lg" style={{ backgroundColor: '#F4F6FA' }}>
+              <div className="flex items-center space-x-2">
+                <div className="relative inline-block w-[44px] h-[24px]">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    id="autoAdvance"
+                  />
+                  <label
+                    htmlFor="autoAdvance"
+                    className="block w-[44px] h-[24px] bg-gray-300 rounded-full cursor-pointer transition-colors duration-200"
+                  >
+                    <div className="w-[20px] h-[20px] bg-white rounded-full shadow-md transform transition-transform duration-200 translate-x-[2px] translate-y-[2px] peer-checked:translate-x-[22px]" />
+                  </label>
+                </div>
+                <span className="text-[14px] text-[#353B46]">Auto Advance</span>
+                <Info className="w-4 h-4 text-gray-500" />
+              </div>
+            </div>
+            
+            {/* Buttons */}
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setCurrentSubStep(Math.max(0, currentSubStep - 1))}
+                className="flex items-center justify-center px-4 py-3 text-[#353B46] border border-gray-300 rounded-[8px] hover:bg-gray-50 transition-colors duration-200 text-sm"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
 
-  </div>
+              <button
+                onClick={() => {
+                  console.log('Complete button clicked in GenericModuleRenderer!');
+                  if (currentSubStep < screens.length - 1) {
+                    setCurrentSubStep(currentSubStep + 1);
+                  } else {
+                    console.log('Assessment complete - final step reached');
+                    if (onNext) {
+                      console.log('Calling parent onNext function');
+                      onNext();
+                    } else {
+                      console.log('ERROR: onNext function not provided to GenericModuleRenderer');
+                    }
+                  }
+                }}
+                data-complete-button
+                className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-[8px] transition-all duration-200 text-white text-sm font-medium"
+                style={{ backgroundColor: primaryColor }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = `${primaryColor}CC`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = primaryColor;
+                }}
+              >
+                <span>
+                  {currentSubStep === screens.length - 1 
+                    ? 'Complete' 
+                    : 'Next'}
+                </span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          // Desktop layout
+          <div className={`flex items-center ${isMobileView ? 'px-4' : 'px-6'} justify-between`}>
+            <div className="flex items-center space-x-4">
+              <span className={`${isMobileView ? 'text-xs' : 'text-[12px] md:text-[14px]'} text-[#637085]`}>
+                {isMobileView ? getSubStepTitle(currentSubStep) : `Assessment | ${getSubStepTitle(currentSubStep)}`}
+              </span>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              {currentSubStep > 0 && (
+               <div className="flex items-center space-x-2 mr-2">
+               <div className="flex items-center space-x-2">
+                 <div className="relative inline-block w-[44px] h-[24px]">
+                   <input
+                     type="checkbox"
+                     className="sr-only peer"
+                     id="autoAdvance"
+                   />
+                   <label
+                     htmlFor="autoAdvance"
+                     className="block w-[44px] h-[24px] bg-gray-300 rounded-full cursor-pointer transition-colors duration-200"
+                   >
+                     <div className="w-[20px] h-[20px] bg-white rounded-full shadow-md transform transition-transform duration-200 translate-x-[2px] translate-y-[2px] peer-checked:translate-x-[22px]" />
+                   </label>
+                 </div>
+                 <span className="text-[12px] md:text-[14px] text-[#353B46]">Auto Advance</span>
+                 <Info className="w-4 h-4 text-gray-500" />
+               </div>
+             </div>
+             
+              )}
+              
+              {currentSubStep > 0 && (
+              <button
+                onClick={() => setCurrentSubStep(Math.max(0, currentSubStep - 1))}
+                className={`flex items-center space-x-2 ${isMobileView ? 'px-4 py-2' : 'px-6 py-2.5'} text-[#353B46] border border-gray-300 ${isMobileView ? 'rounded-[8px]' : 'rounded-[10px]'} hover:bg-gray-50 transition-colors duration-200 ${isMobileView ? 'text-sm' : 'text-sm md:text-base'}`}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                {!isMobileView && <span>Previous</span>}
+              </button>
+
+              )}
+              
+              {currentSubStep === 0 && !isMobileView && (
+    <div className="flex items-center space-x-2">
+      <span className="text-[12px] md:text-[14px] text-[#637085]">Language:</span>
+      <div className="relative">
+        <select 
+          className="h-[32px] pl-3 pr-8 text-[12px] md:text-[14px] text-[#353B46] border border-[#8C95A8] rounded-[10px] bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+          defaultValue="english"
+        >
+          <option value="english">English</option>
+        </select>
+        
+        <ChevronDown 
+          size={16} 
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-[#353B46] pointer-events-none" 
+        />
+      </div>
+
+    </div>
 )}
 
-            
-           <button
+              
+             <button
   onClick={() => {
     console.log('Complete button clicked in GenericModuleRenderer!');
     if (currentSubStep < screens.length - 1) {
@@ -798,7 +926,7 @@ const AssessmentComponent = React.memo(({
     }
   }}
   data-complete-button
-  className="flex items-center space-x-2 px-6 py-2.5 rounded-[10px] transition-all duration-200 text-white text-sm md:text-base"
+  className={`flex items-center space-x-2 ${isMobileView ? 'px-4 py-3 flex-1' : 'px-6 py-2.5'} ${isMobileView ? 'rounded-[8px]' : 'rounded-[10px]'} transition-all duration-200 text-white ${isMobileView ? 'text-sm font-medium' : 'text-sm md:text-base'}`}
   style={{ backgroundColor: primaryColor }}
   onMouseEnter={(e) => {
     e.currentTarget.style.backgroundColor = `${primaryColor}CC`;
@@ -816,10 +944,31 @@ const AssessmentComponent = React.memo(({
   </span>
   <ArrowRight className="w-4 h-4" />
 </button>
-
+            </div>
           </div>
-        </div>
+        )}
       </div>
+  );
+
+  // Memoize the footer to prevent unnecessary re-renders
+  const memoizedFooter = useMemo(() => {
+    if (!isMobileView) return null;
+    return renderAssessmentFooter();
+  }, [isMobileView, currentSubStep, screens, primaryColor, onNext]);
+
+  // Call footer render callback if mobile - use useEffect to prevent infinite loops
+  useEffect(() => {
+    if (isMobileView && onFooterRender && memoizedFooter) {
+      onFooterRender(memoizedFooter);
+    }
+  }, [isMobileView, onFooterRender, memoizedFooter]);
+
+  return (
+    <div className="w-full m-0 p-0 overflow-x-hidden bg-white">
+      {renderCurrentSubStep()}
+      
+      {/* Assessment Navigation - Fixed on desktop, rendered via callback on mobile */}
+      {!isMobileView && renderAssessmentFooter()}
     </div>
   );
 });
@@ -1222,7 +1371,7 @@ const FileUploadComponent = React.memo(({ value, onChange }: FileUploadComponent
   );
 });
 
-export default function GenericModuleRenderer({ template, primaryColor, onNext, onNavigate, moduleOverrides, isMobileView = false }: GenericModuleRendererProps) {
+export default function GenericModuleRenderer({ template, primaryColor, onNext, onNavigate, moduleOverrides, isMobileView = false, onAssessmentFooterRender }: GenericModuleRendererProps) {
   const isThankYouStep = template.component === 'ThankYouStep';
   // Single state object to manage all form data
   const [formData, setFormData] = useState<Record<string, any>>({});
@@ -1528,6 +1677,8 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
             primaryColor={primaryColor}
             onNext={onNext}
             assessmentConfig={question.assessmentConfig}
+            isMobileView={isMobileView}
+            onFooterRender={onAssessmentFooterRender}
           />
         );
 
@@ -1584,9 +1735,9 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
     const isNextHalfWidth = nextQuestion?.halfWidth && (nextQuestion.type === 'text' || nextQuestion.type === 'select');
     
     if (isCurrentHalfWidth && isNextHalfWidth) {
-      // Render two half-width inputs in one row
+      // Render two half-width inputs in one row (vertical on mobile)
       elements.push(
-        <div key={`${question.id}-${nextQuestion.id}`} className="grid grid-cols-2 gap-4">
+        <div key={`${question.id}-${nextQuestion.id}`} className={isMobileView ? "flex flex-col space-y-4" : "grid grid-cols-2 gap-4"}>
           <div className="space-y-2">
             {question.type !== 'image' && question.type !== 'assessment' && (
               <label className="block text-[14px] text-[#464F5E] mb-2">

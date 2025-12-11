@@ -50,6 +50,9 @@ export default function ApplicationFlow() {
   // Mobile view state
   const [isMobileView, setIsMobileView] = useState(false);
   
+  // Assessment footer state for mobile view
+  const [assessmentFooter, setAssessmentFooter] = useState<JSX.Element | null>(null);
+  
   // Initial state variables (these are NOT hooks, just constants)
   const initialContactInfo: ContactInfo = {
     firstName: '',
@@ -181,12 +184,32 @@ export default function ApplicationFlow() {
       voiceScreening: { ...prev.voiceScreening, ...updates }
     }));
   }, []);
+
+  // Memoized callback for assessment footer rendering
+  const handleAssessmentFooterRender = useCallback((footer: JSX.Element) => {
+    setAssessmentFooter(footer);
+  }, []);
   
   // Check authentication on mount
   React.useEffect(() => {
     const authenticated = localStorage.getItem('authenticated') === 'true';
     setIsAuthenticated(authenticated);
   }, []);
+
+  // Clear assessment footer when not in mobile view or not showing assessment
+  React.useEffect(() => {
+    if (!isMobileView || !flow) {
+      setAssessmentFooter(null);
+      return;
+    }
+    const currentFlowStep = flow.steps[currentStep];
+    const currentModule = currentFlowStep?.modules[currentSubStep];
+    const moduleTemplate = templates.find(template => template.id === currentModule?.id);
+    const hasAssessment = moduleTemplate?.content.questions?.some(q => q.type === 'assessment');
+    if (!hasAssessment) {
+      setAssessmentFooter(null);
+    }
+  }, [isMobileView, currentStep, currentSubStep, flow, templates]);
   
   // NOW WE CAN HAVE CONDITIONAL LOGIC AND EARLY RETURNS
   // Show loading state while flows are being fetched
@@ -579,6 +602,7 @@ export default function ApplicationFlow() {
               onNavigate={handleCustomNavigation}
               moduleOverrides={primaryModule.templateOverrides}
               isMobileView={isMobileView}
+              onAssessmentFooterRender={isMobileView ? handleAssessmentFooterRender : undefined}
             />
           );
         }
@@ -926,50 +950,58 @@ export default function ApplicationFlow() {
               </div>
 
               {/* Mobile Footer Navigation */}
-              {currentFlowStep?.modules[currentSubStep]?.component !== 'ThankYouStep' &&
-               currentFlowStep?.modules[currentSubStep]?.component !== 'AssessmentStep' &&
-               currentFlowStep?.modules[currentSubStep]?.component !== 'VoiceScreeningStep' &&
-               currentFlowStep?.modules[currentSubStep]?.component !== 'MultibuttonModule' && (
-                <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 py-3">
-                  <div className="flex items-center space-x-3">
-                    <button
-                      onClick={handleBack}
-                      disabled={currentStep === 0 && currentSubStep === 0}
-                      className={`
-                        flex items-center justify-center px-4 py-3 rounded-[8px] transition-all duration-200 border border-[#D1D5DC]
-                        ${
-                          currentStep === 0 && currentSubStep === 0
-                            ? 'text-gray-400 cursor-not-allowed'
-                            : 'text-[#353B46] hover:bg-gray-100 border border-gray-300'
-                        }
-                      `}
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                    </button>
-
-                    <button
-                      onClick={handleNext}
-                      data-next-button
-                      className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-[8px] transition-all duration-200 text-white text-sm font-medium"
-                      style={{
-                        backgroundColor: primaryColor
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = `${primaryColor}CC`;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = primaryColor;
-                      }}
-                    >
-                      <span>
-                        {currentStep === steps.length - 1 && (!hasSubSteps || currentSubStep === currentStepModules.length - 1)
-                          ? 'Submit'
-                          : 'Next'}
-                      </span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
+              {assessmentFooter ? (
+                // Assessment custom footer
+                <div className="flex-shrink-0">
+                  {assessmentFooter}
                 </div>
+              ) : (
+                // Regular mobile footer
+                currentFlowStep?.modules[currentSubStep]?.component !== 'ThankYouStep' &&
+                currentFlowStep?.modules[currentSubStep]?.component !== 'AssessmentStep' &&
+                currentFlowStep?.modules[currentSubStep]?.component !== 'VoiceScreeningStep' &&
+                currentFlowStep?.modules[currentSubStep]?.component !== 'MultibuttonModule' && (
+                  <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 py-3">
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={handleBack}
+                        disabled={currentStep === 0 && currentSubStep === 0}
+                        className={`
+                          flex items-center justify-center px-4 py-3 rounded-[8px] transition-all duration-200 border border-[#D1D5DC]
+                          ${
+                            currentStep === 0 && currentSubStep === 0
+                              ? 'text-gray-400 cursor-not-allowed'
+                              : 'text-[#353B46] hover:bg-gray-100 border border-gray-300'
+                          }
+                        `}
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={handleNext}
+                        data-next-button
+                        className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-[8px] transition-all duration-200 text-white text-sm font-medium"
+                        style={{
+                          backgroundColor: primaryColor
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = `${primaryColor}CC`;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = primaryColor;
+                        }}
+                      >
+                        <span>
+                          {currentStep === steps.length - 1 && (!hasSubSteps || currentSubStep === currentStepModules.length - 1)
+                            ? 'Submit'
+                            : 'Next'}
+                        </span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )
               )}
             </div>
           </div>
