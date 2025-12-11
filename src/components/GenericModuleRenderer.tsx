@@ -19,6 +19,7 @@ interface GenericModuleRendererProps {
       targetFlow?: string;
     }>;
   };
+  isMobileView?: boolean;
 }
 
 interface NavigationTarget {
@@ -1221,7 +1222,7 @@ const FileUploadComponent = React.memo(({ value, onChange }: FileUploadComponent
   );
 });
 
-export default function GenericModuleRenderer({ template, primaryColor, onNext, onNavigate, moduleOverrides }: GenericModuleRendererProps) {
+export default function GenericModuleRenderer({ template, primaryColor, onNext, onNavigate, moduleOverrides, isMobileView = false }: GenericModuleRendererProps) {
   const isThankYouStep = template.component === 'ThankYouStep';
   // Single state object to manage all form data
   const [formData, setFormData] = useState<Record<string, any>>({});
@@ -1746,20 +1747,25 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
   // Render split screen layout
   if (isSplitScreenEnabled) {
     const contentSection = (
-      <div 
-        className={`flex-1 flex flex-col px-8 md:px-12 lg:px-16 py-8 md:py-12 ${imagePosition === 'left' ? 'border-l' : 'border-r'}`}
-        style={{ backgroundColor: '#F8F9FB', borderColor: '#D1D5DC', paddingBottom: '40px', minHeight: 'calc(100vh + 40px)' }}
+      <div
+        className={`flex-1 flex flex-col ${isMobileView ? 'p-4' : 'px-8 md:px-12 lg:px-16 py-8 md:py-12'} ${!isMobileView && (imagePosition === 'left' ? 'border-l' : 'border-r')}`}
+        style={{
+          backgroundColor: isMobileView ? '#FFFFFF' : '#F8F9FB',
+          borderColor: '#D1D5DC',
+          paddingBottom: isMobileView ? '0px' : '40px',
+          minHeight: isMobileView ? 'auto' : 'calc(100vh + 40px)'
+        }}
       >
         {/* Title and Subtitle for all modules except Assessment and Video Interview */}
         {template.component !== 'AssessmentStep' && !questions.some(q => q.type === 'video-interview') && (
-          <div className={`mb-8 ${template.content.centerTitle ? 'text-center' : ''}`}>
+          <div className={`${isMobileView ? 'mb-4' : 'mb-8'} ${template.content.centerTitle ? 'text-center' : ''}`}>
             {template.content.title && (
               <h2 className="text-[18px] font-semibold text-[#353B46] mb-1">
                 {template.content.title}
               </h2>
             )}
             {template.content.subtitle && (
-              <p className="text-[14px] text-[#464F5E] mb-6">
+              <p className={`text-[14px] text-[#464F5E] ${isMobileView ? 'mb-0' : 'mb-6'}`}>
                 {template.content.subtitle}
               </p>
             )}
@@ -1785,7 +1791,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
     );
 
     const imageSection = (
-      <div className="flex-1 p-8 flex flex-col items-start justify-start sticky top-0 min-h-screen">
+      <div className={`${isMobileView ? '' : 'flex-1'} ${isMobileView ? 'p-4' : 'p-8'} flex flex-col items-start justify-start ${isMobileView ? 'min-h-0' : 'sticky top-0 min-h-screen'}`}>
         {/* Image Side Title and Subtitle */}
         {template.content.imageSideHasTitleSubtitle && (
           <div className="mb-4 w-full">
@@ -1829,7 +1835,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
 
     return (
       <div className="w-full m-0 p-0 overflow-x-hidden bg-white" style={{ marginBottom: '40px' }}>
-        <div className="w-full min-h-screen flex" style={{ paddingBottom: '0px' }}>
+        <div className={`w-full min-h-screen flex ${isMobileView ? 'flex-col' : ''}`} style={{ paddingBottom: '0px' }}>
           {imagePosition === 'left' ? (
             <>
               {imageSection}

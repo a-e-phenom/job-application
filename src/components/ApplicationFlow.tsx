@@ -578,6 +578,7 @@ export default function ApplicationFlow() {
               onNext={handleNext}
               onNavigate={handleCustomNavigation}
               moduleOverrides={primaryModule.templateOverrides}
+              isMobileView={isMobileView}
             />
           );
         }
