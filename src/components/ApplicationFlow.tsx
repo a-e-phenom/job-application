@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { ArrowLeft, ArrowRight, X, Check, ChevronLeft, ChevronRight, Settings2, MoreVertical } from 'lucide-react';
+import { ArrowLeft, ArrowRight, X, Check, ChevronLeft, ChevronRight, Settings2, MoreVertical, Smartphone } from 'lucide-react';
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import ContactInfoStep from './ContactInfoStep';
 import PreScreeningStep from './PreScreeningStep';
@@ -43,9 +43,12 @@ export default function ApplicationFlow() {
   
   // Feedback modal state
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  
+
   // Interview confirmation modal state
   const [showInterviewConfirmation, setShowInterviewConfirmation] = useState(false);
+
+  // Mobile view state
+  const [isMobileView, setIsMobileView] = useState(false);
   
   // Initial state variables (these are NOT hooks, just constants)
   const initialContactInfo: ContactInfo = {
@@ -593,20 +596,22 @@ export default function ApplicationFlow() {
           <div className="flex items-center space-x-4">
             
             
-            <div className="flex items-center space-x-2">
-             <img
-          src={flow.logoUrl || "https://mms.businesswire.com/media/20240122372572/en/1546931/5/Phenom_Lockup_RGB_Black.jpg?download=1"}
-          alt="Phenom Logo"
-          className="h-8 w-auto"
-        />
-              <div>
-               
+            {!isMobileView && (
+              <div className="flex items-center space-x-2">
+               <img
+            src={flow.logoUrl || "https://mms.businesswire.com/media/20240122372572/en/1546931/5/Phenom_Lockup_RGB_Black.jpg?download=1"}
+            alt="Phenom Logo"
+            className="h-8 w-auto"
+          />
+                <div>
+
+                </div>
               </div>
-            </div>
+            )}
           </div>
           
           {/* Step Indicator in Header Middle */}
-          {!isComplete && (
+          {!isComplete && !isMobileView && (
             <div className="absolute left-1/2 transform -translate-x-1/2 hidden md:block">
             <div className="flex items-center">
               {steps.map((step, index) => (
@@ -721,8 +726,16 @@ export default function ApplicationFlow() {
                   <MoreVertical className="w-4 h-4 text-gray-600" />
                 </button>
               )}
-              
-              <button 
+
+              <button
+                onClick={() => setIsMobileView(!isMobileView)}
+                className={`p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 ${isMobileView ? 'bg-blue-50' : ''}`}
+                title="Toggle Mobile View"
+              >
+                <Smartphone className={`w-4 h-4 ${isMobileView ? 'text-blue-600' : 'text-gray-600'}`} />
+              </button>
+
+              <button
                 onClick={() => navigate('/')}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
               >
@@ -734,58 +747,288 @@ export default function ApplicationFlow() {
       </div>
       
       {/* Main Content */}
-      {(() => {
-        const currentModuleId = currentFlowStep?.modules[currentSubStep]?.id;
-        const currentComponent = currentFlowStep?.modules[currentSubStep]?.component;
-        return null;
-      })()}
-      {(() => {
-        // Check if current module has split screen enabled
-        const currentModule = currentFlowStep?.modules[currentSubStep];
-        const moduleTemplate = templates.find(template => template.id === currentModule?.id);
-        const effectiveTemplate = moduleTemplate ? {
-          ...moduleTemplate,
-          content: {
-            ...moduleTemplate.content,
-            ...currentModule?.templateOverrides
-          }
-        } : undefined;
-        
-        const isSplitScreenEnabled = effectiveTemplate?.content.splitScreenWithImage && effectiveTemplate?.content.splitScreenImage;
-        
-        return currentFlowStep?.modules[currentSubStep]?.component === 'AssessmentStep' || 
-               currentFlowStep?.modules[currentSubStep]?.component === 'VoiceScreeningStep' || 
-               isSplitScreenEnabled;
-      })() ? (
-        // Assessment and split screen modules get full screen treatment - no containers, no padding, no cards
-        renderCurrentStep()
-      ) : (
-        <div className={`mx-auto px-4 py-8 ${
-          currentFlowStep?.modules[currentSubStep]?.component === 'InterviewSchedulingStep' 
-            ? 'max-w-[1000px]' 
-            : 'max-w-[780px]'
-        }`}>
-          <div className={`bg-white rounded-xl shadow-sm p-8 mb-20 ${
-            currentFlowStep?.modules[currentSubStep]?.component === 'InterviewSchedulingStep' 
-              ? 'w-full' 
-              : ''
-          }`}>
-          {isComplete ? (
-            <div className="max-w-2xl mx-auto text-center">
-              <div className="mb-8">
-                <h2 className="text-[32px] font-semibold text-[#353B46] mb-4">Application Complete</h2>
-                <p className="text-[16px] text-[#464F5E] mb-6">
-                  Your application has been submitted successfully.
-                </p>
+      {isMobileView ? (
+        <div className="flex items-start justify-center h-screen bg-gray-100 p-0 pt-8">
+          <div className="relative mx-auto border-4 border-black rounded-[2.5rem] shadow-2xl overflow-hidden" style={{width: '375px', height: '80vh', maxHeight: '800px'}}>
+            {/* Phone screen */}
+            <div className="bg-white w-full h-full rounded-[2rem] overflow-hidden relative flex flex-col">
+              {/* Mobile Header with Logo and Stepper */}
+              <div className="flex-shrink-0 bg-white shadow-sm border-b border-gray-200 px-4 py-3">
+                {/* Logo */}
+                <div className="flex justify-start mb-2">
+                  <img
+                    src={flow.logoUrl || "https://mms.businesswire.com/media/20240122372572/en/1546931/5/Phenom_Lockup_RGB_Black.jpg?download=1"}
+                    alt="Phenom Logo"
+                    className="h-6 w-auto"
+                  />
+                </div>
+                <div className="flex items-center justify-start w-full">
+                  {/* Step Indicator in Mobile Header */}
+                  {!isComplete && (
+                    <div className="flex items-center w-full">
+                      {steps.map((step, index) => (
+                        <React.Fragment key={step.id}>
+                          <div className="flex items-center flex-shrink-0">
+                            <div
+                              className={`
+                                 w-6 h-6 min-w-6 min-h-6 flex-shrink-0 rounded-full flex items-center justify-center text-xs transition-all duration-300 border
+                              `}
+                              style={{
+                                backgroundColor: index < currentStep
+                                  ? `${primaryColor}20`
+                                  : index === currentStep
+                                  ? primaryColor
+                                  : 'white',
+                                  border: '1px solid',
+                                borderColor: index < currentStep
+                                  ? `${primaryColor}40`
+                                  : index === currentStep
+                                  ? primaryColor
+                                  : '#D1D5DC',
+                                color: index < currentStep
+                                  ? primaryColor
+                                  : index === currentStep
+                                  ? 'white'
+                                  : '#6B7280'
+                              }}
+                            >
+                              {index < currentStep ? (
+                                <Check className="w-3 h-3" />
+                              ) : (
+                                <span>{index + 1}</span>
+                              )}
+                            </div>
+                            {/* Only show title for current and completed steps */}
+                            {(index <= currentStep) && (
+                              <span
+                                className="ml-1 text-xs transition-colors duration-300 font-medium"
+                                style={{
+                                  color: index < currentStep
+                                    ? '#464F5E'
+                                    : index === currentStep
+                                    ? primaryColor
+                                    : '#637085'
+                                }}
+                              >
+                                {step.title}
+                              </span>
+                            )}
+
+                            {/* Sub-step dots for current step with multiple modules */}
+                            {index === currentStep && flow.steps[currentStep]?.modules.length > 1 && (
+                              <div className="flex items-center ml-1 space-x-0.5">
+                                {(() => {
+                                  const groupedModules = getGroupedModules(flow.steps[currentStep].modules);
+                                  return groupedModules.map((group, groupIndex) => {
+                                    const isGroup = Array.isArray(group);
+                                    const isActive = isGroup
+                                      ? group.some(module => {
+                                          const moduleIndex = flow.steps[currentStep].modules.findIndex(m => m.id === module.id);
+                                          return moduleIndex === currentSubStep;
+                                        })
+                                      : (() => {
+                                          const moduleIndex = flow.steps[currentStep].modules.findIndex(m => m.id === (group as FlowModule).id);
+                                          return moduleIndex === currentSubStep;
+                                        })();
+
+                                    return (
+                                      <div
+                                        key={groupIndex}
+                                        className={`
+                                          w-1.5 h-1.5 rounded-full transition-colors duration-300
+                                          ${isGroup ? 'shadow-sm' : ''}
+                                        `}
+                                        style={{
+                                          backgroundColor: isActive ? primaryColor : '#D1D5DB',
+
+                                        }}
+                                        title={isGroup ? `Custom Button Targets (${group.length})` : (group as FlowModule).name}
+                                      />
+                                    );
+                                  });
+                                })()}
+                              </div>
+                            )}
+                          </div>
+                          {index < steps.length - 1 && (
+                            <div
+                              className={`
+                                flex-1 h-px mx-2 transition-colors duration-300
+                                ${
+                                  index < currentStep
+                                    ? 'bg-gray-300'
+                                    : 'bg-gray-200'
+                                }
+                              `}
+                            />
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Content area */}
+              <div className="flex-1 overflow-y-auto">
+                {(() => {
+                  const currentModuleId = currentFlowStep?.modules[currentSubStep]?.id;
+                  const currentComponent = currentFlowStep?.modules[currentSubStep]?.component;
+                  return null;
+                })()}
+                {(() => {
+                  // Check if current module has split screen enabled
+                  const currentModule = currentFlowStep?.modules[currentSubStep];
+                  const moduleTemplate = templates.find(template => template.id === currentModule?.id);
+                  const effectiveTemplate = moduleTemplate ? {
+                    ...moduleTemplate,
+                    content: {
+                      ...moduleTemplate.content,
+                      ...currentModule?.templateOverrides
+                    }
+                  } : undefined;
+
+                  const isSplitScreenEnabled = effectiveTemplate?.content.splitScreenWithImage && effectiveTemplate?.content.splitScreenImage;
+
+                  return currentFlowStep?.modules[currentSubStep]?.component === 'AssessmentStep' ||
+                         currentFlowStep?.modules[currentSubStep]?.component === 'VoiceScreeningStep' ||
+                         isSplitScreenEnabled;
+                })() ? (
+                  // Assessment and split screen modules get full screen treatment - no containers, no padding, no cards
+                  <div className="h-full">
+                    {renderCurrentStep()}
+                  </div>
+                ) : (
+                  <div className={`p-4 ${
+                    currentFlowStep?.modules[currentSubStep]?.component === 'InterviewSchedulingStep'
+                      ? 'max-w-[1000px]'
+                      : 'max-w-[780px]'
+                  }`}>
+                    <div className={`bg-white p-0 mb-0 ${
+                      currentFlowStep?.modules[currentSubStep]?.component === 'InterviewSchedulingStep'
+                        ? 'w-full'
+                        : ''
+                    }`}>
+                    {isComplete ? (
+                      <div className="max-w-2xl mx-auto text-center">
+                        <div className="mb-6">
+                          <h2 className="text-[28px] font-semibold text-[#353B46] mb-3">Application Complete</h2>
+                          <p className="text-[14px] text-[#464F5E] mb-4">
+                            Your application has been submitted successfully.
+                          </p>
+                        </div>
+                      </div>
+                    ) : renderCurrentStep()}
+                  </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Mobile Footer Navigation */}
+              {currentFlowStep?.modules[currentSubStep]?.component !== 'ThankYouStep' &&
+               currentFlowStep?.modules[currentSubStep]?.component !== 'AssessmentStep' &&
+               currentFlowStep?.modules[currentSubStep]?.component !== 'VoiceScreeningStep' &&
+               currentFlowStep?.modules[currentSubStep]?.component !== 'MultibuttonModule' && (
+                <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 py-3">
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={handleBack}
+                      disabled={currentStep === 0 && currentSubStep === 0}
+                      className={`
+                        flex items-center justify-center px-4 py-3 rounded-[8px] transition-all duration-200 border border-[#D1D5DC]
+                        ${
+                          currentStep === 0 && currentSubStep === 0
+                            ? 'text-gray-400 cursor-not-allowed'
+                            : 'text-[#353B46] hover:bg-gray-100 border border-gray-300'
+                        }
+                      `}
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                    </button>
+
+                    <button
+                      onClick={handleNext}
+                      data-next-button
+                      className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-[8px] transition-all duration-200 text-white text-sm font-medium"
+                      style={{
+                        backgroundColor: primaryColor
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = `${primaryColor}CC`;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = primaryColor;
+                      }}
+                    >
+                      <span>
+                        {currentStep === steps.length - 1 && (!hasSubSteps || currentSubStep === currentStepModules.length - 1)
+                          ? 'Submit'
+                          : 'Next'}
+                      </span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          ) : renderCurrentStep()}
+          </div>
         </div>
-        </div>
+      ) : (
+        <>
+          {(() => {
+            const currentModuleId = currentFlowStep?.modules[currentSubStep]?.id;
+            const currentComponent = currentFlowStep?.modules[currentSubStep]?.component;
+            return null;
+          })()}
+          {(() => {
+            // Check if current module has split screen enabled
+            const currentModule = currentFlowStep?.modules[currentSubStep];
+            const moduleTemplate = templates.find(template => template.id === currentModule?.id);
+            const effectiveTemplate = moduleTemplate ? {
+              ...moduleTemplate,
+              content: {
+                ...moduleTemplate.content,
+                ...currentModule?.templateOverrides
+              }
+            } : undefined;
+
+            const isSplitScreenEnabled = effectiveTemplate?.content.splitScreenWithImage && effectiveTemplate?.content.splitScreenImage;
+
+            return currentFlowStep?.modules[currentSubStep]?.component === 'AssessmentStep' ||
+                   currentFlowStep?.modules[currentSubStep]?.component === 'VoiceScreeningStep' ||
+                   isSplitScreenEnabled;
+          })() ? (
+            // Assessment and split screen modules get full screen treatment - no containers, no padding, no cards
+            renderCurrentStep()
+          ) : (
+            <div className={`mx-auto px-4 py-8 ${
+              currentFlowStep?.modules[currentSubStep]?.component === 'InterviewSchedulingStep'
+                ? 'max-w-[1000px]'
+                : 'max-w-[780px]'
+            }`}>
+              <div className={`bg-white rounded-xl shadow-sm p-8 mb-20 ${
+                currentFlowStep?.modules[currentSubStep]?.component === 'InterviewSchedulingStep'
+                  ? 'w-full'
+                  : ''
+              }`}>
+              {isComplete ? (
+                <div className="max-w-2xl mx-auto text-center">
+                  <div className="mb-8">
+                    <h2 className="text-[32px] font-semibold text-[#353B46] mb-4">Application Complete</h2>
+                    <p className="text-[16px] text-[#464F5E] mb-6">
+                      Your application has been submitted successfully.
+                    </p>
+                  </div>
+                </div>
+              ) : renderCurrentStep()}
+            </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Footer Navigation */}
-      {currentFlowStep?.modules[currentSubStep]?.component !== 'ThankYouStep' && 
+      {!isMobileView && currentFlowStep?.modules[currentSubStep]?.component !== 'ThankYouStep' &&
        currentFlowStep?.modules[currentSubStep]?.component !== 'AssessmentStep' &&
        currentFlowStep?.modules[currentSubStep]?.component !== 'VoiceScreeningStep' &&
        currentFlowStep?.modules[currentSubStep]?.component !== 'MultibuttonModule' && (
