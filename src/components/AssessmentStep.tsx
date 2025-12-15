@@ -3,6 +3,20 @@ import { ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
 import { AssessmentData } from '../types/application';
 import { ModuleTemplate } from '../hooks/useTemplates';
 
+// Extend Window interface to include assessmentState
+declare global {
+  interface Window {
+    assessmentState?: {
+      currentSubStep: number;
+      setCurrentSubStep: (step: number) => void;
+      canAdvance: () => boolean;
+      getSubStepTitle: (step: number) => string;
+      handleNext: () => void;
+      handlePrevious: () => void;
+    };
+  }
+}
+
 interface AssessmentStepProps {
   data: AssessmentData;
   onUpdate: (data: AssessmentData) => void;
@@ -10,6 +24,7 @@ interface AssessmentStepProps {
   primaryColor: string;
   onNext: () => void;
   template?: ModuleTemplate;
+  isMobileView?: boolean;
 }
 
 const SCENARIO_QUESTIONS = [
@@ -43,7 +58,7 @@ const MATH_QUESTIONS = [
   }
 ];
 
-const AssessmentStep = React.memo(function AssessmentStep({ data, onUpdate, onValidate, primaryColor, onNext }: AssessmentStepProps) {
+const AssessmentStep = React.memo(function AssessmentStep({ data, onUpdate, onValidate, primaryColor, onNext, isMobileView = false }: AssessmentStepProps) {
   const [currentSubStep, setCurrentSubStep] = useState(data.introCompleted ? 1 : 0);
   const [localData, setLocalData] = useState<AssessmentData>(data);
 
@@ -221,35 +236,35 @@ const AssessmentStep = React.memo(function AssessmentStep({ data, onUpdate, onVa
               </p>
             </div>
             
-            <div className="space-y-4">
+            <div className={isMobileView ? "space-y-1" : "space-y-4"}>
               {question.responses.map((response, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
+                <div key={index} className={`border border-gray-200 rounded-lg ${isMobileView ? 'p-2' : 'p-4'}`}>
                   <div className="flex items-start justify-between">
-                    <p className="text-[16px] text-[#464F5E] flex-1 pr-4">{response}</p>
+                    <p className={`${isMobileView ? 'text-[14px]' : 'text-[16px]'} text-[#464F5E] flex-1 ${isMobileView ? 'pr-2' : 'pr-4'}`}>{response}</p>
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleScenarioAnswer(question.id, 'best', index)}
                         className={`
-                          w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors duration-200
+                          ${isMobileView ? 'w-6 h-6' : 'w-8 h-8'} rounded-full border-2 flex items-center justify-center transition-colors duration-200
                           ${answer?.bestResponse === index.toString()
                             ? 'bg-green-600 border-green-600 text-white'
                             : 'border-gray-300 hover:border-green-400'
                           }
                         `}
                       >
-                        <Check className="w-4 h-4" />
+                        <Check className={isMobileView ? "w-3 h-3" : "w-4 h-4"} />
                       </button>
                       <button
                         onClick={() => handleScenarioAnswer(question.id, 'worst', index)}
                         className={`
-                          w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors duration-200
+                          ${isMobileView ? 'w-6 h-6' : 'w-8 h-8'} rounded-full border-2 flex items-center justify-center transition-colors duration-200
                           ${answer?.worstResponse === index.toString()
                             ? 'bg-red-600 border-red-600 text-white'
                             : 'border-gray-300 hover:border-red-400'
                           }
                         `}
                       >
-                        <X className="w-4 h-4" />
+                        <X className={isMobileView ? "w-3 h-3" : "w-4 h-4"} />
                       </button>
                     </div>
                   </div>
@@ -415,12 +430,12 @@ const AssessmentStep = React.memo(function AssessmentStep({ data, onUpdate, onVa
             return true;
           case 1:
             const scenarioAnswer = getScenarioAnswer(SCENARIO_QUESTIONS[0].id);
-            return scenarioAnswer?.bestResponse !== undefined && scenarioAnswer?.worstResponse !== undefined && 
-                   scenarioAnswer?.bestResponse !== scenarioAnswer?.worstResponse;
+            return !!(scenarioAnswer?.bestResponse !== undefined && scenarioAnswer?.worstResponse !== undefined &&
+                   scenarioAnswer?.bestResponse !== scenarioAnswer?.worstResponse);
           case 2:
-            return getAgreementAnswer(AGREEMENT_QUESTIONS[0].id)?.rating;
+            return !!getAgreementAnswer(AGREEMENT_QUESTIONS[0].id)?.rating;
           case 3:
-            return getMathAnswer(MATH_QUESTIONS[0].id)?.answer;
+            return !!getMathAnswer(MATH_QUESTIONS[0].id)?.answer;
           default:
             return false;
         }

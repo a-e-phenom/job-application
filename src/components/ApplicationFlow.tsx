@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, X, Check, ChevronLeft, ChevronRight, Settings2, MoreVertical, Smartphone } from 'lucide-react';
-import { useNavigate, useParams, Navigate } from 'react-router-dom';
+import { useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
 import ContactInfoStep from './ContactInfoStep';
 import PreScreeningStep from './PreScreeningStep';
 import InterviewSchedulingStep from './InterviewSchedulingStep';
@@ -23,6 +23,7 @@ export default function ApplicationFlow() {
   const { templates } = useTemplates();
   const { updateFlow, flows, loading: flowsLoading } = useFlows();
   const navigate = useNavigate();
+  const location = useLocation();
   const { slug } = useParams<{ slug: string }>();
   
   // Find the flow by slug
@@ -52,6 +53,13 @@ export default function ApplicationFlow() {
   
   // Assessment footer state for mobile view
   const [assessmentFooter, setAssessmentFooter] = useState<JSX.Element | null>(null);
+  // Video interview footer state for mobile view
+  const [videoInterviewFooter, setVideoInterviewFooter] = useState<JSX.Element | null>(null);
+  // Voice screening footer state for mobile view
+  const [voiceScreeningFooter, setVoiceScreeningFooter] = useState<JSX.Element | null>(null);
+  
+  // Ref for mobile scrollable content area
+  const mobileContentRef = useRef<HTMLDivElement>(null);
   
   // Initial state variables (these are NOT hooks, just constants)
   const initialContactInfo: ContactInfo = {
@@ -189,6 +197,16 @@ export default function ApplicationFlow() {
   const handleAssessmentFooterRender = useCallback((footer: JSX.Element) => {
     setAssessmentFooter(footer);
   }, []);
+
+  // Memoized callback for video interview footer rendering
+  const handleVideoInterviewFooterRender = useCallback((footer: JSX.Element) => {
+    setVideoInterviewFooter(footer);
+  }, []);
+
+  // Memoized callback for voice screening footer rendering
+  const handleVoiceScreeningFooterRender = useCallback((footer: JSX.Element) => {
+    setVoiceScreeningFooter(footer);
+  }, []);
   
   // Check authentication on mount
   React.useEffect(() => {
@@ -196,18 +214,78 @@ export default function ApplicationFlow() {
     setIsAuthenticated(authenticated);
   }, []);
 
-  // Clear assessment footer when not in mobile view or not showing assessment
+  // Check URL for /mobile suffix and auto-detect mobile view based on screen width
+  React.useEffect(() => {
+    // Check if URL ends with /mobile
+    const isMobileInUrl = location.pathname.endsWith('/mobile');
+    
+    if (isMobileInUrl) {
+      // If URL has /mobile, always set mobile view
+      setIsMobileView(true);
+    } else {
+      // Otherwise, use screen width detection
+      const checkMobileView = () => {
+        setIsMobileView(window.innerWidth < 768); // 768px is typical tablet breakpoint
+      };
+      
+      checkMobileView(); // Check on mount
+      window.addEventListener('resize', checkMobileView); // Check on resize
+      
+      return () => window.removeEventListener('resize', checkMobileView);
+    }
+  }, [location.pathname]);
+
+  // Update URL when mobile view changes
+  React.useEffect(() => {
+    if (!slug) return;
+    
+    const currentPath = location.pathname;
+    const basePath = `/flow/${slug}`;
+    const mobilePath = `${basePath}/mobile`;
+    
+    // Only update URL if it doesn't match the desired state
+    if (isMobileView && !currentPath.endsWith('/mobile')) {
+      navigate(mobilePath, { replace: true });
+    } else if (!isMobileView && currentPath.endsWith('/mobile')) {
+      navigate(basePath, { replace: true });
+    }
+  }, [isMobileView, slug, navigate, location.pathname]);
+
+  // Reset scroll position when step or sub-step changes
+  useEffect(() => {
+    if (isMobileView) {
+      // Scroll mobile content area to top
+      if (mobileContentRef.current) {
+        mobileContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } else {
+      // Scroll window to top for desktop view
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [currentStep, currentSubStep, isMobileView]);
+
+  // Clear footers when not in mobile view or not showing respective modules
   React.useEffect(() => {
     if (!isMobileView || !flow) {
       setAssessmentFooter(null);
+      setVideoInterviewFooter(null);
+      setVoiceScreeningFooter(null);
       return;
     }
     const currentFlowStep = flow.steps[currentStep];
     const currentModule = currentFlowStep?.modules[currentSubStep];
     const moduleTemplate = templates.find(template => template.id === currentModule?.id);
     const hasAssessment = moduleTemplate?.content.questions?.some(q => q.type === 'assessment');
+    const hasVideoInterview = moduleTemplate?.content.questions?.some(q => q.type === 'video-interview');
+    const hasVoiceScreening = currentModule?.component === 'VoiceScreeningStep';
     if (!hasAssessment) {
       setAssessmentFooter(null);
+    }
+    if (!hasVideoInterview) {
+      setVideoInterviewFooter(null);
+    }
+    if (!hasVoiceScreening) {
+      setVoiceScreeningFooter(null);
     }
   }, [isMobileView, currentStep, currentSubStep, flow, templates]);
   
@@ -479,6 +557,8 @@ export default function ApplicationFlow() {
           primaryColor={primaryColor}
           onNext={handleNext}
           template={effectiveTemplate}
+          isMobileView={isMobileView}
+          onFooterRender={isMobileView ? handleVoiceScreeningFooterRender : undefined}
         />
       );
     }
@@ -521,6 +601,7 @@ export default function ApplicationFlow() {
             onValidate={(validateFn) => setStepValidationRef(currentStep, validateFn)}
             primaryColor={primaryColor}
             template={effectiveTemplate}
+            isMobileView={isMobileView}
           />
         );
       case 'resume':
@@ -542,6 +623,7 @@ export default function ApplicationFlow() {
             primaryColor={primaryColor}
             onNext={handleNext}
             template={effectiveTemplate}
+            isMobileView={isMobileView}
           />
         );
       case 'voice-screening':
@@ -553,6 +635,8 @@ export default function ApplicationFlow() {
             primaryColor={primaryColor}
             onNext={handleNext}
             template={effectiveTemplate}
+            isMobileView={isMobileView}
+            onFooterRender={isMobileView ? handleVoiceScreeningFooterRender : undefined}
           />
         );
       case 'thank-you':
@@ -603,6 +687,7 @@ export default function ApplicationFlow() {
               moduleOverrides={primaryModule.templateOverrides}
               isMobileView={isMobileView}
               onAssessmentFooterRender={isMobileView ? handleAssessmentFooterRender : undefined}
+              onVideoInterviewFooterRender={isMobileView ? handleVideoInterviewFooterRender : undefined}
             />
           );
         }
@@ -738,36 +823,38 @@ export default function ApplicationFlow() {
             </div>
           )}
           
-          {/* Header Actions - Only visible when authenticated */}
-          {isAuthenticated && (
-            <div className="flex items-center space-x-1">
-              {/* Settings Button - only show if there are modules in current step */}
-              {currentFlowStep?.modules && currentFlowStep.modules.length > 0 && (
-                <button
-                  onClick={() => handleModuleConfig(currentFlowStep.modules[currentSubStep] || currentFlowStep.modules[0])}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-                  title="Configure Module"
-                >
-                  <MoreVertical className="w-4 h-4 text-gray-600" />
-                </button>
-              )}
-
+          {/* Header Actions */}
+          <div className="flex items-center space-x-1">
+            {/* Settings Button - Only visible when authenticated */}
+            {isAuthenticated && currentFlowStep?.modules && currentFlowStep.modules.length > 0 && (
               <button
-                onClick={() => setIsMobileView(!isMobileView)}
-                className={`p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 ${isMobileView ? 'bg-blue-50' : ''}`}
-                title="Toggle Mobile View"
+                onClick={() => handleModuleConfig(currentFlowStep.modules[currentSubStep] || currentFlowStep.modules[0])}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                title="Configure Module"
               >
-                <Smartphone className={`w-4 h-4 ${isMobileView ? 'text-blue-600' : 'text-gray-600'}`} />
+                <MoreVertical className="w-4 h-4 text-gray-600" />
               </button>
+            )}
 
+            {/* Mobile View Toggle - Always visible */}
+            <button
+              onClick={() => setIsMobileView(!isMobileView)}
+              className={`p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 ${isMobileView ? 'bg-blue-50' : ''}`}
+              title="Toggle Mobile View"
+            >
+              <Smartphone className={`w-4 h-4 ${isMobileView ? 'text-blue-600' : 'text-gray-600'}`} />
+            </button>
+
+            {/* Close Button - Only visible when authenticated */}
+            {isAuthenticated && (
               <button
                 onClick={() => navigate('/')}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
               >
                 <X className="w-4 h-4 text-gray-600" />
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
       
@@ -776,7 +863,7 @@ export default function ApplicationFlow() {
         <div className="flex items-start justify-center h-screen bg-gray-100 p-0 pt-8">
           <div className="relative mx-auto border-4 border-black rounded-[2.5rem] shadow-2xl overflow-hidden" style={{width: '375px', height: '80vh', maxHeight: '800px'}}>
             {/* Phone screen */}
-            <div className="bg-white w-full h-full rounded-[2rem] overflow-hidden relative flex flex-col">
+            <div className="bg-white w-full h-full rounded-[2rem] overflow-hidden relative flex flex-col" style={{ position: 'relative' }}>
               {/* Mobile Header with Logo and Stepper */}
               <div className="flex-shrink-0 bg-white shadow-sm border-b border-gray-200 px-4 py-3">
                 {/* Logo */}
@@ -895,7 +982,7 @@ export default function ApplicationFlow() {
               </div>
 
               {/* Content area */}
-              <div className="flex-1 overflow-y-auto">
+              <div ref={mobileContentRef} className="flex-1 overflow-y-auto">
                 {(() => {
                   const currentModuleId = currentFlowStep?.modules[currentSubStep]?.id;
                   const currentComponent = currentFlowStep?.modules[currentSubStep]?.component;
@@ -955,6 +1042,16 @@ export default function ApplicationFlow() {
                 <div className="flex-shrink-0">
                   {assessmentFooter}
                 </div>
+              ) : videoInterviewFooter ? (
+                // Video interview custom footer
+                <div className="flex-shrink-0">
+                  {videoInterviewFooter}
+                </div>
+              ) : voiceScreeningFooter ? (
+                // Voice screening custom footer
+                <div className="flex-shrink-0">
+                  {voiceScreeningFooter}
+                </div>
               ) : (
                 // Regular mobile footer
                 currentFlowStep?.modules[currentSubStep]?.component !== 'ThankYouStep' &&
@@ -1003,6 +1100,33 @@ export default function ApplicationFlow() {
                   </div>
                 )
               )}
+              
+              {/* Interview Confirmation Modal - Inside Mobile Frame */}
+              {showInterviewConfirmation && (
+                <InterviewConfirmationModal
+                  isOpen={showInterviewConfirmation}
+                  onClose={() => setShowInterviewConfirmation(false)}
+                  onConfirm={handleInterviewConfirm}
+                  jobTitle={flow?.name}
+                  selectedDate={applicationData.interviewScheduling.selectedDate}
+                  selectedTime={applicationData.interviewScheduling.selectedTime}
+                  timezone={applicationData.interviewScheduling.timezone}
+                  primaryColor={flow?.primaryColor || '#6366F1'}
+                  isMobileView={isMobileView}
+                />
+              )}
+
+              {/* Feedback Modal - Inside Mobile Frame */}
+              <FeedbackModal
+                isOpen={showFeedbackModal}
+                onClose={() => {
+                  setShowFeedbackModal(false);
+                  navigate('/');
+                }}
+                onSubmit={handleFeedbackSubmit}
+                primaryColor={flow?.primaryColor || '#6366F1'}
+                isMobileView={isMobileView}
+              />
             </div>
           </div>
         </div>
@@ -1120,28 +1244,33 @@ export default function ApplicationFlow() {
         />
       )}
 
-      {/* Feedback Modal */}
-      <FeedbackModal
-        isOpen={showFeedbackModal}
-        onClose={() => {
-          setShowFeedbackModal(false);
-          navigate('/');
-        }}
-        onSubmit={handleFeedbackSubmit}
-        primaryColor={flow?.primaryColor || '#6366F1'}
-      />
+      {/* Feedback Modal - Desktop View */}
+      {!isMobileView && (
+        <FeedbackModal
+          isOpen={showFeedbackModal}
+          onClose={() => {
+            setShowFeedbackModal(false);
+            navigate('/');
+          }}
+          onSubmit={handleFeedbackSubmit}
+          primaryColor={flow?.primaryColor || '#6366F1'}
+        />
+      )}
 
-      {/* Interview Confirmation Modal */}
-      <InterviewConfirmationModal
-        isOpen={showInterviewConfirmation}
-        onClose={() => setShowInterviewConfirmation(false)}
-        onConfirm={handleInterviewConfirm}
-        jobTitle={flow?.name}
-        selectedDate={applicationData.interviewScheduling.selectedDate}
-        selectedTime={applicationData.interviewScheduling.selectedTime}
-        timezone={applicationData.interviewScheduling.timezone}
-        primaryColor={flow?.primaryColor || '#6366F1'}
-      />
+      {/* Interview Confirmation Modal - Desktop View */}
+      {!isMobileView && (
+        <InterviewConfirmationModal
+          isOpen={showInterviewConfirmation}
+          onClose={() => setShowInterviewConfirmation(false)}
+          onConfirm={handleInterviewConfirm}
+          jobTitle={flow?.name}
+          selectedDate={applicationData.interviewScheduling.selectedDate}
+          selectedTime={applicationData.interviewScheduling.selectedTime}
+          timezone={applicationData.interviewScheduling.timezone}
+          primaryColor={flow?.primaryColor || '#6366F1'}
+          isMobileView={isMobileView}
+        />
+      )}
     </div>
   );
 }

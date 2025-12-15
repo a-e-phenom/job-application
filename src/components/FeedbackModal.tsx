@@ -6,9 +6,10 @@ interface FeedbackModalProps {
   onClose: () => void;
   onSubmit: (rating: number, comment: string) => void;
   primaryColor?: string;
+  isMobileView?: boolean;
 }
 
-export default function FeedbackModal({ isOpen, onClose, onSubmit, primaryColor = '#6366F1' }: FeedbackModalProps) {
+export default function FeedbackModal({ isOpen, onClose, onSubmit, primaryColor = '#6366F1', isMobileView = false }: FeedbackModalProps) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [hoveredStar, setHoveredStar] = useState(0);
@@ -35,8 +36,8 @@ export default function FeedbackModal({ isOpen, onClose, onSubmit, primaryColor 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+    <div className={`${isMobileView ? 'absolute' : 'fixed'} inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 ${isMobileView ? 'px-2' : ''}`}>
+      <div className={`bg-white rounded-lg shadow-xl ${isMobileView ? 'w-full max-w-none' : 'max-w-md w-full'} ${isMobileView ? 'mx-0' : 'mx-4'} p-6`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">How did you like it?</h2>

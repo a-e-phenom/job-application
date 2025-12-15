@@ -14,6 +14,7 @@ interface InterviewSchedulingStepProps {
   onValidate: (validateFn: () => boolean) => void;
   primaryColor: string;
   template?: ModuleTemplate;
+  isMobileView?: boolean;
 }
 
 const TIMEZONES = [
@@ -40,7 +41,7 @@ const MONTHS = [
 
 const DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
-export default function InterviewSchedulingStep({ data, onUpdate, onValidate, primaryColor, template }: InterviewSchedulingStepProps) {
+export default function InterviewSchedulingStep({ data, onUpdate, onValidate, primaryColor, template, isMobileView = false }: InterviewSchedulingStepProps) {
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
@@ -151,7 +152,7 @@ export default function InterviewSchedulingStep({ data, onUpdate, onValidate, pr
 
     // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="w-12 h-12"></div>);
+      days.push(<div key={`empty-${i}`} className={isMobileView ? "w-10 h-10" : "w-12 h-12"}></div>);
     }
 
     // Days of the month
@@ -165,7 +166,8 @@ export default function InterviewSchedulingStep({ data, onUpdate, onValidate, pr
           onClick={() => selectDate(day)}
           disabled={!isAvailable}
           className={`
-            w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200 border-2
+            rounded-full flex items-center justify-center font-medium transition-all duration-200 border-2
+            ${isMobileView ? 'w-10 h-10 text-xs' : 'w-12 h-12 text-sm'}
             ${isSelected
               ? 'text-white ring-4 ring-offset-2'
               : isAvailable
@@ -175,8 +177,7 @@ export default function InterviewSchedulingStep({ data, onUpdate, onValidate, pr
           `}
           style={{
             backgroundColor: isSelected ? primaryColor : undefined,
-            borderColor: isSelected ? primaryColor : undefined,
-            ringColor: isSelected ? primaryColor : undefined
+            borderColor: isSelected ? primaryColor : undefined
           }}
         >
           {day}
@@ -206,16 +207,16 @@ export default function InterviewSchedulingStep({ data, onUpdate, onValidate, pr
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className={`grid gap-8 ${isMobileView ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
         {/* Left side - Calendar */}
-        <div className="space-y-6">
+        <div className={isMobileView ? "space-y-4" : "space-y-6"}>
           {/* Timezone and Duration */}
           <div className="flex items-center justify-between">
             <div className="relative">
               <select
                 value={data.timezone}
                 onChange={(e) => handleChange('timezone', e.target.value)}
-                className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-10 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className={`appearance-none bg-white border border-gray-300 rounded-lg pr-10 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${isMobileView ? 'px-3 py-1.5' : 'px-4 py-2'}`}
               >
                 {TIMEZONES.map((tz) => (
                   <option key={tz.value} value={tz.value}>
@@ -230,19 +231,19 @@ export default function InterviewSchedulingStep({ data, onUpdate, onValidate, pr
 
           {/* Calendar Header */}
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900">
+            <h3 className={isMobileView ? "text-base font-medium text-gray-900" : "text-lg font-medium text-gray-900"}>
               {MONTHS[currentMonth]} {currentYear}
             </h3>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => navigateMonth('prev')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                className={isMobileView ? "p-1.5 hover:bg-gray-100 rounded-lg transition-colors duration-200" : "p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"}
               >
                 <ChevronLeft className="w-4 h-4 text-gray-600" />
               </button>
               <button
                 onClick={() => navigateMonth('next')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                className={isMobileView ? "p-1.5 hover:bg-gray-100 rounded-lg transition-colors duration-200" : "p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"}
               >
                 <ChevronRight className="w-4 h-4 text-gray-600" />
               </button>
@@ -250,11 +251,11 @@ export default function InterviewSchedulingStep({ data, onUpdate, onValidate, pr
           </div>
 
           {/* Calendar Grid */}
-          <div className="bg-white">
+          <div className={isMobileView ? "bg-white p-2 rounded-lg" : "bg-white"}>
             {/* Day headers */}
             <div className="grid grid-cols-7 gap-1 mb-2">
               {DAYS.map((day) => (
-                <div key={day} className="w-12 h-8 flex items-center justify-center text-sm font-medium text-gray-500">
+                <div key={day} className={`flex items-center justify-center font-medium text-gray-500 ${isMobileView ? 'w-10 h-6 text-xs' : 'w-12 h-8 text-sm'}`}>
                   {day}
                 </div>
               ))}
@@ -290,7 +291,8 @@ export default function InterviewSchedulingStep({ data, onUpdate, onValidate, pr
                     color: isSelected ? 'white' : '#374151'
                   }}
                   className={`
-                    w-full px-4 py-3 rounded-lg border text-left transition-all duration-200
+                    w-full rounded-lg border text-left transition-all duration-200
+                    ${isMobileView ? 'px-3 py-2 text-sm' : 'px-4 py-3'}
                     ${isSelected
                       ? ''
                       : 'hover:border-gray-400 hover:bg-gray-50'

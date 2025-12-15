@@ -47,6 +47,7 @@ function App() {
     <Router>
       <Routes>
         {/* Public routes - no authentication required */}
+        <Route path="/flow/:slug/mobile" element={<FlowRoute />} />
         <Route path="/flow/:slug" element={<FlowRoute />} />
         <Route path="/complete" element={<CompletionPage />} />
         

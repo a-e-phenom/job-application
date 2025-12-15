@@ -9,6 +9,7 @@ interface InterviewConfirmationModalProps {
   selectedTime: string;
   timezone: string;
   primaryColor?: string;
+  isMobileView?: boolean;
 }
 
 export default function InterviewConfirmationModal({
@@ -19,7 +20,8 @@ export default function InterviewConfirmationModal({
   selectedDate,
   selectedTime,
   timezone,
-  primaryColor = '#6366F1'
+  primaryColor = '#6366F1',
+  isMobileView = false
 }: InterviewConfirmationModalProps) {
   console.log('InterviewConfirmationModal - isOpen:', isOpen);
   console.log('InterviewConfirmationModal - selectedDate:', selectedDate);
@@ -51,57 +53,57 @@ export default function InterviewConfirmationModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden">
+    <div className={`${isMobileView ? 'absolute' : 'fixed'} inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 ${isMobileView ? 'px-2' : 'px-4'}`}>
+      <div className={`bg-white rounded-2xl shadow-2xl ${isMobileView ? 'w-full max-w-none' : 'max-w-2xl w-full'} ${isMobileView ? 'mx-0' : 'mx-4'} overflow-hidden`}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 bg-white">
-          <h2 className="text-[18px] font-medium text-[#353B46]">Confirm interview</h2>
+        <div className={`flex items-center justify-between border-b border-gray-200 bg-white ${isMobileView ? 'px-4 py-4' : 'px-6 py-5'}`}>
+          <h2 className={isMobileView ? "text-[16px] font-medium text-[#353B46]" : "text-[18px] font-medium text-[#353B46]"}>Confirm interview</h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-full transition-colors duration-200"
+            className={`hover:bg-gray-100 rounded-full transition-colors duration-200 ${isMobileView ? 'p-0.5' : 'p-1'}`}
           >
-            <X className="w-5 h-5 text-gray-600" />
+            <X className={isMobileView ? "w-4 h-4 text-gray-600" : "w-5 h-5 text-gray-600"} />
           </button>
         </div>
 
         {/* Content */}
-        <div className="px-6 py-6" style={{ backgroundColor: '#F8F9FB' }}>
+        <div className={`${isMobileView ? 'px-4 py-4' : 'px-6 py-6'}`} style={{ backgroundColor: '#F8F9FB' }}>
           {/* Interview Details Card */}
-          <div className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
+          <div className={`bg-white rounded-xl border border-gray-200 ${isMobileView ? 'p-3 mb-3' : 'p-4 mb-4'}`}>
             {/* Job Title */}
-            <h3 className="text-md font-medium text-[#353B46] mb-2">
+            <h3 className={isMobileView ? "text-md font-medium text-[#353B46] mb-2" : "text-md font-medium text-[#353B46] mb-2"}>
               Sales Manager
             </h3>
 
             {/* Meeting Platform */}
-            <div className="flex items-center space-x-2 text-gray-600 mb-4">
-              <Video className="w-4 h-4" />
-              <span className="text-sm">Google Meet</span>
+            <div className={`flex items-center space-x-2 text-gray-600 ${isMobileView ? 'mb-3' : 'mb-4'}`}>
+              <Video className={isMobileView ? "w-4 h-4" : "w-4 h-4"} />
+              <span className={isMobileView ? "text-sm" : "text-sm"}>Google Meet</span>
             </div>
 
             {/* Date and Time */}
-            <div className="flex items-center space-x-2 text-gray-600 mb-4">
-              <Calendar className="w-4 h-4 " />
-              <span className="text-sm">
+            <div className={`flex items-center space-x-2 text-gray-600 ${isMobileView ? 'mb-3' : 'mb-4'}`}>
+              <Calendar className={isMobileView ? "w-4 h-4" : "w-4 h-4"} />
+              <span className={isMobileView ? "text-sm" : "text-sm"}>
                 {selectedTime}, {formatDate(selectedDate)}
               </span>
             </div>
 
             {/* Timezone */}
             <div className="flex items-center space-x-2 text-gray-600">
-              <Globe className="w-4 h-4" />
-              <span className="text-sm">{formatTimezone(timezone)}</span>
+              <Globe className={isMobileView ? "w-4 h-4" : "w-4 h-4"} />
+              <span className={isMobileView ? "text-sm" : "text-sm"}>{formatTimezone(timezone)}</span>
             </div>
           </div>
 
           {/* Confirmation Question */}
-          <p className="text-[#464F5E] mb-0">
+          <p className={`text-[#464F5E] mb-0 ${isMobileView ? 'text-sm' : ''}`}>
             Are you sure about the selected date and time?
           </p>
         </div>
 
         {/* Footer with Action Buttons */}
-        <div className="px-6 py-4 bg-white border-t border-gray-200">
+        <div className={`bg-white border-t border-gray-200 ${isMobileView ? 'px-4 py-3' : 'px-6 py-4'}`}>
           <div className="flex items-center justify-end space-x-3">
             <button
               onClick={onClose}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, ArrowRight, ArrowLeft } from 'lucide-react';
 import { ModuleTemplate } from '../hooks/useTemplates';
 
@@ -9,15 +9,19 @@ interface VideoInterviewStepProps {
   primaryColor: string;
   onNext: () => void;
   template?: ModuleTemplate;
+  isMobileView?: boolean;
+  onFooterRender?: (footer: JSX.Element) => void;
 }
 
-const VideoInterviewStep = React.memo(function VideoInterviewStep({ 
-  data, 
-  onUpdate, 
-  onValidate, 
-  primaryColor, 
-  onNext, 
-  template 
+const VideoInterviewStep = React.memo(function VideoInterviewStep({
+  data,
+  onUpdate,
+  onValidate,
+  primaryColor,
+  onNext,
+  template,
+  isMobileView = false,
+  onFooterRender
 }: VideoInterviewStepProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
@@ -133,12 +137,19 @@ const VideoInterviewStep = React.memo(function VideoInterviewStep({
     const question = questions[currentQuestion];
     if (!question) return null;
 
-    return (
+    // Call footer render callback if mobile - use useEffect to prevent infinite loops
+    useEffect(() => {
+      if (isMobileView && onFooterRender && memoizedMobileFooter) {
+        onFooterRender(memoizedMobileFooter);
+      }
+    }, [isMobileView, onFooterRender, memoizedMobileFooter]);
+
+  return (
       <div className="w-full m-0 p-0 overflow-x-hidden">
-        <div className="w-full max-w-4xl mx-auto px-8 md:px-12 lg:px-16 py-8 md:py-12">
+        <div className={`w-full max-w-4xl mx-auto ${isMobileView ? 'p-0' : 'px-8 md:px-12 lg:px-16 py-8 md:py-12'}`}>
           {/* Question Section */}
           <div className="mb-8">
-            <h2 className="text-[18px] font-semibold text-[#353B46] mb-2">
+            <h2 className={`${isMobileView ? 'text-[16px]' : 'text-[18px]'} font-semibold text-[#353B46] mb-2`}>
               {question.question}
             </h2>
             <div className="flex items-center space-x-4 text-[14px] text-[#637085]">
@@ -202,9 +213,10 @@ const VideoInterviewStep = React.memo(function VideoInterviewStep({
               onClick={isRecording ? stopRecording : startRecording}
               disabled={countdown > 0}
               className={`
-                flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all duration-200
-                ${isRecording 
-                  ? 'bg-red-600 text-white hover:bg-red-700' 
+                flex items-center space-x-2 rounded-lg font-medium transition-all duration-200
+                ${isMobileView ? 'px-4 py-2 text-sm' : 'px-6 py-3'}
+                ${isRecording
+                  ? 'bg-red-600 text-white hover:bg-red-700'
                   : countdown > 0
                   ? 'bg-gray-400 text-white cursor-not-allowed'
                   : 'bg-green-600 text-white hover:bg-green-700'
@@ -251,12 +263,73 @@ const VideoInterviewStep = React.memo(function VideoInterviewStep({
     }
   };
 
+  // Memoize the mobile footer to prevent unnecessary re-renders
+  const memoizedMobileFooter = useMemo(() => {
+    if (!isMobileView) return null;
+
+    return (
+      <div className="w-full pb-4 bg-white">
+        {/* Progress Bar */}
+        <div className="w-full px-0 pb-4">
+          <div className="flex w-full gap-2">
+            {questions.map((_, index) => (
+              <div
+                key={index}
+                className="h-1 rounded-full transition-all duration-300 flex-1"
+                style={{
+                  backgroundColor: currentQuestion >= index ? primaryColor : '#E5E7EB',
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="px-4">
+          <div className="mb-3">
+            <span className="text-[12px] text-[#637085]">
+              Screening | Video Interview | Question {currentQuestion + 1} of {questions.length}
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            {currentQuestion > 0 && (
+              <button
+                onClick={handlePrevious}
+                className="flex items-center justify-center w-12 h-[44px] text-[#353B46] border border-gray-300 rounded-[10px] hover:bg-gray-50 transition-colors duration-200"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            )}
+
+            <button
+              onClick={handleNext}
+              className={`flex items-center justify-center space-x-2 px-4 h-[44px] rounded-[10px] transition-all duration-200 text-white text-sm ${currentQuestion > 0 ? 'flex-1' : 'w-full'}`}
+              style={{ backgroundColor: primaryColor }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = `${primaryColor}CC`;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = primaryColor;
+              }}
+            >
+              <span>
+                {currentQuestion === questions.length - 1 ? 'Complete' : 'Next'}
+              </span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }, [isMobileView, questions, currentQuestion, primaryColor, handleNext, handlePrevious]);
+
   return (
     <div className="w-full m-0 p-0 overflow-x-hidden bg-white">
       {renderCurrentQuestion()}
-      
+
       {/* Video Interview Navigation - Same footer as Assessment */}
-      <div className="fixed bottom-0 left-0 right-0 w-full pb-4 bg-white z-50">
+      {isMobileView && onFooterRender ? null : (
+        <div className="fixed bottom-0 left-0 right-0 w-full pb-4 bg-white z-50">
         {/* Progress Bar */}
         <div className="w-full px-0 pb-4">
           <div className="flex w-full gap-2">
@@ -309,6 +382,9 @@ const VideoInterviewStep = React.memo(function VideoInterviewStep({
           </div>
         </div>
       </div>
+      )}
+
+      {/* Mobile Footer - Render via callback in useEffect */}
     </div>
   );
 });

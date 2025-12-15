@@ -21,6 +21,7 @@ interface GenericModuleRendererProps {
   };
   isMobileView?: boolean;
   onAssessmentFooterRender?: (footer: JSX.Element) => void;
+  onVideoInterviewFooterRender?: (footer: JSX.Element) => void;
 }
 
 interface NavigationTarget {
@@ -259,13 +260,24 @@ const AssessmentComponent = React.memo(({
   };
 
   const getSizeClasses = (rating: number) => {
-    switch (rating) {
-      case 1: return 'w-[72px] h-[72px]';
-      case 2: return 'w-14 h-14';
-      case 3: return 'w-8 h-8';
-      case 4: return 'w-14 h-14';
-      case 5: return 'w-[72px] h-[72px]';
-      default: return 'w-8 h-8';
+    if (isMobileView) {
+      switch (rating) {
+        case 1: return 'w-12 h-12';
+        case 2: return 'w-10 h-10';
+        case 3: return 'w-8 h-8';
+        case 4: return 'w-10 h-10';
+        case 5: return 'w-12 h-12';
+        default: return 'w-8 h-8';
+      }
+    } else {
+      switch (rating) {
+        case 1: return 'w-[72px] h-[72px]';
+        case 2: return 'w-14 h-14';
+        case 3: return 'w-8 h-8';
+        case 4: return 'w-14 h-14';
+        case 5: return 'w-[72px] h-[72px]';
+        default: return 'w-8 h-8';
+      }
     }
   };
 
@@ -327,35 +339,35 @@ const AssessmentComponent = React.memo(({
               </p>
             </div>
             
-            <div className="space-y-4 mt-6">
+            <div className={isMobileView ? "space-y-3 mt-3" : "space-y-4 mt-6"}>
               {(currentScreen.content.scenarioResponses || []).map((response, index) => (
-                <div key={index} className="border border-gray-200 bg-white rounded-lg p-4">
+                <div key={index} className={`border border-gray-200 bg-white rounded-lg ${isMobileView ? 'p-3' : 'p-4'}`}>
                   <div className="flex items-start justify-between">
-                    <p className="text-[16px] text-[#464F5E] flex-1 pr-4 whitespace-pre-line">{response}</p>
+                    <p className={`${isMobileView ? 'text-[14px]' : 'text-[16px]'} text-[#464F5E] flex-1 ${isMobileView ? 'pr-2' : 'pr-4'} whitespace-pre-line`}>{response}</p>
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleScenarioAnswer(currentScreen.id, 'best', index)}
                         className={`
-                          w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors duration-200
+                          ${isMobileView ? 'w-8 h-8' : 'w-8 h-8'} rounded-full border-2 flex items-center justify-center transition-colors duration-200
                           ${answer?.bestResponse === index.toString()
                             ? 'bg-green-600 border-green-600 text-white'
                             : 'border-gray-300 hover:border-green-400'
                           }
                         `}
                       >
-                        <Check className="w-4 h-4" />
+                        <Check className={isMobileView ? "w-4 h-4" : "w-4 h-4"} />
                       </button>
                       <button
                         onClick={() => handleScenarioAnswer(currentScreen.id, 'worst', index)}
                         className={`
-                          w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors duration-200
+                          ${isMobileView ? 'w-8 h-8' : 'w-8 h-8'} rounded-full border-2 flex items-center justify-center transition-colors duration-200
                           ${answer?.worstResponse === index.toString()
                             ? 'bg-red-600 border-red-600 text-white'
                             : 'border-gray-300 hover:border-red-400'
                           }
                         `}
                       >
-                        <X className="w-4 h-4" />
+                        <X className={isMobileView ? "w-4 h-4" : "w-4 h-4"} />
                       </button>
                     </div>
                   </div>
@@ -390,7 +402,7 @@ const AssessmentComponent = React.memo(({
           </div>
           
           <div className={isMobileView ? "flex flex-col justify-start px-4 py-4 w-full bg-white" : "flex flex-col justify-center px-6 md:px-8 lg:px-12 py-8 md:py-12 w-full"} style={{ backgroundColor: isMobileView ? '#FFFFFF' : '#F8F9FB' }}>
-            <div className="flex items-center justify-between mb-4">
+            <div className={`flex items-center justify-between mb-4 ${isMobileView ? 'px-6' : ''}`}>
               {[1, 2, 3, 4, 5].map((rating) => (
                 <button
                   key={rating}
@@ -408,11 +420,17 @@ const AssessmentComponent = React.memo(({
                   }}
                 >
                   {answer?.rating === rating && (
-                    <Check 
+                    <Check
                       className={
-                        rating === 1 || rating === 5 ? 'w-6 h-6' :
-                        rating === 2 || rating === 4 ? 'w-5 h-5' :
-                        'w-4 h-4'
+                        isMobileView ? (
+                          rating === 1 || rating === 5 ? 'w-4 h-4' :
+                          rating === 2 || rating === 4 ? 'w-3 h-3' :
+                          'w-3 h-3'
+                        ) : (
+                          rating === 1 || rating === 5 ? 'w-6 h-6' :
+                          rating === 2 || rating === 4 ? 'w-5 h-5' :
+                          'w-4 h-4'
+                        )
                       }
                       style={{ color: primaryColor }}
                     />
@@ -459,13 +477,13 @@ const AssessmentComponent = React.memo(({
             className={isMobileView ? "flex flex-col justify-start px-4 py-4 w-full bg-white" : "flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full"}
             style={{ backgroundColor: isMobileView ? '#FFFFFF' : '#F8F9FB' }}
           >
-            <div className="space-y-3">
+            <div className={isMobileView ? "space-y-2" : "space-y-3"}>
               {(currentScreen.content.singleSelectOptions || []).map((option, index) => (
                 <button
                   key={index}
                   onClick={() => handleMathAnswer(currentScreen.id, option)}
                   className={`
-                    w-full p-4 rounded-lg border-2 text-left transition-all duration-200 bg-white
+                    w-full ${isMobileView ? 'p-3' : 'p-4'} rounded-lg border-2 text-left transition-all duration-200 bg-white
                     ${answer?.answer === option
                       ? ''
                       : 'border-gray-200 hover:border-gray-300'
@@ -476,7 +494,7 @@ const AssessmentComponent = React.memo(({
                     color: answer?.answer === option ? primaryColor : '#464F5E'
                   }}
                 >
-                  <span className="text-[16px] font-medium">{option}</span>
+                  <span className={`${isMobileView ? 'text-[14px]' : 'text-[16px]'} font-medium`}>{option}</span>
                 </button>
               ))}
             </div>
@@ -514,13 +532,14 @@ const AssessmentComponent = React.memo(({
             className={isMobileView ? "flex flex-col justify-start px-4 py-4 w-full bg-white" : "flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full"}
             style={{ backgroundColor: isMobileView ? '#FFFFFF' : '#F8F9FB' }}
           >
-            <div className="space-y-3">
+            <div className={isMobileView ? "space-y-2" : "space-y-3"}>
               {(currentScreen.content.languageReadingOptions || []).map((option, index) => (
                 <button
                   key={index}
                   onClick={() => handleMathAnswer(currentScreen.id, option)}
                   className={`
-                    w-full p-4 rounded-lg border-2 text-left transition-all duration-200 bg-white
+                    w-full rounded-lg border-2 text-left transition-all duration-200 bg-white
+                    ${isMobileView ? 'p-3' : 'p-4'}
                     ${answer?.answer === option
                       ? ''
                       : 'border-gray-200 hover:border-gray-300'
@@ -531,7 +550,7 @@ const AssessmentComponent = React.memo(({
                     color: answer?.answer === option ? primaryColor : '#464F5E'
                   }}
                 >
-                  <span className="text-[16px] font-medium">{option}</span>
+                  <span className={`${isMobileView ? 'text-[14px]' : 'text-[16px]'} font-medium`}>{option}</span>
                 </button>
               ))}
             </div>
@@ -578,13 +597,14 @@ const AssessmentComponent = React.memo(({
             className={isMobileView ? "flex flex-col justify-start px-4 py-4 w-full bg-white" : "flex flex-col justify-center px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full"}
             style={{ backgroundColor: isMobileView ? '#FFFFFF' : '#F8F9FB' }}
           >
-            <div className="space-y-3">
+            <div className={isMobileView ? "space-y-2" : "space-y-3"}>
               {(currentScreen.content.languageListeningOptions || []).map((option, index) => (
                 <button
                   key={index}
                   onClick={() => handleMathAnswer(currentScreen.id, option)}
                   className={`
-                    w-full p-4 rounded-lg border-2 text-left transition-all duration-200 bg-white
+                    w-full rounded-lg border-2 text-left transition-all duration-200 bg-white
+                    ${isMobileView ? 'p-3' : 'p-4'}
                     ${answer?.answer === option
                       ? ''
                       : 'border-gray-200 hover:border-gray-300'
@@ -595,7 +615,7 @@ const AssessmentComponent = React.memo(({
                     color: answer?.answer === option ? primaryColor : '#464F5E'
                   }}
                 >
-                  <span className="text-[16px] font-medium">{option}</span>
+                  <span className={`${isMobileView ? 'text-[14px]' : 'text-[16px]'} font-medium`}>{option}</span>
                 </button>
               ))}
             </div>
@@ -613,7 +633,7 @@ const AssessmentComponent = React.memo(({
     
     return (
       <div className="w-full bg-white m-0 p-0 overflow-y-auto overflow-x-hidden">
-        <div className="flex flex-col px-8 md:px-12 lg:px-16 py-8 md:py-12 w-full max-w-5xl mx-auto mb-20">
+        <div className={`flex flex-col w-full max-w-5xl mx-auto ${isMobileView ? 'px-4 py-4' : 'px-8 md:px-12 lg:px-16 py-8 md:py-12'} ${isMobileView ? 'mb-4' : 'mb-20'}`}>
           <h2 className="text-[18px] font-medium text-[#353B46] mb-1">
             {currentScreen.content.languageTypingTitle || 'Typing Test'}
           </h2>
@@ -973,7 +993,7 @@ const AssessmentComponent = React.memo(({
   );
 });
 
-const InterviewSchedulerComponent = React.memo(({ primaryColor }: { primaryColor: string }) => {
+const InterviewSchedulerComponent = React.memo(({ primaryColor, isMobileView = false }: { primaryColor: string; isMobileView?: boolean }) => {
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
@@ -1096,7 +1116,7 @@ const InterviewSchedulerComponent = React.memo(({ primaryColor }: { primaryColor
 
       // Empty cells for days before the first day of the month
       for (let i = 0; i < firstDay; i++) {
-        days.push(<div key={`empty-${i}`} className="w-12 h-12"></div>);
+        days.push(<div key={`empty-${i}`} className={isMobileView ? "w-10 h-10" : "w-12 h-12"}></div>);
       }
 
       // Days of the month
@@ -1111,7 +1131,8 @@ const InterviewSchedulerComponent = React.memo(({ primaryColor }: { primaryColor
               onClick={() => selectDate(day)}
               disabled={!isAvailable}
               className={`
-                w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200
+                rounded-full flex items-center justify-center font-medium transition-all duration-200
+                ${isMobileView ? 'w-10 h-10 text-xs' : 'w-12 h-12 text-sm'}
                 ${isSelected
                   ? 'border-2 text-gray-700'
                   : isAvailable
@@ -1147,16 +1168,16 @@ const InterviewSchedulerComponent = React.memo(({ primaryColor }: { primaryColor
   return (
     <div className="w-full">
       <div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className={`grid gap-8 ${isMobileView ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
           {/* Left side - Calendar */}
-          <div className="space-y-6">
+          <div className={isMobileView ? "space-y-4" : "space-y-6"}>
             {/* Timezone and Duration */}
             <div className="flex items-center justify-between w-full">
   <div className="relative w-full">
     <select
       value={timezone}
       onChange={(e) => setTimezone(e.target.value)}
-      className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-10 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
+      className={`appearance-none bg-white border border-gray-300 rounded-lg pr-10 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full ${isMobileView ? 'px-3 py-1.5' : 'px-4 py-2'}`}
     >
       {TIMEZONES.map((tz) => (
         <option key={tz.value} value={tz.value}>
@@ -1191,11 +1212,11 @@ const InterviewSchedulerComponent = React.memo(({ primaryColor }: { primaryColor
             </div>
 
             {/* Calendar Grid */}
-            <div className="bg-white rounded-lg p-4">
+            <div className={`bg-white rounded-lg ${isMobileView ? 'p-2' : 'p-4'}`}>
               {/* Day headers */}
               <div className="grid grid-cols-7 gap-1 mb-2">
                 {DAYS.map((day) => (
-                  <div key={day} className="w-12 h-8 flex items-center justify-center text-sm font-medium text-gray-500">
+                  <div key={day} className={`flex items-center justify-center font-medium text-gray-500 ${isMobileView ? 'w-10 h-6 text-xs' : 'w-12 h-8 text-sm'}`}>
                     {day}
                   </div>
                 ))}
@@ -1209,11 +1230,11 @@ const InterviewSchedulerComponent = React.memo(({ primaryColor }: { primaryColor
           </div>
 
           {/* Right side - Time slots */}
-          <div className="space-y-4">
+          <div className={isMobileView ? "space-y-3" : "space-y-4"}>
             <div className="text-sm text-gray-600">
               Meeting duration | 60 min
             </div>
-            <div className="max-h-96 overflow-y-auto space-y-3">
+            <div className={isMobileView ? "space-y-2" : "max-h-96 overflow-y-auto space-y-3"}>
               {TIME_SLOTS.map((time) => {
                 const isSelected = selectedTime === time;
                 return (
@@ -1225,7 +1246,8 @@ const InterviewSchedulerComponent = React.memo(({ primaryColor }: { primaryColor
                     color: '#374151'
                   }}
                   className={`
-                    w-full px-4 py-3 rounded-lg border text-left transition-all duration-200
+                    w-full rounded-lg border text-left transition-all duration-200
+                    ${isMobileView ? 'p-3 text-sm' : 'px-4 py-3'}
                     ${isSelected ? 'border-2' : 'hover:border-gray-400 hover:bg-gray-50'}
                   `}
                 >
@@ -1371,7 +1393,7 @@ const FileUploadComponent = React.memo(({ value, onChange }: FileUploadComponent
   );
 });
 
-export default function GenericModuleRenderer({ template, primaryColor, onNext, onNavigate, moduleOverrides, isMobileView = false, onAssessmentFooterRender }: GenericModuleRendererProps) {
+export default function GenericModuleRenderer({ template, primaryColor, onNext, onNavigate, moduleOverrides, isMobileView = false, onAssessmentFooterRender, onVideoInterviewFooterRender }: GenericModuleRendererProps) {
   const isThankYouStep = template.component === 'ThankYouStep';
   // Single state object to manage all form data
   const [formData, setFormData] = useState<Record<string, any>>({});
@@ -1686,6 +1708,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
         return (
           <InterviewSchedulerComponent 
             primaryColor={primaryColor}
+            isMobileView={isMobileView}
           />
         );
 
@@ -1699,6 +1722,8 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
             primaryColor={primaryColor}
             onNext={onNext || (() => {})}
             template={template}
+            isMobileView={isMobileView}
+            onFooterRender={onVideoInterviewFooterRender}
           />
         );
 
@@ -1813,8 +1838,8 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
         </div>
         
         {/* Custom Footer Buttons */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4">
-          <div className="mx-auto flex justify-end items-center space-x-3">
+        <div className={isMobileView ? "sticky bottom-0 bg-white border-t border-gray-200 px-2 py-4" : "fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4"}>
+          <div className={isMobileView ? "flex flex-col space-y-3" : "mx-auto flex justify-end items-center space-x-3"}>
             {buttons.map((button: { id: string; label: string; isPrimary: boolean; targetModule?: string; targetStep?: number; targetSubStep?: number; targetFlow?: string }) => (
               <button
                 key={button.id}
@@ -1833,9 +1858,9 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
                   }
                 }}
                 className={`
-                  flex items-center space-x-2 px-6 py-2.5 rounded-[10px] transition-all duration-200 text-sm md:text-base
-                  ${button.isPrimary 
-                    ? 'text-white' 
+                  flex items-center ${isMobileView ? 'justify-center' : 'justify-start'} space-x-2 px-6 py-2.5 rounded-[10px] transition-all duration-200 text-sm md:text-base
+                  ${button.isPrimary
+                    ? 'text-white'
                     : 'text-[#353B46] border border-gray-300 hover:bg-gray-50'
                   }
                 `}
