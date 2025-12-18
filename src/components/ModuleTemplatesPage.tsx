@@ -1581,6 +1581,195 @@ export default function ModuleTemplatesPage() {
                           </div>
                         )}
 
+                        {/* Sections Configuration - Only for ScreeningSummaryStep */}
+                        {editedTemplate?.component === 'ScreeningSummaryStep' && (
+                          <div className="mb-6">
+                            <div className="flex items-center justify-between mb-3">
+                              <h5 className="text-sm font-medium text-gray-700">Sections</h5>
+                              <button
+                                onClick={() => {
+                                  const currentSections = (editedTemplate?.content as any)?.sections || [];
+                                  const newSection = {
+                                    id: `section-${Date.now()}`,
+                                    title: `Section ${currentSections.length + 1}`,
+                                    fields: [
+                                      {
+                                        label: 'Label',
+                                        value: 'Value'
+                                      }
+                                    ]
+                                  };
+                                  updateEditedTemplate('content.sections', [...currentSections, newSection]);
+                                }}
+                                className="text-sm text-indigo-600 hover:text-indigo-700"
+                              >
+                                + Add Section
+                              </button>
+                            </div>
+                            
+                            <div className="space-y-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                              {((editedTemplate?.content as any)?.sections || []).map((section: { id: string; title: string; fields: Array<{ label: string; value: string }> }, sectionIndex: number) => (
+                                <div key={section.id} className="bg-white rounded-lg p-3 border border-gray-200">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <span className="text-sm font-medium text-gray-700">Section {sectionIndex + 1}</span>
+                                    <div className="flex items-center space-x-2">
+                                      {/* Move Up Button */}
+                                      <button
+                                        onClick={() => {
+                                          const sections = [...((editedTemplate?.content as any)?.sections || [])];
+                                          if (sectionIndex > 0) {
+                                            [sections[sectionIndex], sections[sectionIndex - 1]] = [sections[sectionIndex - 1], sections[sectionIndex]];
+                                            updateEditedTemplate('content.sections', sections);
+                                          }
+                                        }}
+                                        disabled={sectionIndex === 0}
+                                        className={`p-1 rounded transition-colors duration-200 ${
+                                          sectionIndex === 0 
+                                            ? 'text-gray-300 cursor-not-allowed' 
+                                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                                        }`}
+                                        title="Move up"
+                                      >
+                                        <MoveUp className="w-4 h-4" />
+                                      </button>
+                                      
+                                      {/* Move Down Button */}
+                                      <button
+                                        onClick={() => {
+                                          const sections = [...((editedTemplate?.content as any)?.sections || [])];
+                                          if (sectionIndex < sections.length - 1) {
+                                            [sections[sectionIndex], sections[sectionIndex + 1]] = [sections[sectionIndex + 1], sections[sectionIndex]];
+                                            updateEditedTemplate('content.sections', sections);
+                                          }
+                                        }}
+                                        disabled={sectionIndex === ((editedTemplate?.content as any)?.sections || []).length - 1}
+                                        className={`p-1 rounded transition-colors duration-200 ${
+                                          sectionIndex === ((editedTemplate?.content as any)?.sections || []).length - 1
+                                            ? 'text-gray-300 cursor-not-allowed' 
+                                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                                        }`}
+                                        title="Move down"
+                                      >
+                                        <MoveDown className="w-4 h-4" />
+                                      </button>
+                                      
+                                      {/* Delete Button */}
+                                      <button
+                                        onClick={() => {
+                                          const sections = ((editedTemplate?.content as any)?.sections || []).filter((s: { id: string }) => s.id !== section.id);
+                                          updateEditedTemplate('content.sections', sections);
+                                        }}
+                                        className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                                        title="Delete section"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="space-y-3">
+                                    {/* Section Title */}
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">Section Title</label>
+                                      <input
+                                        type="text"
+                                        value={section.title}
+                                        onChange={(e) => {
+                                          const sections = [...((editedTemplate?.content as any)?.sections || [])];
+                                          sections[sectionIndex] = { ...section, title: e.target.value };
+                                          updateEditedTemplate('content.sections', sections);
+                                        }}
+                                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                      />
+                                    </div>
+                                    
+                                    {/* Fields */}
+                                    <div className="space-y-2">
+                                      <div className="flex items-center justify-between">
+                                        <label className="block text-xs font-medium text-gray-600">Fields</label>
+                                        <button
+                                          onClick={() => {
+                                            const sections = [...((editedTemplate?.content as any)?.sections || [])];
+                                            sections[sectionIndex] = {
+                                              ...section,
+                                              fields: [...section.fields, { label: 'Label', value: 'Value' }]
+                                            };
+                                            updateEditedTemplate('content.sections', sections);
+                                          }}
+                                          className="flex items-center text-xs text-indigo-600 hover:text-indigo-800 transition-colors duration-200"
+                                        >
+                                          <Plus className="w-3 h-3 mr-1" />
+                                          Add Field
+                                        </button>
+                                      </div>
+                                      
+                                      <div className="space-y-2 pl-2 border-l-2 border-gray-200">
+                                        {section.fields.map((field: { label: string; value: string }, fieldIndex: number) => (
+                                          <div key={fieldIndex} className="bg-gray-50 rounded p-2 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                              <span className="text-xs font-medium text-gray-500">Field {fieldIndex + 1}</span>
+                                              <button
+                                                onClick={() => {
+                                                  const sections = [...((editedTemplate?.content as any)?.sections || [])];
+                                                  sections[sectionIndex] = {
+                                                    ...section,
+                                                    fields: section.fields.filter((_, i) => i !== fieldIndex)
+                                                  };
+                                                  updateEditedTemplate('content.sections', sections);
+                                                }}
+                                                className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                                                title="Delete field"
+                                              >
+                                                <Trash2 className="w-3 h-3" />
+                                              </button>
+                                            </div>
+                                            <div>
+                                              <label className="block text-xs font-medium text-gray-500 mb-1">Label/Question</label>
+                                              <input
+                                                type="text"
+                                                value={field.label}
+                                                onChange={(e) => {
+                                                  const sections = [...((editedTemplate?.content as any)?.sections || [])];
+                                                  sections[sectionIndex] = {
+                                                    ...section,
+                                                    fields: section.fields.map((f, i) => 
+                                                      i === fieldIndex ? { ...f, label: e.target.value } : f
+                                                    )
+                                                  };
+                                                  updateEditedTemplate('content.sections', sections);
+                                                }}
+                                                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                              />
+                                            </div>
+                                            <div>
+                                              <label className="block text-xs font-medium text-gray-500 mb-1">Value/Answer</label>
+                                              <input
+                                                type="text"
+                                                value={field.value}
+                                                onChange={(e) => {
+                                                  const sections = [...((editedTemplate?.content as any)?.sections || [])];
+                                                  sections[sectionIndex] = {
+                                                    ...section,
+                                                    fields: section.fields.map((f, i) => 
+                                                      i === fieldIndex ? { ...f, value: e.target.value } : f
+                                                    )
+                                                  };
+                                                  updateEditedTemplate('content.sections', sections);
+                                                }}
+                                                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                              />
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Custom Buttons - Only for MultibuttonModule */}
                         {editedTemplate?.component === 'MultibuttonModule' && (
                           <div className="mb-6">
@@ -1716,7 +1905,7 @@ export default function ModuleTemplatesPage() {
                         )}
 
                         {/* Questions */}
-                        {(editedTemplate?.content.questions !== undefined || editedTemplate?.component === 'InterviewSchedulingStep' || editedTemplate?.component === 'AssessmentStep' || editedTemplate?.component === 'VideoInterviewStep') && editedTemplate?.component !== 'VoiceScreeningStep' && (
+                        {(editedTemplate?.content.questions !== undefined || editedTemplate?.component === 'InterviewSchedulingStep' || editedTemplate?.component === 'AssessmentStep' || editedTemplate?.component === 'VideoInterviewStep') && editedTemplate?.component !== 'VoiceScreeningStep' && editedTemplate?.component !== 'ScreeningSummaryStep' && (
                           <div>
                             <div className="flex items-center justify-between mb-3">
                               <h5 className="text-sm font-medium text-gray-700">Elements</h5>
