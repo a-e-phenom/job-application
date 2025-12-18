@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Check, Upload, X, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, ArrowLeft, Info } from 'lucide-react';
 import { ModuleTemplate } from '../hooks/useTemplates';
 import VideoInterviewStep from './VideoInterviewStep';
+import ScreeningSummaryStep from './ScreeningSummaryStep';
 
 interface GenericModuleRendererProps {
   template: ModuleTemplate;
@@ -1395,6 +1396,7 @@ const FileUploadComponent = React.memo(({ value, onChange }: FileUploadComponent
 
 export default function GenericModuleRenderer({ template, primaryColor, onNext, onNavigate, moduleOverrides, isMobileView = false, onAssessmentFooterRender, onVideoInterviewFooterRender }: GenericModuleRendererProps) {
   const isThankYouStep = template.component === 'ThankYouStep';
+  const isScreeningSummaryStep = template.component === 'ScreeningSummaryStep';
   // Single state object to manage all form data
   const [formData, setFormData] = useState<Record<string, any>>({});
 
@@ -1888,6 +1890,19 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (isScreeningSummaryStep) {
+    return (
+      <ScreeningSummaryStep
+        data={formData}
+        onUpdate={(data) => setFormData(data)}
+        onValidate={() => true}
+        primaryColor={primaryColor}
+        template={template}
+        isMobileView={isMobileView}
+      />
     );
   }
 

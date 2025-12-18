@@ -20,6 +20,14 @@ interface LocalOverrides {
     label: string;
     isPrimary: boolean;
   }>;
+  sections?: Array<{
+    id: string;
+    title: string;
+    fields: Array<{
+      label: string;
+      value: string;
+    }>;
+  }>;
   questions: Array<{
     id: string;
     text: string;
@@ -1128,6 +1136,7 @@ export default function ModuleConfigPanel({
     imageSideSubtitle: '',
     comments: '',
     customButtons: [],
+    sections: [],
     questions: []
   });
     const [hasChanges, setHasChanges] = useState(false);
@@ -1165,6 +1174,7 @@ export default function ModuleConfigPanel({
       imageSideSubtitle: module.templateOverrides?.imageSideSubtitle || globalTemplate?.content.imageSideSubtitle || '',
       comments: module.templateOverrides?.comments || '',
       customButtons: (module.templateOverrides as any)?.customButtons || (globalTemplate?.content as any)?.customButtons || [],
+      sections: (module.templateOverrides as any)?.sections || (globalTemplate?.content as any)?.sections || [],
       questions
     };
     
@@ -1205,6 +1215,7 @@ export default function ModuleConfigPanel({
       imageSideSubtitle: globalTemplate?.content.imageSideSubtitle || '',
       comments: '',
       customButtons: (globalTemplate?.content as any)?.customButtons || [],
+      sections: (globalTemplate?.content as any)?.sections || [],
       questions: globalTemplate?.content.questions || []
     };
     setLocalOverrides(initialOverrides);
@@ -1323,11 +1334,9 @@ export default function ModuleConfigPanel({
           </div>
         </div>
 
-        {/* Basic Fields - Hidden for Assessment and Video Interview modules */}
+        {/* Title and Subtitle - Show for all modules except Assessment and Video Interview */}
         {module.component !== 'AssessmentStep' && !localOverrides.questions.some(q => q.type === 'video-interview') && (
           <div className="space-y-3">
-            {/* <h3 className="text-md font-medium text-gray-900">Basic Configuration</h3> */}
-            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Title
@@ -1339,7 +1348,6 @@ export default function ModuleConfigPanel({
                 placeholder="Enter title"
                 className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-              
             </div>
 
             {module.component !== 'VoiceScreeningStep' && (
@@ -1354,11 +1362,10 @@ export default function ModuleConfigPanel({
                   rows={3}
                   className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-                
               </div>
             )}
 
-            {module.component !== 'VoiceScreeningStep' && (
+            {module.component !== 'VoiceScreeningStep' && module.component !== 'ScreeningSummaryStep' && (
               <div>
                 <label className="flex items-center">
                   <input
@@ -1372,64 +1379,259 @@ export default function ModuleConfigPanel({
               </div>
             )}
 
-            <div>
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={localOverrides.splitScreenWithImage}
-                  onChange={(e) => updateField('splitScreenWithImage', e.target.checked)}
-                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                />
-                <span className="ml-2 text-sm text-gray-700">Split screen with image</span>
-              </label>
-            </div>
-
-            {/* Split Screen Image Configuration */}
-            {localOverrides.splitScreenWithImage && (
-              <div className="space-y-3">
+            {/* Split Screen Configuration - Hidden for ScreeningSummaryStep */}
+            {module.component !== 'ScreeningSummaryStep' && (
+              <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Image</label>
-                  <ImageUploadComponent
-                    value={localOverrides.splitScreenImage || ''}
-                    onChange={(value) => updateField('splitScreenImage', value)}
-                    placeholder="https://example.com/split-screen-image.png"
-                    label="Split Screen Image"
-                  />
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={localOverrides.splitScreenWithImage}
+                      onChange={(e) => updateField('splitScreenWithImage', e.target.checked)}
+                      className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Split screen with image</span>
+                  </label>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Image Position</label>
-                  <div className="inline-flex space-x-1 bg-gray-100 rounded-lg p-1">
-                    <button
-                      type="button"
-                      onClick={() => updateField('splitScreenImagePosition', 'left')}
-                      className={`
-                        px-3 py-1 text-sm rounded-md transition-colors duration-200
-                        ${localOverrides.splitScreenImagePosition === 'left'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                        }
-                      `}
-                    >
-                      Left
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => updateField('splitScreenImagePosition', 'right')}
-                      className={`
-                        px-3 py-1 text-sm rounded-md transition-colors duration-200
-                        ${localOverrides.splitScreenImagePosition === 'right'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                        }
-                      `}
-                    >
-                      Right
-                    </button>
+
+                {/* Split Screen Image Configuration */}
+                {localOverrides.splitScreenWithImage && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Image</label>
+                      <ImageUploadComponent
+                        value={localOverrides.splitScreenImage || ''}
+                        onChange={(value) => updateField('splitScreenImage', value)}
+                        placeholder="https://example.com/split-screen-image.png"
+                        label="Split Screen Image"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Image Position</label>
+                      <div className="inline-flex space-x-1 bg-gray-100 rounded-lg p-1">
+                        <button
+                          type="button"
+                          onClick={() => updateField('splitScreenImagePosition', 'left')}
+                          className={`
+                            px-3 py-1 text-sm rounded-md transition-colors duration-200
+                            ${localOverrides.splitScreenImagePosition === 'left'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                            }
+                          `}
+                        >
+                          Left
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateField('splitScreenImagePosition', 'right')}
+                          className={`
+                            px-3 py-1 text-sm rounded-md transition-colors duration-200
+                            ${localOverrides.splitScreenImagePosition === 'right'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                            }
+                          `}
+                        >
+                          Right
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Sections Configuration - Only for ScreeningSummaryStep */}
+        {module.component === 'ScreeningSummaryStep' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-900">Sections</h3>
+              <button
+                onClick={() => {
+                  const currentSections = localOverrides.sections || [];
+                  const newSection = {
+                    id: `section-${Date.now()}`,
+                    title: `Section ${currentSections.length + 1}`,
+                    fields: [
+                      {
+                        label: 'Label',
+                        value: 'Value'
+                      }
+                    ]
+                  };
+                  updateField('sections', [...currentSections, newSection]);
+                }}
+                className="flex items-center text-indigo-600 text-sm font-medium hover:text-indigo-800 transition-colors duration-200"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add Section
+              </button>
+            </div>
+            
+            <div className="space-y-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
+              {(localOverrides.sections || []).map((section, sectionIndex) => (
+                <div key={section.id} className="bg-white rounded-lg p-3 border border-gray-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-medium text-gray-700">Section {sectionIndex + 1}</span>
+                    <div className="flex items-center space-x-2">
+                      {/* Move Up Button */}
+                      <button
+                        onClick={() => {
+                          const sections = [...(localOverrides.sections || [])];
+                          if (sectionIndex > 0) {
+                            [sections[sectionIndex], sections[sectionIndex - 1]] = [sections[sectionIndex - 1], sections[sectionIndex]];
+                            updateField('sections', sections);
+                          }
+                        }}
+                        disabled={sectionIndex === 0}
+                        className={`p-1 rounded transition-colors duration-200 ${
+                          sectionIndex === 0 
+                            ? 'text-gray-300 cursor-not-allowed' 
+                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                        }`}
+                        title="Move up"
+                      >
+                        <MoveUp className="w-4 h-4" />
+                      </button>
+                      
+                      {/* Move Down Button */}
+                      <button
+                        onClick={() => {
+                          const sections = [...(localOverrides.sections || [])];
+                          if (sectionIndex < sections.length - 1) {
+                            [sections[sectionIndex], sections[sectionIndex + 1]] = [sections[sectionIndex + 1], sections[sectionIndex]];
+                            updateField('sections', sections);
+                          }
+                        }}
+                        disabled={sectionIndex === (localOverrides.sections || []).length - 1}
+                        className={`p-1 rounded transition-colors duration-200 ${
+                          sectionIndex === (localOverrides.sections || []).length - 1
+                            ? 'text-gray-300 cursor-not-allowed' 
+                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                        }`}
+                        title="Move down"
+                      >
+                        <MoveDown className="w-4 h-4" />
+                      </button>
+                      
+                      {/* Delete Button */}
+                      <button
+                        onClick={() => {
+                          const sections = (localOverrides.sections || []).filter((s) => s.id !== section.id);
+                          updateField('sections', sections);
+                        }}
+                        className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                        title="Delete section"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {/* Section Title */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Section Title</label>
+                      <input
+                        type="text"
+                        value={section.title}
+                        onChange={(e) => {
+                          const sections = [...(localOverrides.sections || [])];
+                          sections[sectionIndex] = { ...section, title: e.target.value };
+                          updateField('sections', sections);
+                        }}
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+                    
+                    {/* Fields */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-medium text-gray-600">Fields</label>
+                        <button
+                          onClick={() => {
+                            const sections = [...(localOverrides.sections || [])];
+                            sections[sectionIndex] = {
+                              ...section,
+                              fields: [...section.fields, { label: 'Label', value: 'Value' }]
+                            };
+                            updateField('sections', sections);
+                          }}
+                          className="flex items-center text-xs text-indigo-600 hover:text-indigo-800 transition-colors duration-200"
+                        >
+                          <Plus className="w-3 h-3 mr-1" />
+                          Add Field
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-2 pl-2 border-l-2 border-gray-200">
+                        {section.fields.map((field, fieldIndex) => (
+                          <div key={fieldIndex} className="bg-gray-50 rounded p-2 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-medium text-gray-500">Field {fieldIndex + 1}</span>
+                              <button
+                                onClick={() => {
+                                  const sections = [...(localOverrides.sections || [])];
+                                  sections[sectionIndex] = {
+                                    ...section,
+                                    fields: section.fields.filter((_, i) => i !== fieldIndex)
+                                  };
+                                  updateField('sections', sections);
+                                }}
+                                className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                                title="Delete field"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1">Label/Question</label>
+                              <input
+                                type="text"
+                                value={field.label}
+                                onChange={(e) => {
+                                  const sections = [...(localOverrides.sections || [])];
+                                  sections[sectionIndex] = {
+                                    ...section,
+                                    fields: section.fields.map((f, i) => 
+                                      i === fieldIndex ? { ...f, label: e.target.value } : f
+                                    )
+                                  };
+                                  updateField('sections', sections);
+                                }}
+                                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1">Value/Answer</label>
+                              <input
+                                type="text"
+                                value={field.value}
+                                onChange={(e) => {
+                                  const sections = [...(localOverrides.sections || [])];
+                                  sections[sectionIndex] = {
+                                    ...section,
+                                    fields: section.fields.map((f, i) => 
+                                      i === fieldIndex ? { ...f, value: e.target.value } : f
+                                    )
+                                  };
+                                  updateField('sections', sections);
+                                }}
+                                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
         )}
 
@@ -1569,7 +1771,7 @@ export default function ModuleConfigPanel({
         )}
 
         {/* Questions */}
-        {module.component !== 'VoiceScreeningStep' && (
+        {module.component !== 'VoiceScreeningStep' && module.component !== 'ScreeningSummaryStep' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium text-gray-900">Elements</h3>
