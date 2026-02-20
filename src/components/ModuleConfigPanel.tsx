@@ -1379,8 +1379,8 @@ export default function ModuleConfigPanel({
               </div>
             )}
 
-            {/* Split Screen Configuration - Hidden for ScreeningSummaryStep */}
-            {module.component !== 'ScreeningSummaryStep' && (
+            {/* Split Screen Configuration - Hidden for ScreeningSummaryStep and MultibuttonModule */}
+            {module.component !== 'ScreeningSummaryStep' && module.component !== 'MultibuttonModule' && (
               <>
                 <div>
                   <label className="flex items-center">

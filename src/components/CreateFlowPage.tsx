@@ -112,6 +112,32 @@ export default function CreateFlowPage() {
     return <Navigate to="/" replace />;
   }
 
+  // Module names that get split-screen ON and image left-aligned by default when added
+  const SPLIT_SCREEN_DEFAULT_MODULES = new Set([
+    'Screening Questions',
+    'Pre-screening Questions',
+    'Contact Information',
+    'Contact',
+    'Resume Upload',
+    'Additional Form Step (I)',
+    'Additional Form Step (II)',
+  ]);
+
+  const getModuleWithDefaults = (module: FlowModule): FlowModule => {
+    if (SPLIT_SCREEN_DEFAULT_MODULES.has(module.name)) {
+      return {
+        ...module,
+        templateOverrides: {
+          ...module.templateOverrides,
+          splitScreenWithImage: true,
+          splitScreenImage: module.templateOverrides?.splitScreenImage || '/placeholderimage1.png',
+          splitScreenImagePosition: 'left',
+        },
+      };
+    }
+    return module;
+  };
+
   // Convert templates to available modules
   const availableModules: FlowModule[] = templates.map(template => ({
     id: template.id,
@@ -119,6 +145,27 @@ export default function CreateFlowPage() {
     description: template.description,
     component: template.component
   }));
+
+  // Custom sort order for the "Add modules to this step" dropdown
+  const getModuleSortIndex = (name: string): number => {
+    if (name === 'Contact Information' || name === 'Contact') return 0;
+    if (name === 'Resume Upload') return 1;
+    if (name.toLowerCase().startsWith('voluntary')) return 2;
+    if (name === 'Pre-screening Questions') return 3;
+    if (name === 'Screening Questions') return 4;
+    if (name === 'Screening Summary and Confirmation') return 5;
+    if (name === 'Voice Screening Agent') return 6;
+    if (name === 'Interview Scheduling') return 7;
+    if (name === 'Video Interview') return 8;
+    if (name.toLowerCase().startsWith('thank')) return 999; // Last
+    return 10; // "The rest" - all others in middle, preserve original order via stable sort
+  };
+  const sortedModules = [...availableModules].sort((a, b) => {
+    const idxA = getModuleSortIndex(a.name);
+    const idxB = getModuleSortIndex(b.name);
+    if (idxA !== idxB) return idxA - idxB;
+    return availableModules.indexOf(a) - availableModules.indexOf(b); // Preserve order for "rest"
+  });
 
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -874,7 +921,7 @@ export default function CreateFlowPage() {
                     
                     {showModuleSelector === step.id && (
                       <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
-                        {availableModules.map((module) => (
+                        {sortedModules.map((module) => (
                           <label
                             key={module.id}
                             className="flex items-center px-4 py-2 hover:bg-gray-50 cursor-pointer"
@@ -885,7 +932,8 @@ export default function CreateFlowPage() {
                               onChange={(e) => {
                                 const currentModules = getStepModules(step.id);
                                 if (e.target.checked) {
-                                  updateStepModules(step.id, [...currentModules, module]);
+                                  const moduleToAdd = getModuleWithDefaults(module);
+                                  updateStepModules(step.id, [...currentModules, moduleToAdd]);
                                 } else {
                                   updateStepModules(step.id, currentModules.filter(m => m.id !== module.id));
                                 }
@@ -1050,7 +1098,7 @@ export default function CreateFlowPage() {
                                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                       >
                                         <option value="">Select target module</option>
-                                        {availableModules.map(targetModule => (
+                                        {sortedModules.map(targetModule => (
                                           <option key={targetModule.id} value={targetModule.id}>
                                             {targetModule.name}
                                           </option>
