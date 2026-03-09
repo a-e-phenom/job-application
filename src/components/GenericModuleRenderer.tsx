@@ -1790,7 +1790,7 @@ export default function GenericModuleRenderer({ template, primaryColor, onNext, 
       // Render single question (full width or half width but no consecutive half)
       elements.push(
         <div key={question.id} className="space-y-2">
-          {question.type !== 'checkbox' && question.type !== 'message' && question.type !== 'image' && question.type !== 'assessment' && question.type !== 'video-interview' && (
+          {(question.type !== 'checkbox' || question.options) && question.type !== 'message' && question.type !== 'image' && question.type !== 'assessment' && question.type !== 'video-interview' && (
             <label className="block text-[14px] text-[#464F5E] mb-2">
               {question.text}
               {question.required && <span className="text-red-500 ml-1"></span>}
