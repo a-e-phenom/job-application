@@ -23,6 +23,8 @@ export interface DatabaseFlow {
   folder_id: string | null;
   created_at: string;
   updated_at: string;
+  step_count?: number;
+  module_count?: number;
 }
 
 export interface DatabaseFolder {

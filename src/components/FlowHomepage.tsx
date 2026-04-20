@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Search, Settings, HelpCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import FlowCard from './FlowCard';
@@ -10,14 +10,38 @@ import { Folder } from '../types/folder';
 import { useFlows } from '../hooks/useFlows';
 import { useFolders } from '../hooks/useFolders';
 
+/** Matches folder grid: 1 col ×2, md 2×2, lg 3×2 */
+function useFolderGridTwoRowLimit(): number {
+  const [limit, setLimit] = useState(6);
+  useEffect(() => {
+    const update = () => {
+      if (window.matchMedia('(min-width: 1024px)').matches) setLimit(6);
+      else if (window.matchMedia('(min-width: 768px)').matches) setLimit(4);
+      else setLimit(2);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+  return limit;
+}
+
 export default function FlowHomepage() {
-  const { flows, loading, error, deleteFlow, duplicateFlow, updateFlow } = useFlows();
+  const { flows, loading, error, deleteFlow, duplicateFlow, syncFlowFolderIds } = useFlows();
   const { folders, loading: foldersLoading, createFolder, updateFolder, deleteFolder } = useFolders();
   const [searchTerm, setSearchTerm] = useState('');
   const [showHowItWorksModal, setShowHowItWorksModal] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
+  const [showAllFolders, setShowAllFolders] = useState(false);
+  const folderTwoRowLimit = useFolderGridTwoRowLimit();
   const navigate = useNavigate();
+
+  const visibleFolders =
+    showAllFolders || folders.length <= folderTwoRowLimit
+      ? folders
+      : folders.slice(0, folderTwoRowLimit);
+  const hasMoreFoldersThanTwoRows = folders.length > folderTwoRowLimit;
 
   const handleDeleteFlow = async (flowId: string) => {
     try {
@@ -92,7 +116,7 @@ export default function FlowHomepage() {
           const currentFolderIds = flow.folderIds || [];
           if (!currentFolderIds.includes(folderId)) {
             const newFolderIds = [...currentFolderIds, folderId];
-            await updateFlow(flow.id, { ...flow, folderIds: newFolderIds });
+            await syncFlowFolderIds(flow.id, newFolderIds);
           }
         }
       }
@@ -106,7 +130,7 @@ export default function FlowHomepage() {
         if (!selectedFlowIds.includes(flow.id)) {
           // Remove this folder from the flow's folder list
           const newFolderIds = (flow.folderIds || []).filter(id => id !== folderId);
-          await updateFlow(flow.id, { ...flow, folderIds: newFolderIds });
+          await syncFlowFolderIds(flow.id, newFolderIds);
         }
       }
     } catch (error) {
@@ -214,16 +238,29 @@ export default function FlowHomepage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {folders.map((folder) => (
-                <FolderCard
-                  key={folder.id}
-                  folder={folder}
-                  onEdit={handleEditFolder}
-                  onDelete={handleDeleteFolder}
-                  onClick={handleFolderClick}
-                />
-              ))}
+            <div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {visibleFolders.map((folder) => (
+                  <FolderCard
+                    key={folder.id}
+                    folder={folder}
+                    onEdit={handleEditFolder}
+                    onDelete={handleDeleteFolder}
+                    onClick={handleFolderClick}
+                  />
+                ))}
+              </div>
+              {hasMoreFoldersThanTwoRows && (
+                <div className="flex justify-center mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAllFolders(v => !v)}
+                    className="text-sm font-medium text-indigo-600 hover:text-indigo-700 px-3 py-2 rounded-lg hover:bg-indigo-50 transition-colors"
+                  >
+                    {showAllFolders ? 'Show fewer folders' : 'See all folders'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

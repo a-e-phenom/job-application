@@ -21,13 +21,39 @@ import { useFlows } from '../hooks/useFlows';
 export default function ApplicationFlow() {
   // ALL HOOKS MUST BE AT THE TOP - NO EXCEPTIONS
   const { templates } = useTemplates();
-  const { updateFlow, flows, loading: flowsLoading } = useFlows();
+  const { updateFlow, fetchFlowBySlug } = useFlows();
   const navigate = useNavigate();
   const location = useLocation();
   const { slug } = useParams<{ slug: string }>();
-  
-  // Find the flow by slug
-  const flow = flows.find(f => f.slug === slug);
+
+  const [flow, setFlow] = useState<FlowType | null>(null);
+  const [flowLoading, setFlowLoading] = useState(true);
+
+  React.useEffect(() => {
+    if (!slug) {
+      setFlow(null);
+      setFlowLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setFlowLoading(true);
+    fetchFlowBySlug(slug)
+      .then(result => {
+        if (!cancelled) {
+          setFlow(result);
+          setFlowLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFlow(null);
+          setFlowLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, fetchFlowBySlug]);
   
   // Check if user is authenticated
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -37,7 +63,12 @@ export default function ApplicationFlow() {
   const [currentSubStep, setCurrentSubStep] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const [stepValidationRefs, setStepValidationRefs] = useState<Array<() => boolean>>([]);
-  
+
+  React.useEffect(() => {
+    setCurrentStep(0);
+    setCurrentSubStep(0);
+  }, [slug]);
+
   // Configuration panel state
   const [configPanelOpen, setConfigPanelOpen] = useState(false);
   const [configModule, setConfigModule] = useState<FlowModule | null>(null);
@@ -291,7 +322,7 @@ export default function ApplicationFlow() {
   
   // NOW WE CAN HAVE CONDITIONAL LOGIC AND EARLY RETURNS
   // Show loading state while flows are being fetched
-  if (flowsLoading) {
+  if (flowLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -503,8 +534,9 @@ export default function ApplicationFlow() {
       };
 
       // Save to database
-      await updateFlow(flow.id, updatedFlow);
-      
+      const saved = await updateFlow(flow.id, updatedFlow);
+      setFlow(saved);
+
       // Close the panel
       setConfigPanelOpen(false);
       setConfigModule(null);

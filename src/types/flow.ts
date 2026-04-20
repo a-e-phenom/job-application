@@ -60,6 +60,9 @@ export interface ApplicationFlow {
   collectFeedback?: boolean;
   folderId?: string; // Deprecated: kept for backward compatibility
   folderIds?: string[]; // Array of folder IDs this flow belongs to
+  /** From DB when listing without `steps`; otherwise derivable from `steps` */
+  stepCount?: number;
+  moduleCount?: number;
 }
 
 

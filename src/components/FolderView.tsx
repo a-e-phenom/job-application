@@ -12,7 +12,7 @@ import { useFolders } from '../hooks/useFolders';
 export default function FolderView() {
   const { folderId } = useParams<{ folderId: string }>();
   const navigate = useNavigate();
-  const { flows, loading, error, deleteFlow, duplicateFlow, updateFlow } = useFlows();
+  const { flows, loading, error, deleteFlow, duplicateFlow, syncFlowFolderIds } = useFlows();
   const { folders, loading: foldersLoading, updateFolder, deleteFolder } = useFolders();
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [showHowItWorksModal, setShowHowItWorksModal] = useState(false);
@@ -91,7 +91,7 @@ export default function FolderView() {
           const currentFolderIds = flow.folderIds || [];
           if (!currentFolderIds.includes(folderId)) {
             const newFolderIds = [...currentFolderIds, folderId];
-            await updateFlow(flow.id, { ...flow, folderIds: newFolderIds });
+            await syncFlowFolderIds(flow.id, newFolderIds);
           }
         }
       }
@@ -104,7 +104,7 @@ export default function FolderView() {
       for (const flow of flowsCurrentlyInFolder) {
         if (!selectedFlowIds.includes(flow.id)) {
           const newFolderIds = (flow.folderIds || []).filter(id => id !== folderId);
-          await updateFlow(flow.id, { ...flow, folderIds: newFolderIds });
+          await syncFlowFolderIds(flow.id, newFolderIds);
         }
       }
     } catch (error) {

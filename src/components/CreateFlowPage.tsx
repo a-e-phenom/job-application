@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Check, Upload, X, ChevronUp, ChevronDown, Plus, Edit } from 'lucide-react';
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
-import { FlowModule, FlowStep, PRESET_COLORS } from '../types/flow';
+import { ApplicationFlow, FlowModule, FlowStep, PRESET_COLORS } from '../types/flow';
 import { useTemplates } from '../hooks/useTemplates';
 import { useFlows } from '../hooks/useFlows';
 import { uploadLogoImage } from '../lib/supabase';
@@ -10,28 +10,45 @@ import FeedbackModal from './FeedbackModal';
 
 export default function CreateFlowPage() {
   const { templates, loading: templatesLoading } = useTemplates();
-  const { createFlow, updateFlow, flows, loading: flowsLoading } = useFlows();
+  const { createFlow, updateFlow, flows, fetchFlowBySlug } = useFlows();
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
-  
-  // Determine if we're editing an existing flow
-  const editingFlow = slug ? flows.find(f => f.slug === slug) : null;
+
+  /** `undefined` = loading, `null` = not found, otherwise full flow for edit */
+  const [loadedEditorFlow, setLoadedEditorFlow] = useState<
+    ApplicationFlow | null | undefined
+  >(undefined);
+
+  React.useEffect(() => {
+    if (!slug) {
+      setLoadedEditorFlow(undefined);
+      return;
+    }
+    let cancelled = false;
+    setLoadedEditorFlow(undefined);
+    fetchFlowBySlug(slug).then(flow => {
+      if (!cancelled) setLoadedEditorFlow(flow ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, fetchFlowBySlug]);
   
   // Remove step management - everything on one page
   
-  // Form data
-  const [name, setName] = useState(editingFlow?.name || '');
-  const [description, setDescription] = useState(editingFlow?.description || '');
-  const [logoUrl, setLogoUrl] = useState(editingFlow?.logoUrl || 'https://mms.businesswire.com/media/20240122372572/en/1546931/5/Phenom_Lockup_RGB_Black.jpg?download=1');
+  // Form data (hydrated from `loadedEditorFlow` in effect below)
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [logoUrl, setLogoUrl] = useState(
+    'https://mms.businesswire.com/media/20240122372572/en/1546931/5/Phenom_Lockup_RGB_Black.jpg?download=1'
+  );
   const [logoUploadMode, setLogoUploadMode] = useState<'url' | 'upload'>('url');
   const [uploadedLogoFile, setUploadedLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [steps, setSteps] = useState<FlowStep[]>(
-    editingFlow?.steps || [{ id: '1', name: 'Step 1', modules: [] }]
-  );
-  const [isActive, setIsActive] = useState(editingFlow?.isActive || false);
-  const [primaryColor, setPrimaryColor] = useState(editingFlow?.primaryColor || '#6366F1');
-  const [collectFeedback, setCollectFeedback] = useState(editingFlow?.collectFeedback || false);
+  const [steps, setSteps] = useState<FlowStep[]>([{ id: '1', name: 'Step 1', modules: [] }]);
+  const [isActive, setIsActive] = useState(false);
+  const [primaryColor, setPrimaryColor] = useState('#6366F1');
+  const [collectFeedback, setCollectFeedback] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [colorFormat, setColorFormat] = useState<'hex' | 'rgb' | 'hsl'>('hex');
@@ -43,24 +60,9 @@ export default function CreateFlowPage() {
 
   // Remove drag and drop state - no longer needed
 
-  // Update state when editingFlow changes
+  // Hydrate form when loading a flow to edit, or reset for create mode
   React.useEffect(() => {
-    if (editingFlow) {
-      setName(editingFlow.name);
-      setDescription(editingFlow.description);
-      setLogoUrl(editingFlow.logoUrl || 'https://mms.businesswire.com/media/20240122372572/en/1546931/5/Phenom_Lockup_RGB_Black.jpg?download=1');
-      setSteps(editingFlow.steps);
-      setIsActive(editingFlow.isActive);
-      setPrimaryColor(editingFlow.primaryColor || '#6366F1');
-      setCollectFeedback(editingFlow.collectFeedback || false);
-      
-      // Initialize selectedModules for each step
-      const modulesByStep: {[stepId: string]: FlowModule[]} = {};
-      editingFlow.steps.forEach(step => {
-        modulesByStep[step.id] = step.modules || [];
-      });
-      setSelectedModules(modulesByStep);
-    } else {
+    if (!slug) {
       setName('');
       setDescription('');
       setLogoUrl('https://mms.businesswire.com/media/20240122372572/en/1546931/5/Phenom_Lockup_RGB_Black.jpg?download=1');
@@ -69,8 +71,27 @@ export default function CreateFlowPage() {
       setPrimaryColor('#6366F1');
       setCollectFeedback(false);
       setSelectedModules({ '1': [] });
+      return;
     }
-  }, [editingFlow]);
+    if (loadedEditorFlow === undefined || loadedEditorFlow === null) return;
+
+    setName(loadedEditorFlow.name);
+    setDescription(loadedEditorFlow.description);
+    setLogoUrl(
+      loadedEditorFlow.logoUrl ||
+        'https://mms.businesswire.com/media/20240122372572/en/1546931/5/Phenom_Lockup_RGB_Black.jpg?download=1'
+    );
+    setSteps(loadedEditorFlow.steps);
+    setIsActive(loadedEditorFlow.isActive);
+    setPrimaryColor(loadedEditorFlow.primaryColor || '#6366F1');
+    setCollectFeedback(loadedEditorFlow.collectFeedback || false);
+
+    const modulesByStep: { [stepId: string]: FlowModule[] } = {};
+    loadedEditorFlow.steps.forEach(step => {
+      modulesByStep[step.id] = step.modules || [];
+    });
+    setSelectedModules(modulesByStep);
+  }, [slug, loadedEditorFlow]);
 
   // Sync selectedModules with steps
   React.useEffect(() => {
@@ -95,8 +116,7 @@ export default function CreateFlowPage() {
     };
   }, [showModuleSelector]);
 
-  // Show loading state while flows are being fetched (only when editing)
-  if (slug && flowsLoading) {
+  if (slug && loadedEditorFlow === undefined) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -106,11 +126,13 @@ export default function CreateFlowPage() {
       </div>
     );
   }
-  
-  // Redirect to homepage if editing flow not found
-  if (slug && !editingFlow) {
+
+  if (slug && loadedEditorFlow === null) {
     return <Navigate to="/" replace />;
   }
+
+  const editingFlow: ApplicationFlow | null =
+    slug && loadedEditorFlow ? loadedEditorFlow : null;
 
   // Module names that get split-screen ON and image left-aligned by default when added
   const SPLIT_SCREEN_DEFAULT_MODULES = new Set([

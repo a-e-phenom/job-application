@@ -77,6 +77,12 @@ export default function FlowCard({ flow, onEdit, onDelete, onPreview, onDuplicat
     setShowDeleteConfirm(false);
   };
 
+  const hasStepDetails = flow.steps.length > 0;
+  const stepCount = hasStepDetails ? flow.steps.length : (flow.stepCount ?? 0);
+  const moduleCount = hasStepDetails
+    ? flow.steps.reduce((total, step) => total + step.modules.length, 0)
+    : (flow.moduleCount ?? 0);
+
   const handleCopyUrl = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const url = `${window.location.origin}/flow/${flow.slug}`;
@@ -115,12 +121,12 @@ export default function FlowCard({ flow, onEdit, onDelete, onPreview, onDuplicat
             <h3 className="text-md font-medium text-[#464F5E]">{flow.name}</h3>
           </div>
           <div className="flex flex-wrap gap-2 mb-2">
-  {/* Steps Tag */}
+  {/* Steps tag: counts from DB when list omits `steps`; popover only when step data is loaded */}
   <div className="relative group">
     <span className="px-2 py-0.5 text-xs rounded-md bg-indigo-50 text-gray-700 cursor-default">
-      {flow.steps.length} step{flow.steps.length !== 1 ? 's' : ''}
+      {stepCount} step{stepCount !== 1 ? 's' : ''}
     </span>
-    {/* Popover */}
+    {hasStepDetails && (
     <div className="absolute left-0 mt-1 hidden w-52 rounded-lg bg-white border border-gray-200 shadow-lg p-3 text-xs text-gray-700 group-hover:block z-20">
   <div className="space-y-1">
     {flow.steps.map((step, idx) => (
@@ -131,15 +137,15 @@ export default function FlowCard({ flow, onEdit, onDelete, onPreview, onDuplicat
     ))}
   </div>
 </div>
+    )}
   </div>
 
-  {/* Modules Tag */}
+  {/* Modules tag */}
   <div className="relative group">
     <span className="px-2 py-0.5 text-xs rounded-md bg-gray-100 text-gray-700 cursor-default">
-      {flow.steps.reduce((total, step) => total + step.modules.length, 0)} module
-      {flow.steps.reduce((total, step) => total + step.modules.length, 0) !== 1 ? 's' : ''}
+      {moduleCount} module{moduleCount !== 1 ? 's' : ''}
     </span>
-    {/* Popover */}
+    {hasStepDetails && (
     <div className="absolute left-0 mt-1 hidden w-52 rounded-lg bg-white border border-gray-200 shadow-lg p-3 text-xs text-gray-700 group-hover:block z-20">
   <div className="space-y-1">
     {flow.steps.flatMap((step) =>
@@ -152,6 +158,7 @@ export default function FlowCard({ flow, onEdit, onDelete, onPreview, onDuplicat
     )}
   </div>
 </div>
+    )}
   </div>
 </div>
 
