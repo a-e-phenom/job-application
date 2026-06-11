@@ -81,6 +81,14 @@ export interface VoiceScreeningData {
   transcript?: string;
 }
 
+export interface AIAgentInterviewerData {
+  setupCompleted: boolean;
+  consentGiven: boolean;
+  callStarted: boolean;
+  completed?: boolean;
+  callDuration?: number;
+}
+
 export interface ApplicationData {
   contactInfo: ContactInfo;
   jobFit: JobFitInfo;
@@ -91,6 +99,7 @@ export interface ApplicationData {
   resume: ResumeData;
   assessment: AssessmentData;
   voiceScreening: VoiceScreeningData;
+  aiAgentInterviewer: AIAgentInterviewerData;
 }
 
 export interface StepConfig {

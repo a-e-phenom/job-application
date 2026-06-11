@@ -8,11 +8,12 @@ import ScreeningStep from './ScreeningStep';
 import ResumeStep from './ResumeStep';
 import AssessmentStep from './AssessmentStep';
 import VoiceScreeningStep from './VoiceScreeningStep';
+import AIAgentInterviewerStep from './AIAgentInterviewerStep';
 import GenericModuleRenderer from './GenericModuleRenderer';
 import ModuleConfigPanel from './ModuleConfigPanel';
 import FeedbackModal from './FeedbackModal';
 import InterviewConfirmationModal from './InterviewConfirmationModal';
-import { ApplicationData, ContactInfo, ScreeningData, ResumeData, PreScreeningInfo, AssessmentData, VoiceScreeningData, JobFitInfo, TasksInfo } from '../types/application';
+import { ApplicationData, ContactInfo, ScreeningData, ResumeData, PreScreeningInfo, AssessmentData, VoiceScreeningData, AIAgentInterviewerData, JobFitInfo, TasksInfo } from '../types/application';
 import { ApplicationFlow as FlowType, FlowModule } from '../types/flow';
 import { InterviewSchedulingData } from '../types/application';
 import { useTemplates } from '../hooks/useTemplates';
@@ -88,6 +89,7 @@ export default function ApplicationFlow() {
   const [videoInterviewFooter, setVideoInterviewFooter] = useState<JSX.Element | null>(null);
   // Voice screening footer state for mobile view
   const [voiceScreeningFooter, setVoiceScreeningFooter] = useState<JSX.Element | null>(null);
+  const [aiAgentInterviewerFooter, setAIAgentInterviewerFooter] = useState<JSX.Element | null>(null);
   
   // Ref for mobile scrollable content area
   const mobileContentRef = useRef<HTMLDivElement>(null);
@@ -161,6 +163,12 @@ export default function ApplicationFlow() {
     introCompleted: false,
     callStarted: false,
   };
+
+  const initialAIAgentInterviewer: AIAgentInterviewerData = {
+    setupCompleted: false,
+    consentGiven: true,
+    callStarted: false,
+  };
   
   const [applicationData, setApplicationData] = useState<ApplicationData>({
     contactInfo: initialContactInfo,
@@ -172,6 +180,7 @@ export default function ApplicationFlow() {
     resume: initialResume,
     assessment: initialAssessment,
     voiceScreening: initialVoiceScreening,
+    aiAgentInterviewer: initialAIAgentInterviewer,
   });
 
   // ALL useCallback HOOKS
@@ -224,6 +233,13 @@ export default function ApplicationFlow() {
     }));
   }, []);
 
+  const updateAIAgentInterviewer = useCallback((updates: Partial<AIAgentInterviewerData>) => {
+    setApplicationData(prev => ({
+      ...prev,
+      aiAgentInterviewer: { ...prev.aiAgentInterviewer, ...updates }
+    }));
+  }, []);
+
   // Memoized callback for assessment footer rendering
   const handleAssessmentFooterRender = useCallback((footer: JSX.Element) => {
     setAssessmentFooter(footer);
@@ -237,6 +253,10 @@ export default function ApplicationFlow() {
   // Memoized callback for voice screening footer rendering
   const handleVoiceScreeningFooterRender = useCallback((footer: JSX.Element) => {
     setVoiceScreeningFooter(footer);
+  }, []);
+
+  const handleAIAgentInterviewerFooterRender = useCallback((footer: JSX.Element) => {
+    setAIAgentInterviewerFooter(footer);
   }, []);
   
   // Check authentication on mount
@@ -301,6 +321,7 @@ export default function ApplicationFlow() {
       setAssessmentFooter(null);
       setVideoInterviewFooter(null);
       setVoiceScreeningFooter(null);
+      setAIAgentInterviewerFooter(null);
       return;
     }
     const currentFlowStep = flow.steps[currentStep];
@@ -309,6 +330,7 @@ export default function ApplicationFlow() {
     const hasAssessment = moduleTemplate?.content.questions?.some(q => q.type === 'assessment');
     const hasVideoInterview = moduleTemplate?.content.questions?.some(q => q.type === 'video-interview');
     const hasVoiceScreening = currentModule?.component === 'VoiceScreeningStep';
+    const hasAIAgentInterviewer = currentModule?.component === 'AIAgentInterviewerStep';
     if (!hasAssessment) {
       setAssessmentFooter(null);
     }
@@ -317,6 +339,9 @@ export default function ApplicationFlow() {
     }
     if (!hasVoiceScreening) {
       setVoiceScreeningFooter(null);
+    }
+    if (!hasAIAgentInterviewer) {
+      setAIAgentInterviewerFooter(null);
     }
   }, [isMobileView, currentStep, currentSubStep, flow, templates]);
   
@@ -507,6 +532,7 @@ export default function ApplicationFlow() {
       resume: initialResume,
       assessment: initialAssessment,
       voiceScreening: initialVoiceScreening,
+      aiAgentInterviewer: initialAIAgentInterviewer,
     });
   };
 
@@ -568,7 +594,9 @@ export default function ApplicationFlow() {
     const primaryModule = currentFlowStep.modules[currentSubStep] || currentFlowStep.modules[0];
     
     // Find the template for this module to get the latest content
-    const moduleTemplate = templates.find(template => template.id === primaryModule.id);
+    const moduleTemplate =
+      templates.find(template => template.id === primaryModule.id) ??
+      templates.find(template => template.component === primaryModule.component);
 
     // Merge global template with flow-specific overrides
     const effectiveTemplate = moduleTemplate ? {
@@ -591,6 +619,23 @@ export default function ApplicationFlow() {
           template={effectiveTemplate}
           isMobileView={isMobileView}
           onFooterRender={isMobileView ? handleVoiceScreeningFooterRender : undefined}
+        />
+      );
+    }
+
+    if (primaryModule.component === 'AIAgentInterviewerStep') {
+      return (
+        <AIAgentInterviewerStep
+          data={applicationData.aiAgentInterviewer}
+          onUpdate={updateAIAgentInterviewer}
+          onValidate={(validateFn) => setStepValidationRef(currentStep, validateFn)}
+          primaryColor={primaryColor}
+          onNext={handleNext}
+          template={effectiveTemplate}
+          isMobileView={isMobileView}
+          onFooterRender={isMobileView ? handleAIAgentInterviewerFooterRender : undefined}
+          candidateFirstName={applicationData.contactInfo.firstName}
+          candidateLastName={applicationData.contactInfo.lastName}
         />
       );
     }
@@ -731,7 +776,7 @@ export default function ApplicationFlow() {
   const currentFlowStep = flow.steps[currentStep];
 
   return (
-    <div className={`min-h-screen ${currentFlowStep?.modules[currentSubStep]?.component === 'AssessmentStep' || currentFlowStep?.modules[currentSubStep]?.component === 'VoiceScreeningStep' ? 'bg-white' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen ${currentFlowStep?.modules[currentSubStep]?.component === 'AssessmentStep' || currentFlowStep?.modules[currentSubStep]?.component === 'VoiceScreeningStep' || currentFlowStep?.modules[currentSubStep]?.component === 'AIAgentInterviewerStep' ? 'bg-white' : 'bg-gray-50'}`}>
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white shadow-sm border-b border-gray-200">
         <div className="mx-auto px-6 py-4 flex items-center justify-between relative">
@@ -1036,6 +1081,7 @@ export default function ApplicationFlow() {
 
                   return currentFlowStep?.modules[currentSubStep]?.component === 'AssessmentStep' ||
                          currentFlowStep?.modules[currentSubStep]?.component === 'VoiceScreeningStep' ||
+                         currentFlowStep?.modules[currentSubStep]?.component === 'AIAgentInterviewerStep' ||
                          isSplitScreenEnabled;
                 })() ? (
                   // Assessment and split screen modules get full screen treatment - no containers, no padding, no cards
@@ -1084,11 +1130,16 @@ export default function ApplicationFlow() {
                 <div className="flex-shrink-0">
                   {voiceScreeningFooter}
                 </div>
+              ) : aiAgentInterviewerFooter ? (
+                <div className="flex-shrink-0">
+                  {aiAgentInterviewerFooter}
+                </div>
               ) : (
                 // Regular mobile footer
                 currentFlowStep?.modules[currentSubStep]?.component !== 'ThankYouStep' &&
                 currentFlowStep?.modules[currentSubStep]?.component !== 'AssessmentStep' &&
                 currentFlowStep?.modules[currentSubStep]?.component !== 'VoiceScreeningStep' &&
+                currentFlowStep?.modules[currentSubStep]?.component !== 'AIAgentInterviewerStep' &&
                 currentFlowStep?.modules[currentSubStep]?.component !== 'MultibuttonModule' && (
                   <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 py-3">
                     <div className="flex items-center space-x-3">
@@ -1185,6 +1236,7 @@ export default function ApplicationFlow() {
 
             return currentFlowStep?.modules[currentSubStep]?.component === 'AssessmentStep' ||
                    currentFlowStep?.modules[currentSubStep]?.component === 'VoiceScreeningStep' ||
+                   currentFlowStep?.modules[currentSubStep]?.component === 'AIAgentInterviewerStep' ||
                    isSplitScreenEnabled;
           })() ? (
             // Assessment and split screen modules get full screen treatment - no containers, no padding, no cards
@@ -1220,6 +1272,7 @@ export default function ApplicationFlow() {
       {!isMobileView && currentFlowStep?.modules[currentSubStep]?.component !== 'ThankYouStep' &&
        currentFlowStep?.modules[currentSubStep]?.component !== 'AssessmentStep' &&
        currentFlowStep?.modules[currentSubStep]?.component !== 'VoiceScreeningStep' &&
+       currentFlowStep?.modules[currentSubStep]?.component !== 'AIAgentInterviewerStep' &&
        currentFlowStep?.modules[currentSubStep]?.component !== 'MultibuttonModule' && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4">
         <div className="mx-auto flex justify-end items-center space-x-3">

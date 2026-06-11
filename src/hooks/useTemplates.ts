@@ -17,6 +17,9 @@ export interface ModuleTemplate {
     imageSideHasTitleSubtitle?: boolean;
     imageSideTitle?: string;
     imageSideSubtitle?: string;
+    consentText?: string;
+    leftVideoImage?: string;
+    rightVideoImage?: string;
     questions?: Array<{
       id: string;
       text: string;
