@@ -8,7 +8,8 @@ import {
   PhoneOff,
   Check,
   ChevronDown,
-  AudioLines
+  AudioLines,
+  MoreVertical
 } from 'lucide-react';
 import { AIAgentInterviewerData } from '../types/application';
 import { ModuleTemplate } from '../hooks/useTemplates';
@@ -337,19 +338,78 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
     );
   };
 
+  const renderDeviceField = (field: (typeof DEVICE_FIELDS)[number]) => (
+    <div key={field.id} className="min-w-0">
+      <label className="mb-1.5 flex items-center gap-2 text-xs font-medium text-[#637085]">
+        <span>{field.label}</span>
+        {isMobileView && (
+          <span
+            className="rounded px-1.5 py-0.5 text-[10px] font-medium leading-none"
+            style={{ backgroundColor: `${primaryColor}1A`, color: primaryColor }}
+          >
+            Active
+          </span>
+        )}
+      </label>
+      <div className="relative h-8 min-w-0 rounded-lg border border-gray-400 bg-white">
+        {!isMobileView && (
+          <span className="pointer-events-none absolute left-2.5 top-1/2 z-10 flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full bg-[#36B37E]">
+            <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />
+          </span>
+        )}
+        <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-[#637085]" />
+        <span
+          aria-hidden
+          className={`pointer-events-none absolute top-1/2 z-[1] -translate-y-1/2 truncate text-sm text-[#353B46] ${
+            isMobileView ? 'left-3 right-8' : 'left-9 right-8'
+          }`}
+        >
+          {deviceSelections[field.id]}
+        </span>
+        <select
+          value={deviceSelections[field.id]}
+          onChange={e =>
+            setDeviceSelections(prev => ({ ...prev, [field.id]: e.target.value }))
+          }
+          className={`absolute inset-0 z-[2] h-full w-full min-w-0 cursor-pointer appearance-none rounded-lg bg-transparent pr-8 text-sm text-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+            isMobileView ? 'pl-3' : 'pl-9'
+          }`}
+          title={deviceSelections[field.id]}
+        >
+          {field.options.map(option => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+
   const renderSetup = () => (
     <div
-      className="flex h-full flex-col items-center overflow-hidden px-4 pb-32 pt-6 md:px-8"
-      style={{
-        height: 'calc(100vh - 80px)',
-        backgroundColor: '#F3F4F6'
-      }}
+      className={`flex h-full flex-col items-center overflow-hidden ${
+        isMobileView ? 'bg-white px-4 pb-0 pt-4' : 'px-4 pb-32 pt-6 md:px-8'
+      }`}
+      style={
+        isMobileView
+          ? undefined
+          : { height: 'calc(100vh - 80px)', backgroundColor: '#F3F4F6' }
+      }
     >
-      <h1 className="mb-4 max-w-2xl shrink-0 text-center text-xl font-semibold text-[#353B46] md:text-2xl">
+      <h1
+        className={`max-w-2xl shrink-0 text-center font-semibold text-[#353B46] ${
+          isMobileView ? 'mb-3 text-base leading-snug' : 'mb-4 text-xl md:text-2xl'
+        }`}
+      >
         {title}
       </h1>
 
-      <div className="relative mb-4 min-h-0 w-full max-w-3xl flex-1 overflow-hidden rounded-2xl">
+      <div
+        className={`relative mb-4 min-h-0 w-full flex-1 overflow-hidden rounded-2xl ${
+          isMobileView ? 'max-w-none bg-[#E5E7EB]' : 'max-w-3xl'
+        }`}
+      >
         {cameraOff ? (
           <div className="flex h-full w-full items-center justify-center bg-[#E5E7EB]">
             <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white shadow-sm md:h-28 md:w-28">
@@ -365,41 +425,15 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
         )}
       </div>
 
-      <div className="mb-4 grid w-full max-w-3xl shrink-0 grid-cols-1 gap-4 md:grid-cols-3">
-        {DEVICE_FIELDS.map(field => (
-          <div key={field.id} className="min-w-0">
-            <label className="block text-xs font-medium text-[#637085] mb-1.5">{field.label}</label>
-            <div className="relative h-8 min-w-0 rounded-lg border border-gray-400 bg-white">
-              <span className="pointer-events-none absolute left-2.5 top-1/2 z-10 flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full bg-[#36B37E]">
-                <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />
-              </span>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-[#637085]" />
-              <span
-                aria-hidden
-                className="pointer-events-none absolute left-9 right-8 top-1/2 z-[1] -translate-y-1/2 truncate text-sm text-[#353B46]"
-              >
-                {deviceSelections[field.id]}
-              </span>
-              <select
-                value={deviceSelections[field.id]}
-                onChange={e =>
-                  setDeviceSelections(prev => ({ ...prev, [field.id]: e.target.value }))
-                }
-                className="absolute inset-0 z-[2] h-full w-full min-w-0 cursor-pointer appearance-none bg-transparent pl-9 pr-8 text-sm text-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg"
-                title={deviceSelections[field.id]}
-              >
-                {field.options.map(option => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        ))}
+      <div
+        className={`mb-4 grid w-full shrink-0 grid-cols-1 gap-3 ${
+          isMobileView ? 'max-w-none' : 'max-w-3xl md:grid-cols-3 md:gap-4'
+        }`}
+      >
+        {DEVICE_FIELDS.map(renderDeviceField)}
       </div>
 
-      <div className="mb-4 flex w-full max-w-3xl shrink-0 items-start">
+      <div className={`mb-4 flex w-full shrink-0 items-start ${isMobileView ? '' : 'max-w-3xl'}`}>
         <input
           type="checkbox"
           id="ai-interview-consent"
@@ -422,14 +456,16 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
         </label>
       </div>
 
-      <div className="flex shrink-0 flex-wrap items-center justify-center gap-3">
-        <span className="px-[6px] py-1 rounded-[6px] bg-[#E8EAEE] text-xs text-gray-800">
-          Your Microphone is {micMuted ? 'Off' : 'On'}
-        </span>
-        <span className="px-[6px] py-1 rounded-[6px] bg-[#E8EAEE] text-xs text-gray-800">
-          Your Camera is {cameraOff ? 'Off' : 'On'}
-        </span>
-      </div>
+      {!isMobileView && (
+        <div className="flex shrink-0 flex-wrap items-center justify-center gap-3">
+          <span className="rounded-[6px] bg-[#E8EAEE] px-[6px] py-1 text-xs text-gray-800">
+            Your Microphone is {micMuted ? 'Off' : 'On'}
+          </span>
+          <span className="rounded-[6px] bg-[#E8EAEE] px-[6px] py-1 text-xs text-gray-800">
+            Your Camera is {cameraOff ? 'Off' : 'On'}
+          </span>
+        </div>
+      )}
     </div>
   );
 
@@ -464,22 +500,41 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
 
   const renderCall = () => (
     <div
-      className="flex h-full w-full"
-      style={{
-        height: 'calc(100vh - 80px)',
-        backgroundColor: '#F3F4F6'
-      }}
+      className={`flex h-full w-full overflow-hidden ${
+        isMobileView ? 'relative flex-col bg-white' : ''
+      }`}
+      style={
+        isMobileView
+          ? undefined
+          : { height: 'calc(100vh - 80px)', backgroundColor: '#F3F4F6' }
+      }
     >
       <div
-        className="flex min-h-0 min-w-0 flex-1 flex-col justify-between px-4 pt-6 md:px-8"
-        style={{ paddingBottom: CALL_TAGS_ABOVE_FOOTER + CALL_FOOTER_HEIGHT }}
+        className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${
+          isMobileView ? 'px-3 pt-3' : 'justify-between px-4 pt-6 md:px-8'
+        }`}
+        style={
+          isMobileView
+            ? undefined
+            : { paddingBottom: CALL_TAGS_ABOVE_FOOTER + CALL_FOOTER_HEIGHT }
+        }
       >
-        <div className="relative mx-auto w-full max-w-5xl shrink-0">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div
+          className={`mx-auto w-full min-h-0 ${
+            isMobileView ? 'relative flex flex-1 flex-col gap-3' : 'relative max-w-5xl shrink-0'
+          }`}
+        >
+          <div
+            className={
+              isMobileView
+                ? 'flex min-h-0 flex-1 flex-col gap-3'
+                : 'grid grid-cols-1 gap-4 md:grid-cols-2'
+            }
+          >
             <div
-              className={`relative aspect-square w-full overflow-hidden rounded-2xl transition-shadow duration-200 ${
-                activeSpeaker === 'agent' ? activeSpeakerCardClass : ''
-              }`}
+              className={`relative min-h-0 w-full overflow-hidden rounded-2xl transition-shadow duration-200 ${
+                isMobileView ? 'flex-1' : 'aspect-square'
+              } ${activeSpeaker === 'agent' ? activeSpeakerCardClass : ''}`}
             >
               <img
                 src={leftVideoImage}
@@ -489,13 +544,13 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
               {activeSpeaker === 'agent' && <SpeakingIndicator />}
             </div>
             <div
-              className={`relative aspect-square w-full overflow-hidden rounded-2xl transition-shadow duration-200 ${
-                activeSpeaker === 'candidate' ? activeSpeakerCardClass : ''
-              }`}
+              className={`relative min-h-0 w-full overflow-hidden rounded-2xl transition-shadow duration-200 ${
+                isMobileView ? 'flex-1' : 'aspect-square'
+              } ${activeSpeaker === 'candidate' ? activeSpeakerCardClass : ''}`}
             >
               {cameraOff ? (
                 <div
-                  className="flex h-full w-full items-center justify-center rounded-2xl"
+                  className="flex h-full w-full items-center justify-center"
                   style={{ backgroundColor: '#E5E7EB' }}
                 >
                   <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white shadow-sm md:h-28 md:w-28">
@@ -511,14 +566,19 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
               )}
               {activeSpeaker === 'candidate' && <SpeakingIndicator />}
               {micMuted && (
-                <div className="absolute top-3 right-3 flex items-center gap-1 rounded-[6px] bg-[#353B46]/80 px-2 py-1 text-xs text-white">
+                <div className="absolute right-3 top-3 flex items-center gap-1 rounded-[6px] bg-[#353B46]/80 px-2 py-1 text-xs text-white">
                   <MicOff className="h-3.5 w-3.5" />
-                  <span>Mic off</span>
+                  {!isMobileView && <span>Mic off</span>}
+                </div>
+              )}
+              {isMobileView && !transcriptPanelOpen && overlaySnippet && (
+                <div className="absolute bottom-3 left-1/2 z-10 flex h-6 w-max max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center justify-center bg-[#353B46]/90 px-1">
+                  <p className="whitespace-nowrap text-xs leading-none text-white">{overlaySnippet}</p>
                 </div>
               )}
             </div>
           </div>
-          {!transcriptPanelOpen && overlaySnippet && (
+          {!isMobileView && !transcriptPanelOpen && overlaySnippet && (
             <div
               className="absolute left-1/2 z-10 flex h-6 -translate-x-1/2 items-center justify-center bg-[#353B46]/90 px-1"
               style={{ bottom: 60 }}
@@ -528,20 +588,27 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
           )}
         </div>
 
-        <div className="mx-auto flex w-full max-w-5xl shrink-0 flex-wrap items-center justify-center gap-3">
-          <span className="rounded-[6px] bg-[#E8EAEE] px-[6px] py-1 text-xs text-gray-800">
-            Your Microphone is {micMuted ? 'Off' : 'On'}
-          </span>
-          <span className="rounded-[6px] bg-[#E8EAEE] px-[6px] py-1 text-xs text-gray-800">
-            Your Camera is {cameraOff ? 'Off' : 'On'}
-          </span>
-          <span className="rounded-[6px] bg-[#E8EAEE] px-[6px] py-1 text-xs text-gray-800">
-            {transcriptPanelOpen ? 'Transcript in the panel' : 'Transcript Overlay'}
-          </span>
-        </div>
+        {isMobileView ? (
+          <div className="shrink-0 border-t border-gray-200 py-2.5 text-center text-sm text-[#637085]">
+            Call Duration: {formatDuration(callDuration)} |{' '}
+            <span className="font-medium text-gray-700">Recording in progress</span>
+          </div>
+        ) : (
+          <div className="mx-auto flex w-full max-w-5xl shrink-0 flex-wrap items-center justify-center gap-3">
+            <span className="rounded-[6px] bg-[#E8EAEE] px-[6px] py-1 text-xs text-gray-800">
+              Your Microphone is {micMuted ? 'Off' : 'On'}
+            </span>
+            <span className="rounded-[6px] bg-[#E8EAEE] px-[6px] py-1 text-xs text-gray-800">
+              Your Camera is {cameraOff ? 'Off' : 'On'}
+            </span>
+            <span className="rounded-[6px] bg-[#E8EAEE] px-[6px] py-1 text-xs text-gray-800">
+              {transcriptPanelOpen ? 'Transcript in the panel' : 'Transcript Overlay'}
+            </span>
+          </div>
+        )}
       </div>
 
-      {transcriptPanelOpen && (
+      {transcriptPanelOpen && !isMobileView && (
         <aside
           className="flex w-80 max-w-sm shrink-0 flex-col border-l border-gray-200 bg-white"
           style={{ height: 'calc(100vh - 80px)' }}
@@ -571,13 +638,77 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
           </div>
         </aside>
       )}
+
+      {transcriptPanelOpen && isMobileView && (
+        <div className="absolute inset-0 z-40 flex flex-col bg-white">
+          <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+            <h2 className="text-base font-semibold text-[#353B46]">Live Transcript</h2>
+            <button
+              type="button"
+              onClick={() => setTranscriptPanelOpen(false)}
+              className="text-sm font-medium text-[#637085]"
+            >
+              Close
+            </button>
+          </div>
+          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+            {completedUtterances.map(message =>
+              renderTranscriptBubble(
+                message.speaker,
+                message.text,
+                formatTranscriptTime(Math.max(0, callDuration - message.elapsedSeconds)),
+                false,
+                message.id
+              )
+            )}
+            {!demoFinished && liveTranscriptText && currentUtterance &&
+              renderTranscriptBubble(
+                currentUtterance.speaker,
+                liveTranscriptText,
+                'Just now',
+                true,
+                'live-utterance'
+              )}
+            <div ref={transcriptEndRef} />
+          </div>
+        </div>
+      )}
     </div>
   );
 
+  const footerShellClass = isMobileView
+    ? 'w-full border-t border-gray-200 bg-white'
+    : 'fixed bottom-0 left-0 right-0 z-50 w-full border-t border-gray-200 bg-white px-4 py-4 md:px-6';
+
   const footer = useMemo(() => {
     if (phase === 'setup') {
+      if (isMobileView) {
+        return (
+          <div className={footerShellClass}>
+            <div className="px-4 py-4">
+              <p className="mb-3 text-sm text-[#637085]">Interview Setup</p>
+              <div className="flex items-center gap-3">
+                <div className="flex shrink-0 items-center gap-2">
+                  {renderMediaToggleButton('mic', micMuted, () => setMicMuted(v => !v))}
+                  {renderMediaToggleButton('camera', cameraOff, () => setCameraOff(v => !v))}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleStartCall}
+                  disabled={!consentChecked}
+                  className="min-w-0 flex-1 rounded-lg py-3 text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  Start Call
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 w-full border-t border-gray-200 bg-white px-4 py-4 md:px-6">
+        <div className={footerShellClass}>
           <div className="grid grid-cols-3 items-center gap-4">
             <span className="justify-self-start text-sm text-[#637085]">Interview Setup</span>
             <div className="flex items-center justify-center gap-2 justify-self-center">
@@ -598,8 +729,48 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
       );
     }
 
+    if (isMobileView) {
+      return (
+        <div className={footerShellClass}>
+          <div className="flex items-center justify-center gap-3 px-4 py-3">
+            {renderMediaToggleButton('mic', micMuted, () => setMicMuted(v => !v))}
+            {renderMediaToggleButton('camera', cameraOff, () => setCameraOff(v => !v))}
+            <button
+              type="button"
+              onClick={() => setTranscriptPanelOpen(open => !open)}
+              className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
+                transcriptPanelOpen
+                  ? 'text-white'
+                  : 'bg-gray-100 text-[#353B46] hover:bg-gray-200'
+              }`}
+              style={transcriptPanelOpen ? { backgroundColor: primaryColor } : undefined}
+              aria-label={transcriptPanelOpen ? 'Close live transcript' : 'Open live transcript'}
+              aria-pressed={transcriptPanelOpen}
+            >
+              <MessageSquare className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-[#353B46] transition-colors hover:bg-gray-200"
+              aria-label="More options"
+            >
+              <MoreVertical className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={handleEndCall}
+              className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-500 text-white transition-colors hover:bg-red-600"
+              aria-label="End call"
+            >
+              <PhoneOff className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-50 w-full border-t border-gray-200 bg-white px-4 py-4 md:px-6">
+      <div className={footerShellClass}>
         <div className="grid grid-cols-3 items-center gap-2 md:gap-4">
         <span className="justify-self-start truncate text-sm text-[#637085]">
   Call Duration: {formatDuration(callDuration)} |{" "}
@@ -636,6 +807,7 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
     );
   }, [
     phase,
+    isMobileView,
     consentChecked,
     callDuration,
     primaryColor,
@@ -653,8 +825,10 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
   }, [isMobileView, onFooterRender, footer]);
 
   return (
-    <div className="m-0 w-full overflow-hidden bg-[#F3F4F6]">
-      {phase === 'setup' ? renderSetup() : renderCall()}
+    <div className={`m-0 w-full overflow-hidden ${isMobileView ? 'flex h-full flex-col bg-white' : 'bg-[#F3F4F6]'}`}>
+      <div className={isMobileView ? 'min-h-0 flex-1 overflow-hidden' : undefined}>
+        {phase === 'setup' ? renderSetup() : renderCall()}
+      </div>
       {!isMobileView || !onFooterRender ? footer : null}
     </div>
   );
