@@ -1302,10 +1302,13 @@ export default function ModuleConfigPanel({
 
   if (!isOpen) return null;
 
+  const isCommentsOnlyModule =
+    module.component === 'AIAgentInterviewerStep' || module.component === 'EventsStep';
+
   return (
-    <div className="fixed inset-y-0 right-0 w-96 bg-white shadow-xl border-l border-gray-200 z-50 overflow-y-auto">
+    <div className="fixed inset-y-0 right-0 z-50 flex w-96 flex-col overflow-hidden border-l border-gray-200 bg-white shadow-xl">
       {/* Header */}
-      <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-[60]">
+      <div className="shrink-0 border-b border-gray-200 bg-white px-6 py-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Edit content</h2>
           <button
@@ -1319,8 +1322,9 @@ export default function ModuleConfigPanel({
       </div>
 
       {/* Content */}
-      <div className="p-6 pt-4 space-y-6">
+      <div className="min-h-0 flex-1 overflow-y-auto p-6 pt-4">
         {/* Comments */}
+        <div className="space-y-6">
         <div className="space-y-0">
           <div className="bg-indigo-50 rounded-lg px-2 pb-1 pt-1">
           <h3 className="text-xs font-medium text-gray-900 pl-1 py-1 mb-1">Comments</h3>
@@ -1334,8 +1338,8 @@ export default function ModuleConfigPanel({
           </div>
         </div>
 
-        {/* Title and Subtitle - Show for all modules except Assessment and Video Interview */}
-        {module.component !== 'AssessmentStep' && !localOverrides.questions.some(q => q.type === 'video-interview') && (
+        {/* Title and Subtitle - Show for all modules except Assessment, Video Interview, and comments-only modules */}
+        {!isCommentsOnlyModule && module.component !== 'AssessmentStep' && !localOverrides.questions.some(q => q.type === 'video-interview') && (
           <div className="space-y-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1771,7 +1775,7 @@ export default function ModuleConfigPanel({
         )}
 
         {/* Questions */}
-        {module.component !== 'VoiceScreeningStep' && module.component !== 'ScreeningSummaryStep' && (
+        {!isCommentsOnlyModule && module.component !== 'VoiceScreeningStep' && module.component !== 'ScreeningSummaryStep' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium text-gray-900">Elements</h3>
@@ -2311,10 +2315,11 @@ export default function ModuleConfigPanel({
 
         {/* Global Template Info */}
        
+        </div>
       </div>
 
       {/* Footer Actions */}
-      <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-3 z-[60]">
+      <div className="shrink-0 border-t border-gray-200 bg-white px-6 py-3">
         <div className="flex items-center justify-between">
           <button
             onClick={handleReset}

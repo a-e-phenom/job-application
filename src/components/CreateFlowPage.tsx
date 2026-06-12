@@ -178,7 +178,8 @@ export default function CreateFlowPage() {
     if (name === 'Screening Summary and Confirmation') return 5;
     if (name === 'Voice Screening Agent') return 6;
     if (name === 'Interview Scheduling') return 7;
-    if (name === 'Video Interview') return 8;
+    if (name === 'Events') return 8;
+    if (name === 'Video Interview') return 9;
     if (name.toLowerCase().startsWith('thank')) return 999; // Last
     return 10; // "The rest" - all others in middle, preserve original order via stable sort
   };

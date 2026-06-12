@@ -17,6 +17,7 @@ export interface FlowModule {
     imageSideTitle?: string;
     imageSideSubtitle?: string;
     comments?: string;
+    footerLabel?: string;
     questions?: Array<{
       id: string;
       text: string;

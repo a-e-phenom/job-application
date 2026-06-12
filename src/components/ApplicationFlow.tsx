@@ -9,11 +9,14 @@ import ResumeStep from './ResumeStep';
 import AssessmentStep from './AssessmentStep';
 import VoiceScreeningStep from './VoiceScreeningStep';
 import AIAgentInterviewerStep from './AIAgentInterviewerStep';
+import EventsStep from './EventsStep';
 import GenericModuleRenderer from './GenericModuleRenderer';
 import ModuleConfigPanel from './ModuleConfigPanel';
 import FeedbackModal from './FeedbackModal';
 import InterviewConfirmationModal from './InterviewConfirmationModal';
-import { ApplicationData, ContactInfo, ScreeningData, ResumeData, PreScreeningInfo, AssessmentData, VoiceScreeningData, AIAgentInterviewerData, JobFitInfo, TasksInfo } from '../types/application';
+import EventSessionConfirmationModal from './EventSessionConfirmationModal';
+import { buildConfirmedSlots, DEFAULT_BOOTHS } from '../types/events';
+import { ApplicationData, ContactInfo, ScreeningData, ResumeData, PreScreeningInfo, AssessmentData, VoiceScreeningData, AIAgentInterviewerData, EventsData, JobFitInfo, TasksInfo } from '../types/application';
 import { ApplicationFlow as FlowType, FlowModule } from '../types/flow';
 import { InterviewSchedulingData } from '../types/application';
 import { useTemplates } from '../hooks/useTemplates';
@@ -79,6 +82,7 @@ export default function ApplicationFlow() {
 
   // Interview confirmation modal state
   const [showInterviewConfirmation, setShowInterviewConfirmation] = useState(false);
+  const [showEventsConfirmation, setShowEventsConfirmation] = useState(false);
 
   // Mobile view state
   const [isMobileView, setIsMobileView] = useState(false);
@@ -169,6 +173,13 @@ export default function ApplicationFlow() {
     consentGiven: true,
     callStarted: false,
   };
+
+  const initialEvents: EventsData = {
+    selectedEventId: '',
+    selectedSlotIds: [],
+    phase: 'choose-event',
+    confirmedSlots: [],
+  };
   
   const [applicationData, setApplicationData] = useState<ApplicationData>({
     contactInfo: initialContactInfo,
@@ -181,6 +192,7 @@ export default function ApplicationFlow() {
     assessment: initialAssessment,
     voiceScreening: initialVoiceScreening,
     aiAgentInterviewer: initialAIAgentInterviewer,
+    events: initialEvents,
   });
 
   // ALL useCallback HOOKS
@@ -237,6 +249,13 @@ export default function ApplicationFlow() {
     setApplicationData(prev => ({
       ...prev,
       aiAgentInterviewer: { ...prev.aiAgentInterviewer, ...updates }
+    }));
+  }, []);
+
+  const updateEvents = useCallback((updates: Partial<EventsData>) => {
+    setApplicationData(prev => ({
+      ...prev,
+      events: { ...prev.events, ...updates }
     }));
   }, []);
 
@@ -418,8 +437,38 @@ export default function ApplicationFlow() {
       return;
     }
 
+    if (currentModule?.component === 'EventsStep') {
+      const { phase } = applicationData.events;
+      if (phase === 'thank-you') {
+        proceedToNextStep();
+        return;
+      }
+      if (phase === 'choose-event') {
+        updateEvents({ phase: 'book-sessions' });
+        return;
+      }
+      setShowEventsConfirmation(true);
+      return;
+    }
+
     // Proceed to next step
     proceedToNextStep();
+  };
+
+  const handleEventsConfirm = () => {
+    setShowEventsConfirmation(false);
+    const currentFlowStep = flow.steps[currentStep];
+    const currentModule = currentFlowStep?.modules[currentSubStep];
+    const moduleTemplate =
+      templates.find(template => template.id === currentModule?.id) ??
+      templates.find(template => template.component === currentModule?.component);
+    const templateBooths = moduleTemplate?.content?.customFields?.booths;
+    const booths =
+      Array.isArray(templateBooths) && templateBooths.length > 0
+        ? templateBooths
+        : DEFAULT_BOOTHS;
+    const confirmedSlots = buildConfirmedSlots(applicationData.events.selectedSlotIds, booths);
+    updateEvents({ phase: 'thank-you', confirmedSlots });
   };
 
   const proceedToNextStep = () => {
@@ -506,6 +555,21 @@ export default function ApplicationFlow() {
   };
 
   const handleBack = () => {
+    const currentFlowStep = flow.steps[currentStep];
+    const currentModule = currentFlowStep?.modules[currentSubStep];
+
+    if (currentModule?.component === 'EventsStep') {
+      const { phase } = applicationData.events;
+      if (phase === 'thank-you') {
+        updateEvents({ phase: 'book-sessions', confirmedSlots: [] });
+        return;
+      }
+      if (phase === 'book-sessions') {
+        updateEvents({ phase: 'choose-event', selectedSlotIds: [] });
+        return;
+      }
+    }
+
     // Handle sub-steps within current step
     if (hasSubSteps && currentSubStep > 0) {
       setCurrentSubStep(currentSubStep - 1);
@@ -533,6 +597,7 @@ export default function ApplicationFlow() {
       assessment: initialAssessment,
       voiceScreening: initialVoiceScreening,
       aiAgentInterviewer: initialAIAgentInterviewer,
+      events: initialEvents,
     });
   };
 
@@ -636,6 +701,20 @@ export default function ApplicationFlow() {
           onFooterRender={isMobileView ? handleAIAgentInterviewerFooterRender : undefined}
           candidateFirstName={applicationData.contactInfo.firstName}
           candidateLastName={applicationData.contactInfo.lastName}
+        />
+      );
+    }
+
+    if (primaryModule.component === 'EventsStep') {
+      return (
+        <EventsStep
+          data={applicationData.events}
+          onUpdate={updateEvents}
+          onValidate={(validateFn) => setStepValidationRef(currentStep, validateFn)}
+          primaryColor={primaryColor}
+          template={effectiveTemplate}
+          isMobileView={isMobileView}
+          candidateFirstName={applicationData.contactInfo.firstName}
         />
       );
     }
@@ -774,9 +853,63 @@ export default function ApplicationFlow() {
   };
 
   const currentFlowStep = flow.steps[currentStep];
+  const currentModule = currentFlowStep?.modules[currentSubStep];
+  const currentModuleTemplate =
+    templates.find(template => template.id === currentModule?.id) ??
+    templates.find(template => template.component === currentModule?.component);
+  const footerLabel = currentModuleTemplate
+    ? {
+        ...currentModuleTemplate.content,
+        ...currentModule?.templateOverrides
+      }.footerLabel
+    : currentModule?.templateOverrides?.footerLabel;
+
+  const isEventsThankYou =
+    currentModule?.component === 'EventsStep' && applicationData.events.phase === 'thank-you';
+
+  const effectiveFooterLabel =
+    currentModule?.component === 'EventsStep'
+      ? applicationData.events.phase === 'thank-you'
+        ? 'Events | Thank You'
+        : applicationData.events.phase === 'book-sessions'
+        ? 'Events | Book an Interview'
+        : footerLabel
+      : footerLabel;
+
+  const templateBooths = currentModuleTemplate?.content?.customFields?.booths;
+  const eventBooths =
+    Array.isArray(templateBooths) && templateBooths.length > 0 ? templateBooths : DEFAULT_BOOTHS;
+  const slotsForConfirmation = buildConfirmedSlots(
+    applicationData.events.selectedSlotIds,
+    eventBooths
+  );
+
+  const getPrimaryActionLabel = () => {
+    if (currentModule?.component === 'EventsStep') {
+      if (applicationData.events.phase === 'thank-you') return 'Finish';
+      if (applicationData.events.phase === 'book-sessions') return 'Book Session(s)';
+      return 'Next';
+    }
+    if (
+      currentStep === steps.length - 1 &&
+      (!hasSubSteps || currentSubStep === currentStepModules.length - 1)
+    ) {
+      return 'Submit';
+    }
+    return 'Next';
+  };
+
+  const primaryActionLabel = getPrimaryActionLabel();
 
   return (
-    <div className={`min-h-screen ${currentFlowStep?.modules[currentSubStep]?.component === 'AssessmentStep' || currentFlowStep?.modules[currentSubStep]?.component === 'VoiceScreeningStep' || currentFlowStep?.modules[currentSubStep]?.component === 'AIAgentInterviewerStep' ? 'bg-white' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen ${
+      currentFlowStep?.modules[currentSubStep]?.component === 'AssessmentStep' ||
+      currentFlowStep?.modules[currentSubStep]?.component === 'VoiceScreeningStep' ||
+      currentFlowStep?.modules[currentSubStep]?.component === 'AIAgentInterviewerStep' ||
+      isEventsThankYou
+        ? 'bg-white'
+        : 'bg-gray-50'
+    }`}>
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white shadow-sm border-b border-gray-200">
         <div className="mx-auto px-6 py-4 flex items-center justify-between relative">
@@ -1089,15 +1222,22 @@ export default function ApplicationFlow() {
                     {renderCurrentStep()}
                   </div>
                 ) : (
-                  <div className={`p-4 ${
-                    currentFlowStep?.modules[currentSubStep]?.component === 'InterviewSchedulingStep'
+                  <div className={`${
+                    isEventsThankYou ? 'p-0' : 'p-4'
+                  } ${
+                    currentFlowStep?.modules[currentSubStep]?.component === 'InterviewSchedulingStep' ||
+                    currentFlowStep?.modules[currentSubStep]?.component === 'EventsStep'
                       ? 'max-w-[1000px]'
                       : 'max-w-[780px]'
                   }`}>
-                    <div className={`bg-white p-0 mb-0 ${
-                      currentFlowStep?.modules[currentSubStep]?.component === 'InterviewSchedulingStep'
-                        ? 'w-full'
-                        : ''
+                    <div className={`mb-0 ${
+                      isEventsThankYou
+                        ? 'bg-white px-10 py-8'
+                        : currentFlowStep?.modules[currentSubStep]?.component === 'EventsStep'
+                        ? 'bg-white px-10 py-8'
+                        : currentFlowStep?.modules[currentSubStep]?.component === 'InterviewSchedulingStep'
+                        ? 'w-full bg-white p-0'
+                        : 'bg-white p-0'
                     }`}>
                     {isComplete ? (
                       <div className="max-w-2xl mx-auto text-center">
@@ -1142,6 +1282,9 @@ export default function ApplicationFlow() {
                 currentFlowStep?.modules[currentSubStep]?.component !== 'AIAgentInterviewerStep' &&
                 currentFlowStep?.modules[currentSubStep]?.component !== 'MultibuttonModule' && (
                   <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 py-3">
+                    {effectiveFooterLabel && (
+                      <p className="mb-2 text-sm text-[#637085]">{effectiveFooterLabel}</p>
+                    )}
                     <div className="flex items-center space-x-3">
                       <button
                         onClick={handleBack}
@@ -1172,11 +1315,7 @@ export default function ApplicationFlow() {
                           e.currentTarget.style.backgroundColor = primaryColor;
                         }}
                       >
-                        <span>
-                          {currentStep === steps.length - 1 && (!hasSubSteps || currentSubStep === currentStepModules.length - 1)
-                            ? 'Submit'
-                            : 'Next'}
-                        </span>
+                        <span>{primaryActionLabel}</span>
                         <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>
@@ -1194,6 +1333,17 @@ export default function ApplicationFlow() {
                   selectedDate={applicationData.interviewScheduling.selectedDate}
                   selectedTime={applicationData.interviewScheduling.selectedTime}
                   timezone={applicationData.interviewScheduling.timezone}
+                  primaryColor={flow?.primaryColor || '#6366F1'}
+                  isMobileView={isMobileView}
+                />
+              )}
+
+              {showEventsConfirmation && (
+                <EventSessionConfirmationModal
+                  isOpen={showEventsConfirmation}
+                  onClose={() => setShowEventsConfirmation(false)}
+                  onConfirm={handleEventsConfirm}
+                  slots={slotsForConfirmation}
                   primaryColor={flow?.primaryColor || '#6366F1'}
                   isMobileView={isMobileView}
                 />
@@ -1243,14 +1393,19 @@ export default function ApplicationFlow() {
             renderCurrentStep()
           ) : (
             <div className={`mx-auto px-4 py-8 ${
-              currentFlowStep?.modules[currentSubStep]?.component === 'InterviewSchedulingStep'
+              currentFlowStep?.modules[currentSubStep]?.component === 'InterviewSchedulingStep' ||
+              currentFlowStep?.modules[currentSubStep]?.component === 'EventsStep'
                 ? 'max-w-[1000px]'
                 : 'max-w-[780px]'
             }`}>
-              <div className={`bg-white rounded-xl shadow-sm p-8 mb-20 ${
-                currentFlowStep?.modules[currentSubStep]?.component === 'InterviewSchedulingStep'
-                  ? 'w-full'
-                  : ''
+              <div className={`mb-20 ${
+                isEventsThankYou
+                  ? 'bg-white px-10 py-8'
+                  : currentFlowStep?.modules[currentSubStep]?.component === 'EventsStep'
+                  ? 'rounded-xl bg-white px-10 py-8 shadow-sm'
+                  : currentFlowStep?.modules[currentSubStep]?.component === 'InterviewSchedulingStep'
+                  ? 'w-full bg-white p-8'
+                  : 'rounded-xl bg-white p-8 shadow-sm'
               }`}>
               {isComplete ? (
                 <div className="max-w-2xl mx-auto text-center">
@@ -1275,7 +1430,11 @@ export default function ApplicationFlow() {
        currentFlowStep?.modules[currentSubStep]?.component !== 'AIAgentInterviewerStep' &&
        currentFlowStep?.modules[currentSubStep]?.component !== 'MultibuttonModule' && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4">
-        <div className="mx-auto flex justify-end items-center space-x-3">
+        <div className={`mx-auto flex items-center ${effectiveFooterLabel ? 'justify-between' : 'justify-end'} space-x-3`}>
+          {effectiveFooterLabel && (
+            <span className="text-sm text-[#637085]">{effectiveFooterLabel}</span>
+          )}
+          <div className="flex items-center space-x-3">
           
             <button
             onClick={handleBack}
@@ -1307,13 +1466,10 @@ export default function ApplicationFlow() {
               e.currentTarget.style.backgroundColor = primaryColor;
             }}
           >
-            <span>
-              {currentStep === steps.length - 1 && (!hasSubSteps || currentSubStep === currentStepModules.length - 1) 
-                ? 'Submit' 
-                : 'Next'}
-            </span>
+            <span>{primaryActionLabel}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
+          </div>
         </div>
       </div>
       )}
@@ -1352,6 +1508,17 @@ export default function ApplicationFlow() {
           selectedDate={applicationData.interviewScheduling.selectedDate}
           selectedTime={applicationData.interviewScheduling.selectedTime}
           timezone={applicationData.interviewScheduling.timezone}
+          primaryColor={flow?.primaryColor || '#6366F1'}
+          isMobileView={isMobileView}
+        />
+      )}
+
+      {!isMobileView && (
+        <EventSessionConfirmationModal
+          isOpen={showEventsConfirmation}
+          onClose={() => setShowEventsConfirmation(false)}
+          onConfirm={handleEventsConfirm}
+          slots={slotsForConfirmation}
           primaryColor={flow?.primaryColor || '#6366F1'}
           isMobileView={isMobileView}
         />

@@ -1,3 +1,5 @@
+import type { ConfirmedEventSlot, EventsPhase } from './events';
+
 export interface ContactInfo {
   firstName: string;
   lastName: string;
@@ -89,6 +91,13 @@ export interface AIAgentInterviewerData {
   callDuration?: number;
 }
 
+export interface EventsData {
+  selectedEventId: string;
+  selectedSlotIds: string[];
+  phase: EventsPhase;
+  confirmedSlots: ConfirmedEventSlot[];
+}
+
 export interface ApplicationData {
   contactInfo: ContactInfo;
   jobFit: JobFitInfo;
@@ -100,6 +109,7 @@ export interface ApplicationData {
   assessment: AssessmentData;
   voiceScreening: VoiceScreeningData;
   aiAgentInterviewer: AIAgentInterviewerData;
+  events: EventsData;
 }
 
 export interface StepConfig {

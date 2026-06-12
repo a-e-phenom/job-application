@@ -138,7 +138,9 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
   candidateLastName = ''
 }: AIAgentInterviewerStepProps) {
   const [localData, setLocalData] = useState<AIAgentInterviewerData>(data);
-  const [phase, setPhase] = useState<'setup' | 'call'>(data.callStarted ? 'call' : 'setup');
+  const [phase, setPhase] = useState<'setup' | 'call' | 'thank-you'>(
+    data.completed && data.callStarted ? 'thank-you' : data.callStarted ? 'call' : 'setup'
+  );
   const [consentChecked, setConsentChecked] = useState(data.consentGiven ?? true);
   const [micMuted, setMicMuted] = useState(false);
   const [cameraOff, setCameraOff] = useState(false);
@@ -284,7 +286,11 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
 
   useEffect(() => {
     setLocalData(data);
-    if (data.callStarted) setPhase('call');
+    if (data.completed && data.callStarted) {
+      setPhase('thank-you');
+    } else if (data.callStarted) {
+      setPhase('call');
+    }
   }, [data]);
 
   const handleChange = useCallback(
@@ -327,8 +333,12 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
 
   const handleEndCall = useCallback(() => {
     handleChange({ completed: true, callDuration });
+    setPhase('thank-you');
+  }, [handleChange, callDuration]);
+
+  const handleFinish = useCallback(() => {
     onNext();
-  }, [handleChange, callDuration, onNext]);
+  }, [onNext]);
 
   const renderEndCallButton = (extraClassName = '', showLabel = false) => (
     <button
@@ -344,6 +354,35 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
       <EndCallIcon className={showLabel ? 'h-4 w-4' : 'h-5 w-5'} />
       {showLabel && 'End Call'}
     </button>
+  );
+
+  const renderThankYou = () => (
+    <div
+      className="flex w-full flex-col items-center bg-white px-6 py-8 md:px-10 md:py-10"
+      style={
+        isMobileView
+          ? { height: '100%' }
+          : { minHeight: 'calc(100vh - 80px)', paddingBottom: '6rem' }
+      }
+    >
+      <div className="w-full max-w-2xl text-left">
+        <h1 className="mb-6 text-xl font-semibold text-[#353B46] md:text-[28px]">
+          Thank you, {firstName}! 🎉
+        </h1>
+        <div className="space-y-4 text-sm leading-relaxed text-[#464F5E] md:text-base">
+          <p>
+            It was a pleasure speaking with you, {firstName}. We appreciate you taking the time to
+            share your background and aspirations with us.
+          </p>
+          <p>
+            We were very impressed with your experience and believe you could be a great asset to our
+            team. We will be in touch within the next few days to discuss the next steps in the
+            hiring process.
+          </p>
+          <p>In the meantime, please do not hesitate to reach out if you have any questions.</p>
+        </div>
+      </div>
+    </div>
   );
 
   const renderMediaToggleButton = (
@@ -898,6 +937,42 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
     : 'fixed bottom-0 left-0 right-0 z-50 w-full border-t border-gray-200 bg-white px-4 py-4 md:px-6';
 
   const footer = useMemo(() => {
+    if (phase === 'thank-you') {
+      if (isMobileView) {
+        return (
+          <div className={footerShellClass}>
+            <div className="px-4 py-4">
+              <p className="mb-3 text-sm text-[#637085]">Interview | Thank You</p>
+              <button
+                type="button"
+                onClick={handleFinish}
+                className="w-full rounded-lg py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ backgroundColor: primaryColor }}
+              >
+                Finish
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className={footerShellClass}>
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-sm text-[#637085]">Interview | Thank You</span>
+            <button
+              type="button"
+              onClick={handleFinish}
+              className="rounded-[10px] px-6 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+              style={{ backgroundColor: primaryColor }}
+            >
+              Finish
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     if (phase === 'setup') {
       if (isMobileView) {
         return (
@@ -1055,7 +1130,8 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
     mobileTranscriptOpen,
     callSettingsOpen,
     handleStartCall,
-    handleEndCall
+    handleEndCall,
+    handleFinish
   ]);
 
   useEffect(() => {
@@ -1065,9 +1141,15 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
   }, [isMobileView, onFooterRender, footer]);
 
   return (
-    <div className={`m-0 w-full overflow-hidden ${isMobileView ? 'flex h-full flex-col bg-white' : 'bg-[#F3F4F6]'}`}>
+    <div
+      className={`m-0 w-full overflow-hidden ${
+        isMobileView || phase === 'thank-you'
+          ? 'flex h-full flex-col bg-white'
+          : 'bg-[#F3F4F6]'
+      }`}
+    >
       <div className={isMobileView ? 'min-h-0 flex-1 overflow-hidden' : undefined}>
-        {phase === 'setup' ? renderSetup() : renderCall()}
+        {phase === 'setup' ? renderSetup() : phase === 'call' ? renderCall() : renderThankYou()}
       </div>
       {!isMobileView || !onFooterRender ? footer : null}
     </div>

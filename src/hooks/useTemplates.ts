@@ -20,6 +20,7 @@ export interface ModuleTemplate {
     consentText?: string;
     leftVideoImage?: string;
     rightVideoImage?: string;
+    footerLabel?: string;
     questions?: Array<{
       id: string;
       text: string;
