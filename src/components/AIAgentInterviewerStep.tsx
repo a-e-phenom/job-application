@@ -5,7 +5,6 @@ import {
   Video,
   VideoOff,
   MessageSquare,
-  PhoneOff,
   Check,
   ChevronDown,
   AudioLines,
@@ -84,6 +83,12 @@ const SpeakingIndicator = () => (
   </div>
 );
 
+const EndCallIcon = ({ className = 'h-5 w-5' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.68-1.36-2.66-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z" />
+  </svg>
+);
+
 const activeSpeakerCardClass =
   'ring-4 ring-white shadow-[0_8px_24px_rgba(0,0,0,0.18)]';
 
@@ -137,6 +142,9 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
   const [cameraOff, setCameraOff] = useState(false);
   const [callDuration, setCallDuration] = useState(data.callDuration ?? 0);
   const [transcriptPanelOpen, setTranscriptPanelOpen] = useState(false);
+  const [transcriptOverlayEnabled, setTranscriptOverlayEnabled] = useState(true);
+  const [callSettingsOpen, setCallSettingsOpen] = useState(false);
+  const [videoFocus, setVideoFocus] = useState<'agent' | 'candidate'>('agent');
   const [utteranceIndex, setUtteranceIndex] = useState(0);
   const [wordIndex, setWordIndex] = useState(0);
   const [completedUtterances, setCompletedUtterances] = useState<CompletedUtterance[]>([]);
@@ -177,6 +185,9 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
     : spokenWords.slice(overlayChunkStart, wordIndex).join(' ');
   const activeSpeaker =
     demoFinished || !currentUtterance || wordIndex === 0 ? null : currentUtterance.speaker;
+  const showTranscriptOverlay = isMobileView
+    ? transcriptOverlayEnabled
+    : !transcriptPanelOpen;
 
   useEffect(() => {
     callDurationRef.current = callDuration;
@@ -189,6 +200,9 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
     setCompletedUtterances([]);
     setDemoFinished(false);
     setOverlayBlank(false);
+    setTranscriptOverlayEnabled(true);
+    setTranscriptPanelOpen(false);
+    setCallSettingsOpen(false);
   }, [phase]);
 
   useEffect(() => {
@@ -306,6 +320,22 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
     onNext();
   }, [handleChange, callDuration, onNext]);
 
+  const renderEndCallButton = (extraClassName = '', showLabel = false) => (
+    <button
+      type="button"
+      onClick={handleEndCall}
+      className={`flex shrink-0 items-center justify-center gap-2 bg-red-500 text-white transition-colors hover:bg-red-600 ${
+        showLabel
+          ? 'rounded-[10px] px-6 py-2.5 text-sm font-medium'
+          : 'h-10 w-10 rounded-xl'
+      } ${extraClassName}`}
+      aria-label="End call"
+    >
+      <EndCallIcon className={showLabel ? 'h-4 w-4' : 'h-5 w-5'} />
+      {showLabel && 'End Call'}
+    </button>
+  );
+
   const renderMediaToggleButton = (
     kind: 'mic' | 'camera',
     isOff: boolean,
@@ -383,6 +413,107 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
           ))}
         </select>
       </div>
+    </div>
+  );
+
+  const renderFocusField = () => (
+    <div className="min-w-0">
+      <label className="mb-1.5 block text-xs font-medium text-[#637085]">
+        Focus in main video is on
+      </label>
+      <div className="relative h-8 min-w-0 rounded-lg border border-gray-400 bg-white">
+        <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-[#637085]" />
+        <span
+          aria-hidden
+          className="pointer-events-none absolute left-3 right-8 top-1/2 z-[1] -translate-y-1/2 truncate text-sm text-[#353B46]"
+        >
+          {videoFocus === 'agent' ? 'Agent' : 'You'}
+        </span>
+        <select
+          value={videoFocus}
+          onChange={e => setVideoFocus(e.target.value as 'agent' | 'candidate')}
+          className="absolute inset-0 z-[2] h-full w-full min-w-0 cursor-pointer appearance-none rounded-lg bg-transparent pl-3 pr-8 text-sm text-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          <option value="agent">Agent</option>
+          <option value="candidate">You</option>
+        </select>
+      </div>
+    </div>
+  );
+
+  const renderMobileCallSettings = () => (
+    <div className="flex min-h-0 flex-1 flex-col px-1">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <h2 className="mb-4 text-base font-semibold text-[#353B46]">Call Settings</h2>
+        <div className="space-y-4">
+          {DEVICE_FIELDS.map(renderDeviceField)}
+          {renderFocusField()}
+        </div>
+      </div>
+      <div className="shrink-0 pb-6 pt-4">
+        <button
+          type="button"
+          onClick={() => {
+            setTranscriptOverlayEnabled(true);
+            setCallSettingsOpen(false);
+          }}
+          className="w-full rounded-lg border border-gray-600 py-2 text-sm font-medium text-[#353B46] transition-colors hover:bg-gray-50"
+        >
+          Show Live Transcript
+        </button>
+        <button
+          type="button"
+          onClick={() => setCallSettingsOpen(false)}
+          className="mt-4 w-full py-2 text-center text-sm font-semibold text-[#353B46]"
+        >
+          Close Settings
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderMobileCallVideos = () => (
+    <div
+      className={`relative min-h-0 w-full flex-1 overflow-hidden rounded-2xl transition-shadow duration-200 ${
+        activeSpeaker === 'agent' ? activeSpeakerCardClass : ''
+      }`}
+    >
+      <img src={leftVideoImage} alt="Interviewer" className="h-full w-full object-cover" />
+      {activeSpeaker === 'agent' && <SpeakingIndicator />}
+      <div
+        className={`absolute bottom-3 right-3 z-20 w-[34%] max-w-[132px] transition-shadow duration-200 ${
+          activeSpeaker === 'candidate' ? 'shadow-[0_8px_24px_rgba(0,0,0,0.18)]' : ''
+        }`}
+      >
+        <div className="relative aspect-square w-full overflow-hidden rounded-xl ring-2 ring-white shadow-lg">
+          {cameraOff ? (
+            <div className="flex h-full w-full items-center justify-center bg-[#E5E7EB]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm">
+                <span className="text-sm font-semibold text-[#353B46]">{initials}</span>
+              </div>
+            </div>
+          ) : (
+            <img src={rightVideoImage} alt="Candidate" className="h-full w-full object-cover" />
+          )}
+          {activeSpeaker === 'candidate' && (
+            <div className="absolute bottom-1.5 left-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm">
+              <AudioLines className="h-3 w-3 text-[#637085]" />
+            </div>
+          )}
+          {micMuted && (
+            <div className="absolute right-1.5 top-1.5 z-20 flex h-5 w-5 items-center justify-center rounded-[4px] bg-[#353B46]/80 text-white">
+              <MicOff className="h-3 w-3" />
+            </div>
+          )}
+        </div>
+      </div>
+      {showTranscriptOverlay && overlaySnippet && (
+        <div className="pointer-events-none absolute bottom-6 left-1/2 z-30 flex -translate-x-1/2 items-center justify-center">
+          <div className="flex h-6 items-center justify-center bg-[#353B46]/90 px-2">
+            <p className="whitespace-nowrap text-xs leading-none text-white">{overlaySnippet}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -511,7 +642,7 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
     >
       <div
         className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${
-          isMobileView ? 'px-3 pt-3' : 'justify-between px-4 pt-6 md:px-8'
+          isMobileView ? 'px-3 py-3' : 'justify-between px-4 pt-6 md:px-8'
         }`}
         style={
           isMobileView
@@ -524,17 +655,16 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
             isMobileView ? 'relative flex flex-1 flex-col gap-3' : 'relative max-w-5xl shrink-0'
           }`}
         >
-          <div
-            className={
-              isMobileView
-                ? 'flex min-h-0 flex-1 flex-col gap-3'
-                : 'grid grid-cols-1 gap-4 md:grid-cols-2'
-            }
-          >
+          {isMobileView && callSettingsOpen ? (
+            renderMobileCallSettings()
+          ) : isMobileView ? (
+            renderMobileCallVideos()
+          ) : (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div
-              className={`relative min-h-0 w-full overflow-hidden rounded-2xl transition-shadow duration-200 ${
-                isMobileView ? 'flex-1' : 'aspect-square'
-              } ${activeSpeaker === 'agent' ? activeSpeakerCardClass : ''}`}
+              className={`relative aspect-square w-full overflow-hidden rounded-2xl transition-shadow duration-200 ${
+                activeSpeaker === 'agent' ? activeSpeakerCardClass : ''
+              }`}
             >
               <img
                 src={leftVideoImage}
@@ -544,9 +674,9 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
               {activeSpeaker === 'agent' && <SpeakingIndicator />}
             </div>
             <div
-              className={`relative min-h-0 w-full overflow-hidden rounded-2xl transition-shadow duration-200 ${
-                isMobileView ? 'flex-1' : 'aspect-square'
-              } ${activeSpeaker === 'candidate' ? activeSpeakerCardClass : ''}`}
+              className={`relative aspect-square w-full overflow-hidden rounded-2xl transition-shadow duration-200 ${
+                activeSpeaker === 'candidate' ? activeSpeakerCardClass : ''
+              }`}
             >
               {cameraOff ? (
                 <div
@@ -568,17 +698,13 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
               {micMuted && (
                 <div className="absolute right-3 top-3 flex items-center gap-1 rounded-[6px] bg-[#353B46]/80 px-2 py-1 text-xs text-white">
                   <MicOff className="h-3.5 w-3.5" />
-                  {!isMobileView && <span>Mic off</span>}
-                </div>
-              )}
-              {isMobileView && !transcriptPanelOpen && overlaySnippet && (
-                <div className="absolute bottom-3 left-1/2 z-10 flex h-6 w-max max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center justify-center bg-[#353B46]/90 px-1">
-                  <p className="whitespace-nowrap text-xs leading-none text-white">{overlaySnippet}</p>
+                  <span>Mic off</span>
                 </div>
               )}
             </div>
           </div>
-          {!isMobileView && !transcriptPanelOpen && overlaySnippet && (
+          )}
+          {!isMobileView && showTranscriptOverlay && overlaySnippet && (
             <div
               className="absolute left-1/2 z-10 flex h-6 -translate-x-1/2 items-center justify-center bg-[#353B46]/90 px-1"
               style={{ bottom: 60 }}
@@ -588,12 +714,7 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
           )}
         </div>
 
-        {isMobileView ? (
-          <div className="shrink-0 border-t border-gray-200 py-2.5 text-center text-sm text-[#637085]">
-            Call Duration: {formatDuration(callDuration)} |{' '}
-            <span className="font-medium text-gray-700">Recording in progress</span>
-          </div>
-        ) : (
+        {!isMobileView && (
           <div className="mx-auto flex w-full max-w-5xl shrink-0 flex-wrap items-center justify-center gap-3">
             <span className="rounded-[6px] bg-[#E8EAEE] px-[6px] py-1 text-xs text-gray-800">
               Your Microphone is {micMuted ? 'Off' : 'On'}
@@ -639,45 +760,11 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
         </aside>
       )}
 
-      {transcriptPanelOpen && isMobileView && (
-        <div className="absolute inset-0 z-40 flex flex-col bg-white">
-          <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-            <h2 className="text-base font-semibold text-[#353B46]">Live Transcript</h2>
-            <button
-              type="button"
-              onClick={() => setTranscriptPanelOpen(false)}
-              className="text-sm font-medium text-[#637085]"
-            >
-              Close
-            </button>
-          </div>
-          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-            {completedUtterances.map(message =>
-              renderTranscriptBubble(
-                message.speaker,
-                message.text,
-                formatTranscriptTime(Math.max(0, callDuration - message.elapsedSeconds)),
-                false,
-                message.id
-              )
-            )}
-            {!demoFinished && liveTranscriptText && currentUtterance &&
-              renderTranscriptBubble(
-                currentUtterance.speaker,
-                liveTranscriptText,
-                'Just now',
-                true,
-                'live-utterance'
-              )}
-            <div ref={transcriptEndRef} />
-          </div>
-        </div>
-      )}
     </div>
   );
 
   const footerShellClass = isMobileView
-    ? 'w-full border-t border-gray-200 bg-white'
+    ? 'w-full border-t border-gray-200 bg-white py-1'
     : 'fixed bottom-0 left-0 right-0 z-50 w-full border-t border-gray-200 bg-white px-4 py-4 md:px-6';
 
   const footer = useMemo(() => {
@@ -732,38 +819,46 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
     if (isMobileView) {
       return (
         <div className={footerShellClass}>
-          <div className="flex items-center justify-center gap-3 px-4 py-3">
-            {renderMediaToggleButton('mic', micMuted, () => setMicMuted(v => !v))}
-            {renderMediaToggleButton('camera', cameraOff, () => setCameraOff(v => !v))}
-            <button
-              type="button"
-              onClick={() => setTranscriptPanelOpen(open => !open)}
-              className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
-                transcriptPanelOpen
-                  ? 'text-white'
-                  : 'bg-gray-100 text-[#353B46] hover:bg-gray-200'
-              }`}
-              style={transcriptPanelOpen ? { backgroundColor: primaryColor } : undefined}
-              aria-label={transcriptPanelOpen ? 'Close live transcript' : 'Open live transcript'}
-              aria-pressed={transcriptPanelOpen}
-            >
-              <MessageSquare className="h-5 w-5" />
-            </button>
-            <button
-              type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-[#353B46] transition-colors hover:bg-gray-200"
-              aria-label="More options"
-            >
-              <MoreVertical className="h-5 w-5" />
-            </button>
-            <button
-              type="button"
-              onClick={handleEndCall}
-              className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-500 text-white transition-colors hover:bg-red-600"
-              aria-label="End call"
-            >
-              <PhoneOff className="h-5 w-5" />
-            </button>
+          <div className="flex flex-col gap-2.5 px-4 pb-3 pt-2.5">
+            <div className="text-left text-sm text-[#637085]">
+              Call Duration: {formatDuration(callDuration)} |{' '}
+              <span className="font-medium text-gray-700">Recording in progress</span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+              {renderMediaToggleButton('mic', micMuted, () => setMicMuted(v => !v))}
+              {renderMediaToggleButton('camera', cameraOff, () => setCameraOff(v => !v))}
+              <button
+                type="button"
+                onClick={() => setTranscriptOverlayEnabled(enabled => !enabled)}
+                className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
+                  transcriptOverlayEnabled
+                    ? 'text-white'
+                    : 'bg-gray-100 text-[#353B46] hover:bg-gray-200'
+                }`}
+                style={transcriptOverlayEnabled ? { backgroundColor: primaryColor } : undefined}
+                aria-label={transcriptOverlayEnabled ? 'Turn transcript overlay off' : 'Turn transcript overlay on'}
+                aria-pressed={transcriptOverlayEnabled}
+              >
+                <MessageSquare className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setCallSettingsOpen(open => !open)}
+                className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
+                  callSettingsOpen
+                    ? 'text-white'
+                    : 'bg-gray-100 text-[#353B46] hover:bg-gray-200'
+                }`}
+                style={callSettingsOpen ? { backgroundColor: primaryColor } : undefined}
+                aria-label={callSettingsOpen ? 'Close call settings' : 'Open call settings'}
+                aria-pressed={callSettingsOpen}
+              >
+                <MoreVertical className="h-5 w-5" />
+              </button>
+            </div>
+            {renderEndCallButton()}
+            </div>
           </div>
         </div>
       );
@@ -794,14 +889,7 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
               <MessageSquare className="h-5 w-5" />
             </button>
           </div>
-          <button
-            type="button"
-            onClick={handleEndCall}
-            className="flex shrink-0 items-center gap-2 justify-self-end rounded-[10px] bg-red-500 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600"
-          >
-            <PhoneOff className="h-4 w-4" />
-            End Call
-          </button>
+          {renderEndCallButton('justify-self-end', true)}
         </div>
       </div>
     );
@@ -814,6 +902,8 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
     micMuted,
     cameraOff,
     transcriptPanelOpen,
+    transcriptOverlayEnabled,
+    callSettingsOpen,
     handleStartCall,
     handleEndCall
   ]);
