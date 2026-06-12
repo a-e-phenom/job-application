@@ -8,7 +8,9 @@ import {
   Check,
   ChevronDown,
   AudioLines,
-  MoreVertical
+  MoreVertical,
+  ArrowLeft,
+  X
 } from 'lucide-react';
 import { AIAgentInterviewerData } from '../types/application';
 import { ModuleTemplate } from '../hooks/useTemplates';
@@ -143,6 +145,7 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
   const [callDuration, setCallDuration] = useState(data.callDuration ?? 0);
   const [transcriptPanelOpen, setTranscriptPanelOpen] = useState(false);
   const [transcriptOverlayEnabled, setTranscriptOverlayEnabled] = useState(true);
+  const [mobileTranscriptOpen, setMobileTranscriptOpen] = useState(false);
   const [callSettingsOpen, setCallSettingsOpen] = useState(false);
   const [videoFocus, setVideoFocus] = useState<'agent' | 'candidate'>('agent');
   const [utteranceIndex, setUtteranceIndex] = useState(0);
@@ -186,7 +189,7 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
   const activeSpeaker =
     demoFinished || !currentUtterance || wordIndex === 0 ? null : currentUtterance.speaker;
   const showTranscriptOverlay = isMobileView
-    ? transcriptOverlayEnabled
+    ? transcriptOverlayEnabled && !mobileTranscriptOpen
     : !transcriptPanelOpen;
 
   useEffect(() => {
@@ -202,6 +205,7 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
     setOverlayBlank(false);
     setTranscriptOverlayEnabled(true);
     setTranscriptPanelOpen(false);
+    setMobileTranscriptOpen(false);
     setCallSettingsOpen(false);
   }, [phase]);
 
@@ -268,9 +272,15 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
   ]);
 
   useEffect(() => {
-    if (!transcriptPanelOpen) return;
+    if (!transcriptPanelOpen && !mobileTranscriptOpen) return;
     transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [transcriptPanelOpen, completedUtterances, liveTranscriptText, utteranceIndex]);
+  }, [
+    transcriptPanelOpen,
+    mobileTranscriptOpen,
+    completedUtterances,
+    liveTranscriptText,
+    utteranceIndex
+  ]);
 
   useEffect(() => {
     setLocalData(data);
@@ -454,7 +464,8 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
         <button
           type="button"
           onClick={() => {
-            setTranscriptOverlayEnabled(true);
+            setMobileTranscriptOpen(true);
+            setTranscriptOverlayEnabled(false);
             setCallSettingsOpen(false);
           }}
           className="w-full rounded-lg border border-gray-600 py-2 text-sm font-medium text-[#353B46] transition-colors hover:bg-gray-50"
@@ -472,50 +483,167 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
     </div>
   );
 
-  const renderMobileCallVideos = () => (
-    <div
-      className={`relative min-h-0 w-full flex-1 overflow-hidden rounded-2xl transition-shadow duration-200 ${
-        activeSpeaker === 'agent' ? activeSpeakerCardClass : ''
-      }`}
-    >
+  const renderAgentFeed = (variant: 'main' | 'pip' | 'strip') => (
+    <>
       <img src={leftVideoImage} alt="Interviewer" className="h-full w-full object-cover" />
-      {activeSpeaker === 'agent' && <SpeakingIndicator />}
-      <div
-        className={`absolute bottom-3 right-3 z-20 w-[34%] max-w-[132px] transition-shadow duration-200 ${
-          activeSpeaker === 'candidate' ? 'shadow-[0_8px_24px_rgba(0,0,0,0.18)]' : ''
-        }`}
-      >
-        <div className="relative aspect-square w-full overflow-hidden rounded-xl ring-2 ring-white shadow-lg">
-          {cameraOff ? (
-            <div className="flex h-full w-full items-center justify-center bg-[#E5E7EB]">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm">
-                <span className="text-sm font-semibold text-[#353B46]">{initials}</span>
-              </div>
-            </div>
-          ) : (
-            <img src={rightVideoImage} alt="Candidate" className="h-full w-full object-cover" />
-          )}
-          {activeSpeaker === 'candidate' && (
-            <div className="absolute bottom-1.5 left-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm">
-              <AudioLines className="h-3 w-3 text-[#637085]" />
-            </div>
-          )}
-          {micMuted && (
-            <div className="absolute right-1.5 top-1.5 z-20 flex h-5 w-5 items-center justify-center rounded-[4px] bg-[#353B46]/80 text-white">
-              <MicOff className="h-3 w-3" />
-            </div>
-          )}
-        </div>
-      </div>
-      {showTranscriptOverlay && overlaySnippet && (
-        <div className="pointer-events-none absolute bottom-6 left-1/2 z-30 flex -translate-x-1/2 items-center justify-center">
-          <div className="flex h-6 items-center justify-center bg-[#353B46]/90 px-2">
-            <p className="whitespace-nowrap text-xs leading-none text-white">{overlaySnippet}</p>
+      {activeSpeaker === 'agent' &&
+        (variant === 'main' ? (
+          <SpeakingIndicator />
+        ) : (
+          <div
+            className={`absolute z-20 flex items-center justify-center rounded-full bg-white shadow-sm ${
+              variant === 'pip' ? 'bottom-1.5 left-1.5 h-6 w-6' : 'bottom-2 left-2 h-7 w-7'
+            }`}
+          >
+            <AudioLines className={variant === 'pip' ? 'h-3 w-3 text-[#637085]' : 'h-3.5 w-3.5 text-[#637085]'} />
+          </div>
+        ))}
+    </>
+  );
+
+  const renderCandidateFeed = (variant: 'main' | 'pip' | 'strip') => (
+    <>
+      {cameraOff ? (
+        <div className="flex h-full w-full items-center justify-center bg-[#E5E7EB]">
+          <div
+            className={`flex items-center justify-center rounded-full bg-white shadow-sm ${
+              variant === 'main' ? 'h-24 w-24' : variant === 'pip' ? 'h-10 w-10' : 'h-12 w-12'
+            }`}
+          >
+            <span
+              className={`font-semibold text-[#353B46] ${
+                variant === 'main' ? 'text-2xl' : variant === 'pip' ? 'text-sm' : 'text-base'
+              }`}
+            >
+              {initials}
+            </span>
           </div>
         </div>
+      ) : (
+        <img src={rightVideoImage} alt="Candidate" className="h-full w-full object-cover" />
       )}
+      {activeSpeaker === 'candidate' &&
+        (variant === 'main' ? (
+          <SpeakingIndicator />
+        ) : (
+          <div
+            className={`absolute z-20 flex items-center justify-center rounded-full bg-white shadow-sm ${
+              variant === 'pip' ? 'bottom-1.5 left-1.5 h-6 w-6' : 'bottom-2 left-2 h-7 w-7'
+            }`}
+          >
+            <AudioLines className={variant === 'pip' ? 'h-3 w-3 text-[#637085]' : 'h-3.5 w-3.5 text-[#637085]'} />
+          </div>
+        ))}
+      {micMuted && (
+        <div
+          className={`absolute z-20 flex items-center justify-center bg-[#353B46]/80 text-white ${
+            variant === 'main'
+              ? 'right-3 top-3 gap-1 rounded-[6px] px-2 py-1 text-xs'
+              : 'right-1.5 top-1.5 h-5 w-5 rounded-[4px]'
+          }`}
+        >
+          <MicOff className={variant === 'main' ? 'h-3.5 w-3.5' : 'h-3 w-3'} />
+          {variant === 'main' && <span>Mic off</span>}
+        </div>
+      )}
+    </>
+  );
+
+  const renderMobileTranscriptVideoStrip = () => (
+    <div className="mt-3 grid shrink-0 grid-cols-2 gap-2">
+      <div
+        className={`relative aspect-[5/4] overflow-hidden rounded-xl transition-shadow duration-200 ${
+          activeSpeaker === 'agent' ? activeSpeakerCardClass : ''
+        }`}
+      >
+        <div className="relative h-full w-full">{renderAgentFeed('strip')}</div>
+      </div>
+      <div
+        className={`relative aspect-[5/4] overflow-hidden rounded-xl transition-shadow duration-200 ${
+          activeSpeaker === 'candidate' ? activeSpeakerCardClass : ''
+        }`}
+      >
+        <div className="relative h-full w-full">{renderCandidateFeed('strip')}</div>
+      </div>
     </div>
   );
+
+  const renderMobileLiveTranscript = () => (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="mb-3 flex shrink-0 items-center justify-between border-b border-gray-200 pb-3">
+        <button
+          type="button"
+          onClick={() => setMobileTranscriptOpen(false)}
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-[#353B46] transition-colors hover:bg-gray-100"
+          aria-label="Back to call"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <h2 className="text-base font-semibold text-[#353B46]">Live Transcript</h2>
+        <button
+          type="button"
+          onClick={() => setMobileTranscriptOpen(false)}
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-[#353B46] transition-colors hover:bg-gray-100"
+          aria-label="Close live transcript"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-1">
+        {completedUtterances.map(message =>
+          renderTranscriptBubble(
+            message.speaker,
+            message.text,
+            formatTranscriptTime(Math.max(0, callDuration - message.elapsedSeconds)),
+            false,
+            message.id
+          )
+        )}
+        {!demoFinished && liveTranscriptText && currentUtterance &&
+          renderTranscriptBubble(
+            currentUtterance.speaker,
+            liveTranscriptText,
+            'Just now',
+            true,
+            'live-utterance'
+          )}
+        <div ref={transcriptEndRef} />
+      </div>
+      {renderMobileTranscriptVideoStrip()}
+    </div>
+  );
+
+  const renderMobileCallVideos = () => {
+    const pipSpeaker = videoFocus === 'agent' ? 'candidate' : 'agent';
+
+    return (
+      <div
+        className={`relative min-h-0 w-full flex-1 overflow-hidden rounded-2xl transition-shadow duration-200 ${
+          activeSpeaker === videoFocus ? activeSpeakerCardClass : ''
+        }`}
+      >
+        <div className="relative h-full w-full">
+          {videoFocus === 'agent' ? renderAgentFeed('main') : renderCandidateFeed('main')}
+        </div>
+        <div
+          className={`absolute bottom-3 right-3 z-20 w-[34%] max-w-[132px] transition-shadow duration-200 ${
+            activeSpeaker === pipSpeaker ? 'shadow-[0_8px_24px_rgba(0,0,0,0.18)]' : ''
+          }`}
+        >
+          <div className="relative aspect-square w-full overflow-hidden rounded-xl ring-2 ring-white shadow-lg">
+            {videoFocus === 'agent' ? renderCandidateFeed('pip') : renderAgentFeed('pip')}
+          </div>
+        </div>
+        {showTranscriptOverlay && overlaySnippet && (
+          <div className="pointer-events-none absolute bottom-6 left-1/2 z-30 flex -translate-x-1/2 items-center justify-center">
+            <div className="flex h-6 items-center justify-center bg-[#353B46]/90 px-2">
+              <p className="whitespace-nowrap text-xs leading-none text-white">{overlaySnippet}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderSetup = () => (
     <div
@@ -655,7 +783,9 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
             isMobileView ? 'relative flex flex-1 flex-col gap-3' : 'relative max-w-5xl shrink-0'
           }`}
         >
-          {isMobileView && callSettingsOpen ? (
+          {isMobileView && mobileTranscriptOpen ? (
+            renderMobileLiveTranscript()
+          ) : isMobileView && callSettingsOpen ? (
             renderMobileCallSettings()
           ) : isMobileView ? (
             renderMobileCallVideos()
@@ -830,21 +960,40 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
               {renderMediaToggleButton('camera', cameraOff, () => setCameraOff(v => !v))}
               <button
                 type="button"
-                onClick={() => setTranscriptOverlayEnabled(enabled => !enabled)}
+                onClick={() => {
+                  setTranscriptOverlayEnabled(enabled => {
+                    const next = !enabled;
+                    if (next) setMobileTranscriptOpen(false);
+                    return next;
+                  });
+                }}
                 className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
-                  transcriptOverlayEnabled
+                  transcriptOverlayEnabled && !mobileTranscriptOpen
                     ? 'text-white'
                     : 'bg-gray-100 text-[#353B46] hover:bg-gray-200'
                 }`}
-                style={transcriptOverlayEnabled ? { backgroundColor: primaryColor } : undefined}
-                aria-label={transcriptOverlayEnabled ? 'Turn transcript overlay off' : 'Turn transcript overlay on'}
-                aria-pressed={transcriptOverlayEnabled}
+                style={
+                  transcriptOverlayEnabled && !mobileTranscriptOpen
+                    ? { backgroundColor: primaryColor }
+                    : undefined
+                }
+                aria-label={
+                  transcriptOverlayEnabled && !mobileTranscriptOpen
+                    ? 'Turn transcript overlay off'
+                    : 'Turn transcript overlay on'
+                }
+                aria-pressed={transcriptOverlayEnabled && !mobileTranscriptOpen}
               >
                 <MessageSquare className="h-5 w-5" />
               </button>
               <button
                 type="button"
-                onClick={() => setCallSettingsOpen(open => !open)}
+                onClick={() => {
+                  setCallSettingsOpen(open => {
+                    if (!open) setMobileTranscriptOpen(false);
+                    return !open;
+                  });
+                }}
                 className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
                   callSettingsOpen
                     ? 'text-white'
@@ -903,6 +1052,7 @@ const AIAgentInterviewerStep = React.memo(function AIAgentInterviewerStep({
     cameraOff,
     transcriptPanelOpen,
     transcriptOverlayEnabled,
+    mobileTranscriptOpen,
     callSettingsOpen,
     handleStartCall,
     handleEndCall
