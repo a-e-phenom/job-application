@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, RefreshCw, Clock, Mail } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Clock, Mail, Layers } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { ModuleUsageEntry } from '../lib/moduleUsage';
+import { fetchModuleUsageReport, getErrorMessage } from '../lib/moduleUsageQueries';
 
 interface LoginLog {
   id: string;
@@ -10,16 +12,23 @@ interface LoginLog {
   created_at: string;
 }
 
+type ActivityTab = 'login' | 'modules';
+
 export default function ActivityLog() {
+  const [activeTab, setActiveTab] = useState<ActivityTab>('login');
   const [logs, setLogs] = useState<LoginLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [moduleUsage, setModuleUsage] = useState<ModuleUsageEntry[]>([]);
+  const [totalFlows, setTotalFlows] = useState(0);
+  const [loadingLogin, setLoadingLogin] = useState(true);
+  const [loadingModules, setLoadingModules] = useState(true);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [moduleError, setModuleError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const fetchLogs = async () => {
-    setLoading(true);
-    setError(null);
-    
+  const fetchLoginLogs = async () => {
+    setLoadingLogin(true);
+    setLoginError(null);
+
     try {
       const { data, error: fetchError } = await supabase
         .from('login_logs')
@@ -27,19 +36,40 @@ export default function ActivityLog() {
         .order('logged_in_at', { ascending: false });
 
       if (fetchError) throw fetchError;
-      
       setLogs(data || []);
     } catch (err) {
       console.error('Error fetching login logs:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch login logs');
+      setLoginError(getErrorMessage(err));
     } finally {
-      setLoading(false);
+      setLoadingLogin(false);
     }
   };
 
-  useEffect(() => {
-    fetchLogs();
+  const fetchModuleUsage = async () => {
+    setLoadingModules(true);
+    setModuleError(null);
+
+    try {
+      const report = await fetchModuleUsageReport();
+      setTotalFlows(report.totalFlows);
+      setModuleUsage(report.entries);
+    } catch (err) {
+      console.error('Error fetching module usage:', err);
+      setModuleError(getErrorMessage(err));
+      setModuleUsage([]);
+      setTotalFlows(0);
+    } finally {
+      setLoadingModules(false);
+    }
+  };
+
+  const fetchData = useCallback(async () => {
+    await Promise.all([fetchLoginLogs(), fetchModuleUsage()]);
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -69,9 +99,20 @@ export default function ActivityLog() {
     return formatDate(dateString);
   };
 
+  const tabMeta = useMemo(
+    () => ({
+      login: { label: 'Login History', count: logs.length },
+      modules: { label: 'Module Usage', count: moduleUsage.length }
+    }),
+    [logs.length, moduleUsage.length]
+  );
+
+  const activeError = activeTab === 'login' ? loginError : moduleError;
+  const activeLoading = activeTab === 'login' ? loadingLogin : loadingModules;
+  const isRefreshing = loadingLogin || loadingModules;
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -87,50 +128,130 @@ export default function ActivityLog() {
               <h1 className="text-2xl font-bold text-gray-900">Activity Log</h1>
             </div>
             <button
-              onClick={fetchLogs}
-              disabled={loading}
+              onClick={fetchData}
+              disabled={isRefreshing}
               className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
               <span>Refresh</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {error && (
+        {activeError && (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            <p className="font-medium">Error loading activity log</p>
-            <p className="text-sm">{error}</p>
+            <p className="font-medium">
+              {activeTab === 'login' ? 'Error loading login history' : 'Error loading module usage'}
+            </p>
+            <p className="text-sm">{activeError}</p>
           </div>
         )}
 
+        <div className="mb-6 border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            {(Object.keys(tabMeta) as ActivityTab[]).map(tab => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors ${
+                  activeTab === tab
+                    ? 'border-indigo-600 text-indigo-600'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                {tabMeta[tab].label}
+                <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                  {tabMeta[tab].count}
+                </span>
+              </button>
+            ))}
+          </nav>
+        </div>
+
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          {/* Table Header */}
           <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">
-                Login History
+                {activeTab === 'login' ? 'Login History' : 'Module Usage'}
               </h2>
               <span className="text-sm text-gray-500">
-                {logs.length} {logs.length === 1 ? 'entry' : 'entries'}
+                {activeTab === 'login'
+                  ? `${logs.length} ${logs.length === 1 ? 'entry' : 'entries'}`
+                  : `${moduleUsage.length} ${moduleUsage.length === 1 ? 'module' : 'modules'} across ${totalFlows} ${totalFlows === 1 ? 'flow' : 'flows'}`}
               </span>
             </div>
           </div>
 
-          {/* Table Content */}
-          {loading ? (
+          {activeLoading ? (
             <div className="px-6 py-12 text-center">
               <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin mx-auto mb-4" />
-              <p className="text-gray-600">Loading activity log...</p>
+              <p className="text-gray-600">
+                {activeTab === 'modules' && totalFlows === 0
+                  ? 'Analyzing module usage across flows...'
+                  : 'Loading...'}
+              </p>
             </div>
-          ) : logs.length === 0 ? (
+          ) : activeTab === 'login' ? (
+            logs.length === 0 ? (
+              <div className="px-6 py-12 text-center">
+                <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 font-medium">No login activity yet</p>
+                <p className="text-gray-500 text-sm mt-1">Login records will appear here</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Timestamp
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Time Ago
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {logs.map(log => (
+                      <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <Mail className="w-4 h-4 text-gray-400 mr-2" />
+                            <span className="text-sm font-medium text-gray-900">{log.email}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <Clock className="w-4 h-4 text-gray-400 mr-2" />
+                            <span className="text-sm text-gray-600">{formatDate(log.logged_in_at)}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm text-gray-500">{getRelativeTime(log.logged_in_at)}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          ) : moduleError ? (
             <div className="px-6 py-12 text-center">
-              <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 font-medium">No login activity yet</p>
-              <p className="text-gray-500 text-sm mt-1">Login records will appear here</p>
+              <Layers className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600 font-medium">Could not load module usage</p>
+              <p className="text-gray-500 text-sm mt-1">{moduleError}</p>
+            </div>
+          ) : moduleUsage.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <Layers className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600 font-medium">No module usage yet</p>
+              <p className="text-gray-500 text-sm mt-1">Add modules to flows to see usage here</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -138,38 +259,31 @@ export default function ActivityLog() {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
+                      Module
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Timestamp
+                      Component
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Time Ago
+                      Flows
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {logs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                  {moduleUsage.map(entry => (
+                    <tr key={entry.component} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <Mail className="w-4 h-4 text-gray-400 mr-2" />
-                          <span className="text-sm font-medium text-gray-900">
-                            {log.email}
-                          </span>
+                          <Layers className="w-4 h-4 text-gray-400 mr-2" />
+                          <span className="text-sm font-medium text-gray-900">{entry.name}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <Clock className="w-4 h-4 text-gray-400 mr-2" />
-                          <span className="text-sm text-gray-600">
-                            {formatDate(log.logged_in_at)}
-                          </span>
-                        </div>
+                        <span className="text-sm text-gray-600 font-mono">{entry.component}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-500">
-                          {getRelativeTime(log.logged_in_at)}
+                        <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-sm font-medium text-indigo-700">
+                          {entry.flowCount}
                         </span>
                       </td>
                     </tr>
@@ -183,4 +297,3 @@ export default function ActivityLog() {
     </div>
   );
 }
-
